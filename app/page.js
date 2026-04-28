@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA, TYPE_META } from '../lib/plan-data';
+import {
+  END_GOALS,
+  HEART_ZONES,
+  NUTRITION_GUIDE,
+  PRACTICAL_TIPS,
+  STRENGTH_GUIDE,
+  getWeekOverview,
+} from '../lib/plan-content';
 
 export default function Home() {
   const [session, setSession] = useState(null);
@@ -159,6 +167,7 @@ function Auth() {
 function App({ user }) {
   const [completed, setCompleted] = useState({});
   const [logs, setLogs] = useState([]);
+  const [checkins, setCheckins] = useState([]);
   const [view, setView] = useState('today');
   const [todayId, setTodayId] = useState(1);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -169,15 +178,17 @@ function App({ user }) {
   // Load data from Supabase
   useEffect(() => {
     const load = async () => {
-      const [{ data: completionsData }, { data: logsData }] = await Promise.all([
+      const [{ data: completionsData }, { data: logsData }, { data: checkinData }] = await Promise.all([
         supabase.from('completions').select('*').eq('user_id', user.id),
         supabase.from('workout_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+        supabase.from('daily_checkins').select('*').eq('user_id', user.id).order('date', { ascending: false }),
       ]);
 
       const compMap = {};
       (completionsData || []).forEach(c => { compMap[c.day_id] = true; });
       setCompleted(compMap);
       setLogs(logsData || []);
+      setCheckins(checkinData || []);
     };
     load();
   }, [user.id]);
@@ -190,6 +201,8 @@ function App({ user }) {
         () => reloadCompletions())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'workout_logs', filter: `user_id=eq.${user.id}` },
         () => reloadLogs())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_checkins', filter: `user_id=eq.${user.id}` },
+        () => reloadCheckins())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -205,6 +218,11 @@ function App({ user }) {
   const reloadLogs = async () => {
     const { data } = await supabase.from('workout_logs').select('*').eq('user_id', user.id).order('date', { ascending: false });
     setLogs(data || []);
+  };
+
+  const reloadCheckins = async () => {
+    const { data } = await supabase.from('daily_checkins').select('*').eq('user_id', user.id).order('date', { ascending: false });
+    setCheckins(data || []);
   };
 
   // Find today
@@ -256,12 +274,42 @@ function App({ user }) {
     setLogs(logs.filter(l => l.id !== id));
   };
 
+  const saveCheckin = async (form) => {
+    setSyncing(true);
+    const payload = {
+      user_id: user.id,
+      date: form.date,
+      weight_kg: parseFloat(form.weightKg) || null,
+      waist_cm: parseFloat(form.waistCm) || null,
+      sleep_hours: parseFloat(form.sleepHours) || null,
+      resting_hr: parseInt(form.restingHr) || null,
+      hrv: parseFloat(form.hrv) || null,
+      energy_level: parseInt(form.energyLevel) || null,
+      mood_level: parseInt(form.moodLevel) || null,
+      soreness_hours: parseInt(form.sorenessHours) || null,
+      hunger_level: parseInt(form.hungerLevel) || null,
+      hrv_low_signal: !!form.hrvLowSignal,
+      notes: form.notes || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase
+      .from('daily_checkins')
+      .upsert(payload, { onConflict: 'user_id,date' })
+      .select();
+    if (!error && data) {
+      setCheckins([data[0], ...checkins.filter(item => item.date !== data[0].date)]);
+    }
+    setSyncing(false);
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   const today = PLAN_DATA.find(d => d.id === todayId) || PLAN_DATA[0];
   const currentWeek = today.week;
+  const currentOverview = getWeekOverview(currentWeek);
   const weekDays = PLAN_DATA.filter(d => d.week === currentWeek);
   const completedCount = Object.values(completed).filter(Boolean).length;
   const totalCount = PLAN_DATA.length;
@@ -335,7 +383,8 @@ function App({ user }) {
         {[
           { key: 'today', label: 'Vandaag' },
           { key: 'week', label: `Wk ${currentWeek}` },
-          { key: 'all', label: 'Alles' },
+          { key: 'plan', label: 'Plan' },
+          { key: 'checkin', label: 'Check-in' },
           { key: 'log', label: 'Log' },
         ].map(t => (
           <button key={t.key} onClick={() => setView(t.key)} style={{
@@ -349,9 +398,10 @@ function App({ user }) {
       </nav>
 
       <main style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} weekNum={currentWeek} />}
-        {view === 'all' && <AllView completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} />}
+        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} currentWeek={currentWeek} />}
+        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} />}
         {view === 'log' && <LogView logs={logs} setShowLogForm={setShowLogForm} deleteLog={deleteLog} />}
       </main>
 
@@ -368,7 +418,7 @@ function App({ user }) {
   );
 }
 
-function TodayView({ day, completed, toggleComplete }) {
+function TodayView({ day, completed, toggleComplete, overview }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
 
@@ -419,9 +469,10 @@ function TodayView({ day, completed, toggleComplete }) {
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#444', lineHeight: 1.7 }}>
           <li>130g eiwit (verdeel over 4-5 momenten)</li>
           <li>2L water</li>
-          <li>2400 kcal target</li>
-          {day.type === 'strength' && <li>Eiwit binnen 1u na sessie</li>}
-          {day.type === 'cycle' && day.dur > 60 && <li>Banaan + water mee</li>}
+          <li>{overview.kcal} kcal target</li>
+          {day.type === 'strength' && <li>25-30g eiwit binnen 1u na sessie</li>}
+          {day.type === 'cycle' && day.dur >= 60 && <li>Snack + water mee voor lange rit</li>}
+          {day.week === 6 && <li>Extra zout + water, herstel prioriteit</li>}
         </ul>
       </div>
     </div>
@@ -455,6 +506,135 @@ function AllView({ completed, toggleComplete, setSelectedDay }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function PlanView({ completed, toggleComplete, setSelectedDay, currentWeek }) {
+  const [section, setSection] = useState('days');
+  const overview = getWeekOverview(currentWeek);
+  const sections = [
+    { key: 'days', label: 'Dagen' },
+    { key: 'zones', label: 'Zones' },
+    { key: 'food', label: 'Voeding' },
+    { key: 'strength', label: 'Kracht' },
+    { key: 'tips', label: 'Tips' },
+  ];
+
+  return (
+    <div>
+      <InfoCard>
+        <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px' }}>WEEK {currentWeek} FOCUS</div>
+        <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '6px' }}>{overview.focus}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '14px' }}>
+          <MetricTile label="Periode" value={overview.period} />
+          <MetricTile label="Lange rit" value={overview.longRide} />
+          <MetricTile label="Voeding" value={`${overview.kcal} kcal`} />
+        </div>
+      </InfoCard>
+
+      <Segmented options={sections} value={section} onChange={setSection} />
+
+      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} />}
+      {section === 'zones' && <ZonesSection />}
+      {section === 'food' && <NutritionSection currentWeek={currentWeek} />}
+      {section === 'strength' && <StrengthSection />}
+      {section === 'tips' && <TipsSection />}
+    </div>
+  );
+}
+
+function ZonesSection() {
+  return (
+    <div>
+      <SectionTitle title="Hartslagzones" subtitle="Hartslag is leidend; snelheid is referentie." />
+      {HEART_ZONES.map(zone => (
+        <InfoCard key={zone.zone}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: '#003D7A' }}>{zone.zone}</div>
+              <div style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>{zone.feel}</div>
+            </div>
+            <div style={{ textAlign: 'right', fontSize: '13px', color: '#555' }}>
+              <div style={{ fontWeight: 700 }}>{zone.hr} bpm</div>
+              <div>{zone.speed}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: '13px', color: '#444', marginTop: '10px' }}>{zone.goal}</div>
+        </InfoCard>
+      ))}
+    </div>
+  );
+}
+
+function NutritionSection({ currentWeek }) {
+  const overview = getWeekOverview(currentWeek);
+  return (
+    <div>
+      <SectionTitle title="Voeding" subtitle={`${overview.kcal} kcal deze week, 130g eiwit per dag.`} />
+      <InfoCard>
+        <SimpleList items={NUTRITION_GUIDE.rules} />
+      </InfoCard>
+      <SectionTitle title="Eiwitbronnen" />
+      {NUTRITION_GUIDE.proteinSources.map(([name, portion, protein, tip]) => (
+        <InfoCard key={name}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.7fr', gap: '8px', alignItems: 'center' }}>
+            <div style={{ fontWeight: 700 }}>{name}</div>
+            <div style={{ fontSize: '13px', color: '#555' }}>{portion}</div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#003D7A' }}>{protein}</div>
+          </div>
+          <div style={{ fontSize: '13px', color: '#666', marginTop: '6px' }}>{tip}</div>
+        </InfoCard>
+      ))}
+      <SectionTitle title="Voorbeelddag" />
+      <InfoCard>
+        <SimpleList items={NUTRITION_GUIDE.sampleDay} />
+      </InfoCard>
+    </div>
+  );
+}
+
+function StrengthSection() {
+  return (
+    <div>
+      <SectionTitle title="Krachttraining" subtitle={STRENGTH_GUIDE.intro} />
+      <StrengthTable title="Schema A - woensdag" rows={STRENGTH_GUIDE.A} />
+      <StrengthTable title="Schema B - zondag" rows={STRENGTH_GUIDE.B} />
+    </div>
+  );
+}
+
+function StrengthTable({ title, rows }) {
+  return (
+    <div>
+      <SectionTitle title={title} />
+      {rows.map(([exercise, sets, rest, notes]) => (
+        <InfoCard key={exercise}>
+          <div style={{ fontWeight: 700 }}>{exercise}</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+            <Tag label={sets} bg="#F0F4FA" color="#003D7A" />
+            <Tag label={rest} bg="#FFF4DD" color="#B86E00" />
+          </div>
+          <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{notes}</div>
+        </InfoCard>
+      ))}
+    </div>
+  );
+}
+
+function TipsSection() {
+  return (
+    <div>
+      {PRACTICAL_TIPS.map(group => (
+        <InfoCard key={group.title}>
+          <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{group.title}</div>
+          <SimpleList items={group.items} />
+        </InfoCard>
+      ))}
+      <SectionTitle title="Reeel eindbeeld" />
+      <InfoCard>
+        <SimpleList items={END_GOALS} />
+      </InfoCard>
     </div>
   );
 }
@@ -552,6 +732,199 @@ function Tag({ label, bg, color }) {
       {label}
     </div>
   );
+}
+
+function InfoCard({ children, style }) {
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '14px',
+      padding: '16px',
+      marginBottom: '12px',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function SectionTitle({ title, subtitle }) {
+  return (
+    <div style={{ margin: '18px 4px 10px' }}>
+      <div style={{ fontSize: '12px', fontWeight: 700, color: '#003D7A', letterSpacing: '1px', textTransform: 'uppercase' }}>{title}</div>
+      {subtitle && <div style={{ fontSize: '13px', color: '#666', marginTop: '4px', lineHeight: 1.4 }}>{subtitle}</div>}
+    </div>
+  );
+}
+
+function Segmented({ options, value, onChange }) {
+  return (
+    <div style={{
+      display: 'flex',
+      overflowX: 'auto',
+      gap: '4px',
+      background: 'white',
+      borderRadius: '12px',
+      padding: '4px',
+      margin: '14px 0',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+    }}>
+      {options.map(option => (
+        <button key={option.key} onClick={() => onChange(option.key)} style={{
+          flex: '1 0 auto',
+          padding: '9px 10px',
+          border: 'none',
+          borderRadius: '9px',
+          background: value === option.key ? '#003D7A' : 'transparent',
+          color: value === option.key ? 'white' : '#555',
+          fontSize: '13px',
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}>{option.label}</button>
+      ))}
+    </div>
+  );
+}
+
+function MetricTile({ label, value }) {
+  return (
+    <div style={{ background: '#F0F4FA', borderRadius: '10px', padding: '10px' }}>
+      <div style={{ fontSize: '11px', color: '#666', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '4px', color: '#003D7A' }}>{value}</div>
+    </div>
+  );
+}
+
+function SimpleList({ items }) {
+  return (
+    <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: '#444', lineHeight: 1.65 }}>
+      {items.map(item => <li key={item}>{item}</li>)}
+    </ul>
+  );
+}
+
+function CheckInView({ checkins, onSave, currentWeek }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(today);
+  const current = checkins.find(item => item.date === date);
+  const [form, setForm] = useState(() => checkinToForm(current, today));
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    setForm(checkinToForm(current, date));
+  }, [current, date]);
+
+  const alarms = getAlarmSignals(form);
+  const overview = getWeekOverview(currentWeek);
+  const advice = alarms.length >= 2
+    ? currentWeek === 6
+      ? '2+ signalen: herstel prioriteit, houd 2700 kcal aan en push niet.'
+      : '2+ signalen: schakel terug naar ongeveer 2550 kcal en push niet.'
+    : 'Onder de drempel: houd het plan aan en blijf meten.';
+
+  const update = (key, value) => setForm({ ...form, [key]: value });
+  const submit = async (e) => {
+    e.preventDefault();
+    const { error } = await onSave(form);
+    setMessage(error ? error.message : 'Check-in opgeslagen');
+  };
+
+  return (
+    <div>
+      <InfoCard style={{ borderLeft: `4px solid ${alarms.length >= 2 ? '#DC3545' : '#2C7A2C'}` }}>
+        <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px' }}>DAGELIJKSE CHECK-IN</div>
+        <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '6px' }}>{alarms.length} alarmsignalen</div>
+        <div style={{ fontSize: '13px', color: '#555', marginTop: '6px', lineHeight: 1.5 }}>{advice}</div>
+        <div style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>Weekdoel: {overview.kcal} kcal, 130g eiwit</div>
+      </InfoCard>
+
+      {alarms.length > 0 && (
+        <InfoCard>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {alarms.map(alarm => <Tag key={alarm} label={alarm} bg="#FFE5E5" color="#DC3545" />)}
+          </div>
+        </InfoCard>
+      )}
+
+      <form onSubmit={submit}>
+        <InfoCard>
+          <Field label="Datum">
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+          </Field>
+          <MetricInput label="Gewicht (kg)" value={form.weightKg} onChange={v => update('weightKg', v)} placeholder="bijv. 88.4" />
+          <MetricInput label="Buikomtrek (cm)" value={form.waistCm} onChange={v => update('waistCm', v)} placeholder="bijv. 96" />
+          <MetricInput label="Slaap (uren)" value={form.sleepHours} onChange={v => update('sleepHours', v)} placeholder="bijv. 7.5" />
+          <MetricInput label="Rusthartslag" value={form.restingHr} onChange={v => update('restingHr', v)} placeholder="bijv. 56" />
+          <MetricInput label="HRV" value={form.hrv} onChange={v => update('hrv', v)} placeholder="optioneel" />
+          <MetricInput label="Energie (1-5)" value={form.energyLevel} onChange={v => update('energyLevel', v)} placeholder="3" />
+          <MetricInput label="Stemming (1-5)" value={form.moodLevel} onChange={v => update('moodLevel', v)} placeholder="3" />
+          <MetricInput label="Spierpijn (uren)" value={form.sorenessHours} onChange={v => update('sorenessHours', v)} placeholder="bijv. 24" />
+          <MetricInput label="Honger (1-5)" value={form.hungerLevel} onChange={v => update('hungerLevel', v)} placeholder="3" />
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: '#444', margin: '10px 0 14px' }}>
+            <input type="checkbox" checked={form.hrvLowSignal} onChange={e => update('hrvLowSignal', e.target.checked)} />
+            HRV 3 dagen meer dan 20% laag
+          </label>
+          <Field label="Notities">
+            <textarea value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder="Hoe voel je je?" style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+          </Field>
+          <button type="submit" style={{
+            width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+            background: '#003D7A', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+          }}>Check-in opslaan</button>
+          {message && <div style={{ fontSize: '13px', color: message.includes('opgeslagen') ? '#2C7A2C' : '#DC3545', marginTop: '10px', textAlign: 'center' }}>{message}</div>}
+        </InfoCard>
+      </form>
+
+      <SectionTitle title="Historie" />
+      {checkins.length === 0 ? (
+        <InfoCard><div style={{ fontSize: '13px', color: '#666' }}>Nog geen check-ins opgeslagen.</div></InfoCard>
+      ) : checkins.slice(0, 10).map(item => (
+        <InfoCard key={item.id || item.date}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+            <div style={{ fontWeight: 700 }}>{new Date(item.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}</div>
+            <div style={{ fontSize: '13px', color: '#666' }}>{[item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && `${item.sleep_hours}u slaap`].filter(Boolean).join(' · ')}</div>
+          </div>
+        </InfoCard>
+      ))}
+    </div>
+  );
+}
+
+function MetricInput({ label, value, onChange, placeholder }) {
+  return (
+    <Field label={label}>
+      <input type="number" inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
+    </Field>
+  );
+}
+
+function checkinToForm(checkin, fallbackDate) {
+  return {
+    date: checkin?.date || fallbackDate,
+    weightKg: checkin?.weight_kg ?? '',
+    waistCm: checkin?.waist_cm ?? '',
+    sleepHours: checkin?.sleep_hours ?? '',
+    restingHr: checkin?.resting_hr ?? '',
+    hrv: checkin?.hrv ?? '',
+    energyLevel: checkin?.energy_level ?? '',
+    moodLevel: checkin?.mood_level ?? '',
+    sorenessHours: checkin?.soreness_hours ?? '',
+    hungerLevel: checkin?.hunger_level ?? '',
+    hrvLowSignal: !!checkin?.hrv_low_signal,
+    notes: checkin?.notes || '',
+  };
+}
+
+function getAlarmSignals(form) {
+  const alarms = [];
+  if (Number(form.restingHr) >= 61) alarms.push('Rusthartslag +5 bpm');
+  if (Number(form.sleepHours) > 0 && Number(form.sleepHours) < 7) alarms.push('Slaap < 7 uur');
+  if (Number(form.moodLevel) > 0 && Number(form.moodLevel) <= 2) alarms.push('Lage stemming');
+  if (Number(form.sorenessHours) > 72) alarms.push('Spierpijn > 72u');
+  if (Number(form.hungerLevel) >= 5) alarms.push('Constante honger');
+  if (form.hrvLowSignal) alarms.push('HRV 3 dagen laag');
+  return alarms;
 }
 
 function LogView({ logs, setShowLogForm, deleteLog }) {
