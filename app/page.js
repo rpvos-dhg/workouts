@@ -8,61 +8,16 @@ import {
   HEART_ZONES,
   MEASUREMENT_MOMENTS,
   NUTRITION_GUIDE,
+  PERFORMANCE_REFERENCES,
   PRACTICAL_TIPS,
   STRENGTH_GUIDE,
+  getDueMeasurementMoment,
+  getMeasurementMomentByDate,
+  getMeasurementTitle,
+  getSuggestedMeasurementMoment,
   getWeekOverview,
+  isMeasurementCheckin,
 } from '../lib/plan-content';
-
-const EXERCISE_LINKS = {
-  'Bodyweight Squat': {
-    source: 'ACE',
-    url: 'https://www.acefitness.org/resources/everyone/exercise-library/135/bodyweight-squat/',
-  },
-  'Reverse Lunge': {
-    source: 'ExRx',
-    url: 'https://exrx.net/WeightExercises/Quadriceps/BWRearLunge',
-  },
-  'Push-up': {
-    source: 'ACE',
-    url: 'https://www.acefitness.org/resources/everyone/exercise-library/41/push-up/',
-  },
-  'Glute Bridge': {
-    source: 'ACE',
-    url: 'https://www.acefitness.org/resources/everyone/exercise-library/49/glute-bridge/',
-  },
-  Plank: {
-    source: 'ACE',
-    url: 'https://www.acefitness.org/resources/everyone/exercise-library/32/front-plank/',
-  },
-  'Ab Roller knieend': {
-    source: 'Healthline',
-    url: 'https://www.healthline.com/health/fitness-exercise/exercise-wheel',
-  },
-  'Bulgarian Split Squat': {
-    source: 'ExRx',
-    url: 'https://exrx.net/WeightExercises/Quadriceps/BWSingleLegSplitSquat',
-  },
-  'Single-leg Hip Hinge': {
-    source: 'ExRx',
-    url: 'https://exrx.net/WeightExercises/GluteusMaximus/BWSingleLegStiffLegDeadlift',
-  },
-  'Pike Push-up': {
-    source: 'NASM',
-    url: 'https://www.nasm.org/resource-center/exercise-library/pike-push-up',
-  },
-  'Superman / Y-T-W': {
-    source: 'Elite Performance Institute',
-    url: 'https://elite-performance-institute.com/exercise-library/shoulder-exercises/ytw-exercise/',
-  },
-  'Side Plank': {
-    source: 'ACE',
-    url: 'https://www.acefitness.org/resources/everyone/exercise-library/101/side-plank-with-straight-leg/',
-  },
-  'Dead Bug': {
-    source: 'NASM',
-    url: 'https://www.nasm.org/resource-center/exercise-library/dead-bug',
-  },
-};
 
 export default function Home() {
   const [session, setSession] = useState(null);
@@ -223,6 +178,7 @@ function App({ user }) {
   const [view, setView] = useState('today');
   const [todayId, setTodayId] = useState(1);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedMeasurementDate, setSelectedMeasurementDate] = useState(null);
   const [showLogForm, setShowLogForm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -326,6 +282,20 @@ function App({ user }) {
     setLogs(logs.filter(l => l.id !== id));
   };
 
+  const openMeasurement = (date) => {
+    setSelectedMeasurementDate(date);
+    setSelectedDay(null);
+    setView('checkin');
+  };
+
+  const openDay = (day) => {
+    if (day.type === 'check') {
+      openMeasurement(day.date);
+      return;
+    }
+    setSelectedDay(day);
+  };
+
   const saveCheckin = async (form) => {
     setSyncing(true);
     const payload = {
@@ -366,7 +336,8 @@ function App({ user }) {
   const completedCount = Object.values(completed).filter(Boolean).length;
   const totalCount = PLAN_DATA.length;
   const progressPct = (completedCount / totalCount) * 100;
-  const dueMeasurement = getDueMeasurementMoment(checkins);
+  const todayString = getTodayString();
+  const dueMeasurement = getDueMeasurementMoment(checkins, todayString);
 
   useEffect(() => {
     if (!dueMeasurement || typeof window === 'undefined' || !('Notification' in window)) return;
@@ -463,15 +434,15 @@ function App({ user }) {
 
       {dueMeasurement && (
         <div style={{ padding: '16px 16px 0' }}>
-          <MeasurementBanner moment={dueMeasurement} onOpen={() => setView('checkin')} />
+          <MeasurementBanner moment={dueMeasurement} onOpen={() => openMeasurement(dueMeasurement.date)} />
         </div>
       )}
 
       <main style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} />}
-        {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} weekNum={currentWeek} />}
-        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} currentWeek={currentWeek} />}
-        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} />}
+        {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} />}
+        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} />}
+        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} />}
         {view === 'log' && <LogView logs={logs} setShowLogForm={setShowLogForm} deleteLog={deleteLog} />}
       </main>
 
@@ -488,9 +459,11 @@ function App({ user }) {
   );
 }
 
-function TodayView({ day, completed, toggleComplete, overview }) {
+function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
+  const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
+  const title = measurementMoment?.title || day.title;
 
   return (
     <div>
@@ -505,7 +478,7 @@ function TodayView({ day, completed, toggleComplete, overview }) {
           </div>
           <div style={{ fontSize: '26px', fontWeight: 700, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '34px' }}>{meta.icon}</span>
-            {day.title}
+            {title}
           </div>
         </div>
 
@@ -519,6 +492,19 @@ function TodayView({ day, completed, toggleComplete, overview }) {
         {day.desc && (
           <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.5, marginBottom: '20px' }}>
             {day.desc}
+          </div>
+        )}
+        {measurementMoment && (
+          <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.5, marginBottom: '20px' }}>
+            <div style={{ fontWeight: 700, marginBottom: '6px' }}>{measurementMoment.focus}</div>
+            <SimpleList items={measurementMoment.items} />
+            <button type="button" onClick={() => onOpenMeasurement(day.date)} style={{
+              width: '100%', marginTop: '14px', padding: '12px', borderRadius: '12px',
+              border: 'none', background: '#003D7A', color: 'white', fontSize: '15px',
+              fontWeight: 700, cursor: 'pointer',
+            }}>
+              Open meetmoment
+            </button>
           </div>
         )}
 
@@ -540,7 +526,7 @@ function TodayView({ day, completed, toggleComplete, overview }) {
           <li>130g eiwit (verdeel over 4-5 momenten)</li>
           <li>2L water</li>
           <li>{overview.kcal} kcal target</li>
-          {day.type === 'strength' && <li>25-30g eiwit binnen 1u na sessie</li>}
+          {['cycle', 'strength', 'walk'].includes(day.type) && <li>25-30g eiwit binnen 1u na training</li>}
           {day.type === 'cycle' && day.dur >= 60 && <li>Snack + water mee voor lange rit</li>}
           {day.week === 6 && <li>Extra zout + water, herstel prioriteit</li>}
         </ul>
@@ -583,18 +569,18 @@ function MeasurementBanner({ moment, onOpen }) {
   );
 }
 
-function WeekView({ days, completed, toggleComplete, setSelectedDay, weekNum }) {
+function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum }) {
   return (
     <div>
       <div style={{ marginBottom: '12px', fontSize: '13px', color: '#666', fontWeight: 500 }}>
         Week {weekNum} • {days.filter(d => completed[d.id]).length}/{days.length} dagen voltooid
       </div>
-      {days.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} />)}
+      {days.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} />)}
     </div>
   );
 }
 
-function AllView({ completed, toggleComplete, setSelectedDay }) {
+function AllView({ completed, toggleComplete, onSelectDay }) {
   return (
     <div>
       {[1, 2, 3, 4, 5, 6].map(w => {
@@ -606,7 +592,7 @@ function AllView({ completed, toggleComplete, setSelectedDay }) {
               fontSize: '11px', fontWeight: 700, color: '#003D7A',
               letterSpacing: '1.5px', marginBottom: '10px', padding: '0 4px',
             }}>WEEK {w} • {compl}/{wd.length}</div>
-            {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} compact />)}
+            {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} compact />)}
           </div>
         );
       })}
@@ -614,7 +600,7 @@ function AllView({ completed, toggleComplete, setSelectedDay }) {
   );
 }
 
-function PlanView({ completed, toggleComplete, setSelectedDay, currentWeek }) {
+function PlanView({ completed, toggleComplete, onSelectDay, currentWeek }) {
   const [section, setSection] = useState('days');
   const overview = getWeekOverview(currentWeek);
   const sections = [
@@ -639,7 +625,7 @@ function PlanView({ completed, toggleComplete, setSelectedDay, currentWeek }) {
 
       <Segmented options={sections} value={section} onChange={setSection} />
 
-      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} />}
+      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} />}
       {section === 'zones' && <ZonesSection />}
       {section === 'food' && <NutritionSection currentWeek={currentWeek} />}
       {section === 'strength' && <StrengthSection />}
@@ -665,6 +651,18 @@ function ZonesSection() {
             </div>
           </div>
           <div style={{ fontSize: '13px', color: '#444', marginTop: '10px' }}>{zone.goal}</div>
+        </InfoCard>
+      ))}
+      <SectionTitle title="Jouw referentie" subtitle="Waarom deze snelheden realistisch zijn." />
+      {PERFORMANCE_REFERENCES.map(item => (
+        <InfoCard key={item.label}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: '#003D7A' }}>{item.label}</div>
+              <div style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>{item.detail}</div>
+            </div>
+            <div style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 700, textAlign: 'right' }}>{item.value}</div>
+          </div>
         </InfoCard>
       ))}
     </div>
@@ -712,176 +710,40 @@ function StrengthTable({ title, rows }) {
   return (
     <div>
       <SectionTitle title={title} />
-      {rows.map(([exercise, sets, rest, notes, steps]) => {
-        const link = EXERCISE_LINKS[exercise];
-        return (
-          <InfoCard key={exercise}>
-            <ExerciseVisual exercise={exercise} />
-            <div style={{ fontWeight: 700, marginTop: '12px' }}>{exercise}</div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-              <Tag label={sets} bg="#F0F4FA" color="#003D7A" />
-              <Tag label={rest} bg="#FFF4DD" color="#B86E00" />
-            </div>
-            <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{notes}</div>
-            {steps && (
-              <div style={{ marginTop: '12px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>
-                  Uitvoering
-                </div>
-                <SimpleList items={steps} />
-              </div>
-            )}
-            {link && (
-              <a href={link.url} target="_blank" rel="noopener noreferrer" style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginTop: '12px',
-                padding: '10px 12px',
+      {rows.map(exercise => (
+        <InfoCard key={exercise.name}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+            <div style={{ fontWeight: 700 }}>{exercise.name}</div>
+            {exercise.guideUrl && (
+              <a href={exercise.guideUrl} target="_blank" rel="noopener noreferrer" style={{
+                flex: '0 0 auto',
+                padding: '8px 10px',
                 borderRadius: '10px',
-                background: '#F0F4FA',
-                color: '#003D7A',
-                fontSize: '13px',
+                background: '#003D7A',
+                color: 'white',
+                fontSize: '12px',
                 fontWeight: 800,
                 textDecoration: 'none',
               }}>
-                Bekijk uitleg bij {link.source}
-                <span aria-hidden="true">Open</span>
+                Uitleg {exercise.guideSource}
               </a>
             )}
-          </InfoCard>
-        );
-      })}
-    </div>
-  );
-}
-
-function ExerciseVisual({ exercise }) {
-  const stroke = '#003D7A';
-  const accent = '#FFC72C';
-  const muted = '#B7C6D9';
-  const line = { stroke, strokeWidth: 6, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' };
-  const thin = { stroke: muted, strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' };
-
-  const poses = {
-    'Bodyweight Squat': (
-      <>
-        <circle cx="103" cy="31" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M99 42 L83 67 L65 88" {...line} />
-        <path d="M83 67 L108 86 L132 86" {...line} />
-        <path d="M91 51 L128 60" {...thin} />
-      </>
-    ),
-    'Reverse Lunge': (
-      <>
-        <circle cx="102" cy="28" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M101 40 L92 69" {...line} />
-        <path d="M92 69 L118 91 L144 91" {...line} />
-        <path d="M92 69 L68 88 L43 88" {...line} />
-        <path d="M98 50 L126 56" {...thin} />
-      </>
-    ),
-    'Push-up': (
-      <>
-        <circle cx="157" cy="52" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M145 58 L76 76 L43 82" {...line} />
-        <path d="M133 61 L132 91" {...line} />
-        <path d="M93 71 L91 94" {...thin} />
-      </>
-    ),
-    'Glute Bridge': (
-      <>
-        <circle cx="151" cy="70" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M141 72 L105 55 L68 75" {...line} />
-        <path d="M68 75 L44 93 L28 93" {...line} />
-        <path d="M105 55 L132 93 L154 93" {...line} />
-      </>
-    ),
-    'Plank': (
-      <>
-        <circle cx="156" cy="55" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M145 61 L91 70 L41 82" {...line} />
-        <path d="M134 63 L128 93" {...line} />
-        <path d="M79 73 L74 94" {...thin} />
-      </>
-    ),
-    'Ab Roller knieend': (
-      <>
-        <circle cx="147" cy="79" r="13" fill="white" stroke={accent} strokeWidth="6" />
-        <circle cx="105" cy="36" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M103 47 L118 66 L145 79" {...line} />
-        <path d="M118 66 L86 93 L63 93" {...line} />
-        <path d="M118 66 L111 95" {...thin} />
-      </>
-    ),
-    'Bulgarian Split Squat': (
-      <>
-        <rect x="134" y="74" width="48" height="12" rx="4" fill={muted} />
-        <circle cx="92" cy="28" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M91 40 L84 68" {...line} />
-        <path d="M84 68 L66 92 L43 92" {...line} />
-        <path d="M84 68 L121 78 L149 78" {...line} />
-        <path d="M88 49 L118 57" {...thin} />
-      </>
-    ),
-    'Single-leg Hip Hinge': (
-      <>
-        <circle cx="112" cy="39" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M103 45 L73 61 L47 64" {...line} />
-        <path d="M73 61 L91 92 L96 96" {...line} />
-        <path d="M73 61 L128 52 L165 43" {...line} />
-        <path d="M88 53 L70 82" {...thin} />
-      </>
-    ),
-    'Pike Push-up': (
-      <>
-        <circle cx="137" cy="75" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M130 69 L100 39 L62 92" {...line} />
-        <path d="M100 39 L150 92" {...line} />
-        <path d="M132 82 L125 101" {...thin} />
-      </>
-    ),
-    'Superman / Y-T-W': (
-      <>
-        <circle cx="151" cy="72" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M140 76 L94 78 L47 82" {...line} />
-        <path d="M118 77 L91 53 L69 39" {...thin} />
-        <path d="M118 78 L90 100 L67 107" {...thin} />
-        <path d="M86 79 L52 65" {...line} />
-      </>
-    ),
-    'Side Plank': (
-      <>
-        <circle cx="138" cy="50" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M130 57 L93 72 L47 90" {...line} />
-        <path d="M113 65 L119 94" {...line} />
-        <path d="M94 72 L91 42" {...thin} />
-      </>
-    ),
-    'Dead Bug': (
-      <>
-        <circle cx="126" cy="77" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
-        <path d="M116 81 L78 88 L43 88" {...line} />
-        <path d="M91 86 L70 52" {...thin} />
-        <path d="M93 86 L118 53" {...line} />
-        <path d="M78 88 L55 56" {...line} />
-        <path d="M78 88 L112 96" {...thin} />
-      </>
-    ),
-  };
-
-  return (
-    <div style={{
-      background: 'linear-gradient(180deg, #F7FAFE 0%, #EDF3FA 100%)',
-      border: '1px solid #E2EAF3',
-      borderRadius: '12px',
-      height: '112px',
-      overflow: 'hidden',
-    }}>
-      <svg viewBox="0 0 220 120" role="img" aria-label={`${exercise} uitvoering`} style={{ width: '100%', height: '100%', display: 'block' }}>
-        <line x1="24" y1="96" x2="194" y2="96" stroke="#D6E0EC" strokeWidth="4" strokeLinecap="round" />
-        {poses[exercise] || poses.Plank}
-      </svg>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+            <Tag label={exercise.sets} bg="#F0F4FA" color="#003D7A" />
+            <Tag label={exercise.rest} bg="#FFF4DD" color="#B86E00" />
+          </div>
+          <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{exercise.notes}</div>
+          {exercise.steps && (
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Uitvoering
+              </div>
+              <SimpleList items={exercise.steps} />
+            </div>
+          )}
+        </InfoCard>
+      ))}
     </div>
   );
 }
@@ -903,13 +765,14 @@ function TipsSection() {
   );
 }
 
-function DayCard({ day, completed, toggleComplete, setSelectedDay, compact }) {
+function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact }) {
+  const day = rawDay.type === 'check' ? { ...rawDay, title: getMeasurementTitle(rawDay.date) } : rawDay;
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const dateStr = new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
 
   return (
-    <div onClick={() => setSelectedDay(day)} style={{
+    <div onClick={() => onSelectDay(day)} style={{
       background: 'white', borderRadius: '14px', padding: '14px', marginBottom: '10px',
       boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: `4px solid ${meta.color}`,
       cursor: 'pointer', opacity: isComplete ? 0.6 : 1,
@@ -1068,15 +931,21 @@ function SimpleList({ items }) {
   );
 }
 
-function CheckInView({ checkins, onSave, currentWeek, dueMeasurement }) {
-  const suggestedMoment = dueMeasurement || getSuggestedMeasurementMoment(checkins);
+function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMeasurementDate }) {
+  const today = getTodayString();
+  const selectedMoment = selectedMeasurementDate ? getMeasurementMomentByDate(selectedMeasurementDate) : null;
+  const suggestedMoment = selectedMoment || dueMeasurement || getSuggestedMeasurementMoment(checkins, today);
   const [date, setDate] = useState(suggestedMoment.date);
   const current = checkins.find(item => item.date === date);
-  const currentMoment = MEASUREMENT_MOMENTS.find(moment => moment.date === date) || suggestedMoment;
+  const currentMoment = getMeasurementMomentByDate(date) || suggestedMoment;
   const savedMomentDates = new Set(checkins.map(item => item.date));
   const [form, setForm] = useState(() => checkinToForm(current, date));
   const [message, setMessage] = useState('');
   const [notificationStatus, setNotificationStatus] = useState('unsupported');
+
+  useEffect(() => {
+    if (selectedMeasurementDate) setDate(selectedMeasurementDate);
+  }, [selectedMeasurementDate]);
 
   useEffect(() => {
     setForm(checkinToForm(current, date));
@@ -1089,9 +958,10 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement }) {
   }, []);
 
   const alarms = getAlarmSignals(form);
-  const overview = getWeekOverview(currentWeek);
+  const selectedWeek = currentMoment.week || currentWeek;
+  const overview = getWeekOverview(selectedWeek);
   const advice = alarms.length >= 2
-    ? currentWeek === 6
+    ? selectedWeek === 6
       ? '2+ signalen: herstel prioriteit, houd 2700 kcal aan en push niet.'
       : '2+ signalen: schakel terug naar ongeveer 2550 kcal en push niet.'
     : 'Onder de drempel: houd het plan aan tot het volgende meetmoment.';
@@ -1187,6 +1057,11 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement }) {
             <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5 }}>{currentMoment.focus}</div>
           </div>
           <SimpleList items={currentMoment.items} />
+          {currentMoment.photoReminder && (
+            <div style={{ margin: '10px 0 4px', padding: '10px 12px', borderRadius: '10px', background: '#FFF4DD', color: '#7A4B00', fontSize: '13px', fontWeight: 700 }}>
+              Foto: {currentMoment.photoReminder}
+            </div>
+          )}
           <div style={{ height: '12px' }} />
           <MetricInput label="Gewicht (kg)" value={form.weightKg} onChange={v => update('weightKg', v)} placeholder="bijv. 88.4" />
           <MetricInput label="Buikomtrek (cm)" value={form.waistCm} onChange={v => update('waistCm', v)} placeholder="bijv. 96" />
@@ -1261,30 +1136,6 @@ function getTodayString() {
 
 function formatDateShort(date) {
   return new Date(`${date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-}
-
-function isMeasurementCheckin(checkin) {
-  return MEASUREMENT_MOMENTS.some(moment => moment.date === checkin.date);
-}
-
-function getMeasurementTitle(date) {
-  return MEASUREMENT_MOMENTS.find(moment => moment.date === date)?.title || formatDateShort(date);
-}
-
-function getSuggestedMeasurementMoment(checkins) {
-  const savedDates = new Set(checkins.map(item => item.date));
-  const today = getTodayString();
-  return (
-    MEASUREMENT_MOMENTS.find(moment => moment.date <= today && !savedDates.has(moment.date)) ||
-    MEASUREMENT_MOMENTS.find(moment => moment.date >= today) ||
-    MEASUREMENT_MOMENTS[MEASUREMENT_MOMENTS.length - 1]
-  );
-}
-
-function getDueMeasurementMoment(checkins) {
-  const savedDates = new Set(checkins.map(item => item.date));
-  const today = getTodayString();
-  return MEASUREMENT_MOMENTS.find(moment => moment.date <= today && !savedDates.has(moment.date)) || null;
 }
 
 function getAlarmSignals(form) {
