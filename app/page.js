@@ -13,7 +13,9 @@ import {
   Footprints,
   Gauge,
   HeartPulse,
+  KeyRound,
   LogOut,
+  Mail,
   MoreHorizontal,
   Plus,
   Star,
@@ -62,6 +64,25 @@ const I18N = {
     signUp: 'Maak account',
     signIn: 'Inloggen',
     confirmEmail: 'Check je mail voor bevestigingslink!',
+    forgotPassword: 'Wachtwoord vergeten?',
+    forgotTitle: 'Wachtwoord herstellen',
+    forgotHelp: 'Vul je e-mail in. Je krijgt een link om een nieuw wachtwoord in te stellen.',
+    sendResetLink: 'Resetlink versturen',
+    resetEmailSent: 'Check je mail voor de resetlink.',
+    magicLink: 'Inloggen via magic link',
+    magicLinkTitle: 'Magic link ontvangen',
+    magicLinkHelp: 'Vul je e-mail in. Je krijgt een link waarmee je zonder wachtwoord kunt inloggen.',
+    sendMagicLink: 'Magic link versturen',
+    magicLinkSent: 'Check je mail voor de magic link.',
+    usePasswordLogin: 'Inloggen met wachtwoord',
+    changePassword: 'Wachtwoord wijzigen',
+    newPassword: 'Nieuw wachtwoord',
+    confirmPassword: 'Bevestig wachtwoord',
+    passwordMismatch: 'Wachtwoorden komen niet overeen.',
+    passwordTooShort: 'Gebruik minimaal 6 tekens.',
+    passwordUpdated: 'Wachtwoord gewijzigd.',
+    savePassword: 'Wachtwoord opslaan',
+    passwordRecoveryActive: 'Kies een nieuw wachtwoord om je herstelactie af te ronden.',
     noAccount: 'Nog geen account? Maak er een',
     hasAccount: 'Heb je al een account? Inloggen',
     language: 'Taal',
@@ -210,6 +231,25 @@ const I18N = {
     signUp: 'Create account',
     signIn: 'Log in',
     confirmEmail: 'Check your email for the confirmation link.',
+    forgotPassword: 'Forgot password?',
+    forgotTitle: 'Reset password',
+    forgotHelp: 'Enter your email. You will receive a link to set a new password.',
+    sendResetLink: 'Send reset link',
+    resetEmailSent: 'Check your email for the reset link.',
+    magicLink: 'Log in with magic link',
+    magicLinkTitle: 'Get a magic link',
+    magicLinkHelp: 'Enter your email. You will receive a link to log in without a password.',
+    sendMagicLink: 'Send magic link',
+    magicLinkSent: 'Check your email for the magic link.',
+    usePasswordLogin: 'Log in with password',
+    changePassword: 'Change password',
+    newPassword: 'New password',
+    confirmPassword: 'Confirm password',
+    passwordMismatch: 'Passwords do not match.',
+    passwordTooShort: 'Use at least 6 characters.',
+    passwordUpdated: 'Password changed.',
+    savePassword: 'Save password',
+    passwordRecoveryActive: 'Choose a new password to complete your recovery.',
     noAccount: 'No account yet? Create one',
     hasAccount: 'Already have an account? Log in',
     language: 'Language',
@@ -359,6 +399,7 @@ export default function Home() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState('nl');
+  const [forcePasswordUpdate, setForcePasswordUpdate] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem('workouts-lang');
@@ -373,21 +414,52 @@ export default function Home() {
   const t = makeT(lang);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let active = true;
+    const hasRecoveryMarker = () => {
+      if (typeof window === 'undefined') return false;
+      return window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery');
+    };
+
+    const sessionFallback = new Promise(resolve => {
+      window.setTimeout(() => resolve({ data: { session: null } }), 4000);
+    });
+
+    Promise.race([supabase.auth.getSession(), sessionFallback]).then(({ data: { session } }) => {
+      if (!active) return;
       setSession(session);
+      if (session && hasRecoveryMarker()) setForcePasswordUpdate(true);
+      setLoading(false);
+    }).catch(() => {
+      if (!active) return;
+      setSession(null);
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
       setSession(session);
+      setLoading(false);
+      if (event === 'PASSWORD_RECOVERY') setForcePasswordUpdate(true);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) return <Loading t={t} />;
   if (!session) return <Auth t={t} lang={lang} setLang={setLang} />;
-  return <App user={session.user} t={t} lang={lang} setLang={setLang} />;
+  return (
+    <App
+      user={session.user}
+      t={t}
+      lang={lang}
+      setLang={setLang}
+      forcePasswordUpdate={forcePasswordUpdate}
+      onPasswordUpdateHandled={() => setForcePasswordUpdate(false)}
+    />
+  );
 }
 
 function Loading({ t }) {
@@ -404,6 +476,15 @@ function Auth({ t, lang, setLang }) {
   const [mode, setMode] = useState('signin');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const isEmailOnly = mode === 'forgot' || mode === 'magic';
+  const successMessages = [t('confirmEmail'), t('resetEmailSent'), t('magicLinkSent')];
+  const authSubtitle = mode === 'signup'
+    ? t('createAccount')
+    : mode === 'forgot'
+      ? t('forgotTitle')
+      : mode === 'magic'
+        ? t('magicLinkTitle')
+        : t('loginToStart');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -414,6 +495,19 @@ function Auth({ t, lang, setLang }) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         setMsg(t('confirmEmail'));
+      } else if (mode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        });
+        if (error) throw error;
+        setMsg(t('resetEmailSent'));
+      } else if (mode === 'magic') {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: window.location.origin, shouldCreateUser: false },
+        });
+        if (error) throw error;
+        setMsg(t('magicLinkSent'));
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -437,11 +531,25 @@ function Auth({ t, lang, setLang }) {
           </div>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '25px', fontWeight: 800, color: 'var(--accent-strong)' }}>{t('appTitle')}</h1>
           <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--muted)' }}>
-            {mode === 'signup' ? t('createAccount') : t('loginToStart')}
+            {authSubtitle}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
+          {(mode === 'forgot' || mode === 'magic') && (
+            <div style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--line)',
+              borderRadius: '10px',
+              color: 'var(--muted)',
+              fontSize: '13px',
+              lineHeight: 1.5,
+              marginBottom: '14px',
+              padding: '12px',
+            }}>
+              {mode === 'forgot' ? t('forgotHelp') : t('magicLinkHelp')}
+            </div>
+          )}
           <Field label={t('email')} htmlFor="auth-email">
           <input
             id="auth-email"
@@ -454,19 +562,21 @@ function Auth({ t, lang, setLang }) {
             style={inputStyle}
           />
           </Field>
-          <Field label={t('password')} htmlFor="auth-password" help={mode === 'signup' ? t('minPassword') : undefined}>
-          <input
-            id="auth-password"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder={mode === 'signup' ? t('passwordPlaceholder') : t('password')}
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            required
-            minLength={mode === 'signup' ? 6 : undefined}
-            style={inputStyle}
-          />
-          </Field>
+          {!isEmailOnly && (
+            <Field label={t('password')} htmlFor="auth-password" help={mode === 'signup' ? t('minPassword') : undefined}>
+            <input
+              id="auth-password"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder={mode === 'signup' ? t('passwordPlaceholder') : t('password')}
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              required
+              minLength={mode === 'signup' ? 6 : undefined}
+              style={inputStyle}
+            />
+            </Field>
+          )}
           <button
             type="submit"
             disabled={busy}
@@ -482,7 +592,7 @@ function Auth({ t, lang, setLang }) {
               cursor: busy ? 'not-allowed' : 'pointer',
             }}
           >
-            {busy ? t('busy') : mode === 'signup' ? t('signUp') : t('signIn')}
+            {busy ? t('busy') : mode === 'signup' ? t('signUp') : mode === 'forgot' ? t('sendResetLink') : mode === 'magic' ? t('sendMagicLink') : t('signIn')}
           </button>
         </form>
 
@@ -491,31 +601,54 @@ function Auth({ t, lang, setLang }) {
             marginTop: '14px',
             padding: '12px',
             borderRadius: '8px',
-            background: msg === t('confirmEmail') ? '#e7f6ef' : '#fdeaea',
-            color: msg === t('confirmEmail') ? 'var(--success)' : 'var(--danger)',
+            background: successMessages.includes(msg) ? '#e7f6ef' : '#fdeaea',
+            color: successMessages.includes(msg) ? 'var(--success)' : 'var(--danger)',
             fontSize: '13px',
             textAlign: 'center',
             fontWeight: 700,
           }}>{msg}</div>
         )}
 
-        <button
-          onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setMsg(''); }}
-          style={{
-            width: '100%',
-            padding: '12px',
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--accent-strong)',
-            fontSize: '13px',
-            cursor: 'pointer',
-            marginTop: '8px',
-          }}
-        >
-          {mode === 'signin' ? t('noAccount') : t('hasAccount')}
-        </button>
+        <div style={{ display: 'grid', gap: '2px', marginTop: '8px' }}>
+          {mode === 'signin' && (
+            <>
+              <AuthModeButton onClick={() => { setMode('magic'); setMsg(''); }} icon={Mail} label={t('magicLink')} />
+              <AuthModeButton onClick={() => { setMode('forgot'); setMsg(''); }} icon={KeyRound} label={t('forgotPassword')} />
+              <AuthModeButton onClick={() => { setMode('signup'); setMsg(''); }} label={t('noAccount')} />
+            </>
+          )}
+          {mode === 'signup' && (
+            <AuthModeButton onClick={() => { setMode('signin'); setMsg(''); }} label={t('hasAccount')} />
+          )}
+          {(mode === 'forgot' || mode === 'magic') && (
+            <AuthModeButton onClick={() => { setMode('signin'); setMsg(''); }} label={t('usePasswordLogin')} />
+          )}
+        </div>
       </div>
     </main>
+  );
+}
+
+function AuthModeButton({ onClick, icon: Icon, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%',
+        padding: '11px',
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--accent-strong)',
+        fontSize: '13px',
+        fontWeight: 700,
+        cursor: 'pointer',
+        borderRadius: '8px',
+      }}
+    >
+      {Icon && <Icon size={15} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '6px' }} />}
+      {label}
+    </button>
   );
 }
 
@@ -560,7 +693,7 @@ function LanguageToggle({ t, lang, setLang, onChange }) {
   );
 }
 
-function App({ user, t, lang, setLang }) {
+function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHandled }) {
   const [completed, setCompleted] = useState({});
   const [logs, setLogs] = useState([]);
   const [checkins, setCheckins] = useState([]);
@@ -570,7 +703,12 @@ function App({ user, t, lang, setLang }) {
   const [selectedMeasurementDate, setSelectedMeasurementDate] = useState(null);
   const [showLogForm, setShowLogForm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (forcePasswordUpdate) setShowPasswordDialog(true);
+  }, [forcePasswordUpdate]);
 
   // Load data from Supabase
   useEffect(() => {
@@ -780,6 +918,10 @@ function App({ user, t, lang, setLang }) {
             borderRadius: '12px', padding: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
             minWidth: '180px',
           }}>
+            <button type="button" onClick={() => { setShowMenu(false); setShowPasswordDialog(true); }} style={{
+              width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
+              textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
+            }}><KeyRound size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('changePassword')}</button>
             <button type="button" onClick={() => { setShowMenu(false); signOut(); }} style={{
               width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
@@ -833,6 +975,16 @@ function App({ user, t, lang, setLang }) {
 
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} t={t} />}
       {showLogForm && <LogForm onSave={saveLog} onClose={() => setShowLogForm(false)} todayPlan={today} t={t} />}
+      {showPasswordDialog && (
+        <PasswordDialog
+          t={t}
+          isRecovery={forcePasswordUpdate}
+          onClose={() => {
+            setShowPasswordDialog(false);
+            onPasswordUpdateHandled?.();
+          }}
+        />
+      )}
 
       <button type="button" aria-label={t('workoutLog')} className="fab" onClick={() => setShowLogForm(true)}><Plus size={30} aria-hidden="true" /></button>
     </div>
@@ -1719,6 +1871,106 @@ function StatItem({ icon: Icon, label }) {
       <Icon size={14} aria-hidden="true" />
       {label}
     </span>
+  );
+}
+
+function PasswordDialog({ t, isRecovery, onClose }) {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const isSuccess = message === t('passwordUpdated');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    if (password.length < 6) {
+      setMessage(t('passwordTooShort'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setMessage(t('passwordMismatch'));
+      return;
+    }
+
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setPassword('');
+    setConfirmPassword('');
+    setMessage(t('passwordUpdated'));
+  };
+
+  return (
+    <div role="presentation" onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 220,
+      display: 'flex', alignItems: 'flex-end',
+    }}>
+      <form role="dialog" aria-modal="true" aria-labelledby="password-dialog-title" onSubmit={handleSubmit} onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+        borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px',
+      }}>
+        <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
+        <h2 id="password-dialog-title" style={{ margin: '0 0 8px', fontSize: '22px', fontWeight: 800, color: 'var(--accent-strong)' }}>
+          {t('changePassword')}
+        </h2>
+        {isRecovery && (
+          <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5 }}>
+            {t('passwordRecoveryActive')}
+          </p>
+        )}
+        <Field label={t('newPassword')} htmlFor="new-password" help={t('minPassword')}>
+          <input
+            id="new-password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={6}
+            required
+            style={inputStyle}
+          />
+        </Field>
+        <Field label={t('confirmPassword')} htmlFor="confirm-password">
+          <input
+            id="confirm-password"
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={6}
+            required
+            style={inputStyle}
+          />
+        </Field>
+        {message && (
+          <div role="status" aria-live="polite" style={{
+            marginBottom: '14px',
+            padding: '12px',
+            borderRadius: '8px',
+            background: isSuccess ? '#e7f6ef' : '#fdeaea',
+            color: isSuccess ? 'var(--success)' : 'var(--danger)',
+            fontSize: '13px',
+            fontWeight: 700,
+          }}>{message}</div>
+        )}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button type="button" onClick={onClose} style={{
+            flex: 1, padding: '14px', borderRadius: '8px', border: '2px solid var(--line)',
+            background: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+          }}>{t('cancel')}</button>
+          <button type="submit" disabled={busy} style={{
+            flex: 2, padding: '14px', borderRadius: '8px', border: 'none',
+            background: busy ? '#7b8791' : 'var(--accent)', color: 'white',
+            fontSize: '15px', fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer',
+          }}>{busy ? t('busy') : t('savePassword')}</button>
+        </div>
+      </form>
+    </div>
   );
 }
 
