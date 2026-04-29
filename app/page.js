@@ -43,8 +43,8 @@ export default function Home() {
 
 function Loading() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#eef2f7' }}>
-      <div style={{ color: '#003D7A', fontSize: '16px' }}>Laden...</div>
+    <div role="status" aria-live="polite" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: 'var(--accent-strong)', fontSize: '16px', fontWeight: 700 }}>Laden...</div>
     </div>
   );
 }
@@ -77,62 +77,69 @@ function Auth() {
   };
 
   return (
-    <div style={{
+    <main style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #003D7A 0%, #0058B0 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
     }}>
       <div style={{
-        background: 'white',
-        borderRadius: '24px',
+        background: 'var(--surface)',
+        borderRadius: '12px',
         padding: '32px 24px',
         width: '100%',
         maxWidth: '400px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        boxShadow: 'var(--shadow)',
+        border: '1px solid var(--line)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '8px' }}>🚴‍♂️</div>
-          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#003D7A' }}>6-Weken Plan</h1>
-          <p style={{ margin: '6px 0 0', fontSize: '14px', color: '#888' }}>
+          <div aria-hidden="true" style={{ fontSize: '42px', marginBottom: '8px' }}>🚴‍♂️</div>
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '25px', fontWeight: 800, color: 'var(--accent-strong)' }}>6-Weken Plan</h1>
+          <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--muted)' }}>
             {mode === 'signup' ? 'Maak een account' : 'Log in om te starten'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
+          <Field label="E-mail" htmlFor="auth-email">
           <input
+            id="auth-email"
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder="E-mail"
+            autoComplete="email"
             required
             style={inputStyle}
           />
+          </Field>
+          <Field label="Wachtwoord" htmlFor="auth-password" help={mode === 'signup' ? 'Minimaal 6 tekens.' : undefined}>
           <input
+            id="auth-password"
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             placeholder="Wachtwoord (min 6 tekens)"
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             required
             minLength={6}
-            style={{ ...inputStyle, marginTop: '12px' }}
+            style={inputStyle}
           />
+          </Field>
           <button
             type="submit"
             disabled={busy}
             style={{
               width: '100%',
               padding: '14px',
-              borderRadius: '12px',
+              borderRadius: '8px',
               border: 'none',
-              background: busy ? '#999' : '#003D7A',
+              background: busy ? '#7b8791' : 'var(--accent)',
               color: 'white',
               fontSize: '15px',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: busy ? 'not-allowed' : 'pointer',
-              marginTop: '16px',
             }}
           >
             {busy ? 'Bezig...' : mode === 'signup' ? 'Maak account' : 'Inloggen'}
@@ -140,14 +147,15 @@ function Auth() {
         </form>
 
         {msg && (
-          <div style={{
+          <div role="status" aria-live="polite" style={{
             marginTop: '14px',
             padding: '12px',
-            borderRadius: '10px',
-            background: msg.includes('Check') ? '#E0F0E0' : '#FFE5E5',
-            color: msg.includes('Check') ? '#2C7A2C' : '#DC3545',
+            borderRadius: '8px',
+            background: msg.includes('Check') ? '#e7f6ef' : '#fdeaea',
+            color: msg.includes('Check') ? 'var(--success)' : 'var(--danger)',
             fontSize: '13px',
             textAlign: 'center',
+            fontWeight: 700,
           }}>{msg}</div>
         )}
 
@@ -158,7 +166,7 @@ function Auth() {
             padding: '12px',
             border: 'none',
             background: 'transparent',
-            color: '#003D7A',
+            color: 'var(--accent-strong)',
             fontSize: '13px',
             cursor: 'pointer',
             marginTop: '8px',
@@ -167,7 +175,7 @@ function Auth() {
           {mode === 'signin' ? 'Nog geen account? Maak er een' : 'Heb je al een account? Inloggen'}
         </button>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -351,45 +359,33 @@ function App({ user }) {
   }, [dueMeasurement]);
 
   return (
-    <div style={{
-      background: 'linear-gradient(180deg, #f8f9fb 0%, #eef2f7 100%)',
-      minHeight: '100vh',
-      paddingBottom: '90px',
-      color: '#1a1a1a',
-    }}>
-      <header style={{
-        background: 'linear-gradient(135deg, #003D7A 0%, #0058B0 100%)',
-        color: 'white',
-        padding: '20px 20px 18px',
-        borderBottomLeftRadius: '24px',
-        borderBottomRightRadius: '24px',
-        boxShadow: '0 4px 20px rgba(0, 61, 122, 0.15)',
-      }}>
+    <div className="app-shell">
+      <header className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
-            <div style={{ fontSize: '12px', opacity: 0.85, fontWeight: 500, letterSpacing: '0.5px' }}>WEEK {currentWeek} VAN 6</div>
-            <div style={{ fontSize: '22px', fontWeight: 700, marginTop: '4px' }}>6-Weken Plan</div>
+            <div style={{ fontSize: '12px', opacity: 0.86, fontWeight: 700, textTransform: 'uppercase' }}>Week {currentWeek} van 6</div>
+            <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '4px' }}>6-Weken Plan</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <div style={{
-              background: 'rgba(255,255,255,0.15)', padding: '6px 12px',
-              borderRadius: '16px', fontSize: '13px', fontWeight: 600,
+              background: 'rgba(255,255,255,0.16)', padding: '8px 12px',
+              borderRadius: '999px', fontSize: '13px', fontWeight: 700,
             }}>
-              {completedCount}/{totalCount} ✓
+              {completedCount}/{totalCount}
             </div>
-            <button onClick={() => setShowMenu(!showMenu)} style={{
-              background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white',
-              padding: '6px 10px', borderRadius: '16px', fontSize: '14px',
+            <button type="button" aria-label="Menu openen" aria-expanded={showMenu} onClick={() => setShowMenu(!showMenu)} style={{
+              background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)', color: 'white',
+              padding: '6px 12px', borderRadius: '999px', fontSize: '16px',
               cursor: 'pointer', fontWeight: 600,
-            }}>⋯</button>
+            }}>...</button>
           </div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
-          <div style={{ background: '#FFC72C', height: '100%', width: `${progressPct}%`, borderRadius: '6px', transition: 'width 0.4s ease' }} />
+        <div aria-label={`${Math.round(progressPct)} procent voltooid`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPct)} style={{ background: 'rgba(255,255,255,0.22)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--action)', height: '100%', width: `${progressPct}%`, borderRadius: '999px', transition: 'width 0.4s ease' }} />
         </div>
-        <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: '12px', opacity: 0.88, marginTop: '8px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
           <span>{Math.round(progressPct)}% voltooid</span>
-          {syncing && <span>↻ Synchroniseren...</span>}
+          {syncing && <span role="status" aria-live="polite">Synchroniseren...</span>}
           {!syncing && <span style={{ opacity: 0.6 }}>{user.email}</span>}
         </div>
       </header>
@@ -403,18 +399,15 @@ function App({ user }) {
             borderRadius: '12px', padding: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
             minWidth: '180px',
           }}>
-            <button onClick={() => { setShowMenu(false); signOut(); }} style={{
+            <button type="button" onClick={() => { setShowMenu(false); signOut(); }} style={{
               width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
-            }}>🚪 Uitloggen</button>
+            }}>Uitloggen</button>
           </div>
         </div>
       )}
 
-      <nav style={{
-        display: 'flex', background: 'white', margin: '20px 16px 0',
-        borderRadius: '14px', padding: '4px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
-      }}>
+      <nav className="app-nav" aria-label="Hoofdnavigatie">
         {[
           { key: 'today', label: 'Vandaag' },
           { key: 'week', label: `Wk ${currentWeek}` },
@@ -422,12 +415,12 @@ function App({ user }) {
           { key: 'checkin', label: 'Meet' },
           { key: 'log', label: 'Log' },
         ].map(t => (
-          <button key={t.key} onClick={() => setView(t.key)} style={{
+          <button key={t.key} type="button" aria-current={view === t.key ? 'page' : undefined} onClick={() => setView(t.key)} style={{
             flex: 1, padding: '10px', border: 'none',
-            background: view === t.key ? '#003D7A' : 'transparent',
-            color: view === t.key ? 'white' : '#555',
-            borderRadius: '10px', fontSize: '14px',
-            fontWeight: view === t.key ? 600 : 500, cursor: 'pointer',
+            background: view === t.key ? 'var(--accent)' : 'transparent',
+            color: view === t.key ? 'white' : 'var(--muted)',
+            borderRadius: '8px', fontSize: '14px',
+            fontWeight: 700, cursor: 'pointer',
           }}>{t.label}</button>
         ))}
       </nav>
@@ -438,7 +431,7 @@ function App({ user }) {
         </div>
       )}
 
-      <main style={{ padding: '20px 16px' }}>
+      <main className="view-main" style={{ padding: '20px 16px' }}>
         {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} />}
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} />}
@@ -449,12 +442,7 @@ function App({ user }) {
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} />}
       {showLogForm && <LogForm onSave={saveLog} onClose={() => setShowLogForm(false)} todayPlan={today} />}
 
-      <button onClick={() => setShowLogForm(true)} style={{
-        position: 'fixed', bottom: '24px', right: '20px', width: '60px', height: '60px',
-        borderRadius: '50%', background: 'linear-gradient(135deg, #FFC72C 0%, #FFB300 100%)',
-        border: 'none', color: '#003D7A', fontSize: '28px', fontWeight: 700,
-        boxShadow: '0 6px 20px rgba(255, 199, 44, 0.4)', cursor: 'pointer', zIndex: 100,
-      }}>+</button>
+      <button type="button" aria-label="Workout loggen" className="fab" onClick={() => setShowLogForm(true)}>+</button>
     </div>
   );
 }
@@ -467,17 +455,16 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
 
   return (
     <div>
-      <div style={{
-        background: 'white', borderRadius: '20px', padding: '24px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-        border: `2px solid ${isComplete ? '#2C7A2C' : meta.color}`,
+      <div className="info-card" style={{
+        background: 'var(--surface)', borderRadius: '12px', padding: '24px',
+        border: `2px solid ${isComplete ? 'var(--success)' : meta.color}`,
       }}>
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '12px', color: meta.color, fontWeight: 700, letterSpacing: '1px' }}>
+          <div style={{ fontSize: '12px', color: meta.color, fontWeight: 800, textTransform: 'uppercase' }}>
             {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }).toUpperCase()}
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 700, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '34px' }}>{meta.icon}</span>
+          <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '26px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span aria-hidden="true" style={{ fontSize: '34px' }}>{meta.icon}</span>
             {title}
           </div>
         </div>
@@ -490,17 +477,17 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
         </div>
 
         {day.desc && (
-          <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.5, marginBottom: '20px' }}>
+          <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.5, marginBottom: '20px' }}>
             {day.desc}
           </div>
         )}
         {measurementMoment && (
-          <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.5, marginBottom: '20px' }}>
+          <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.5, marginBottom: '20px' }}>
             <div style={{ fontWeight: 700, marginBottom: '6px' }}>{measurementMoment.focus}</div>
             <SimpleList items={measurementMoment.items} />
             <button type="button" onClick={() => onOpenMeasurement(day.date)} style={{
-              width: '100%', marginTop: '14px', padding: '12px', borderRadius: '12px',
-              border: 'none', background: '#003D7A', color: 'white', fontSize: '15px',
+              width: '100%', marginTop: '14px', padding: '12px', borderRadius: '8px',
+              border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px',
               fontWeight: 700, cursor: 'pointer',
             }}>
               Open meetmoment
@@ -508,21 +495,21 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
           </div>
         )}
 
-        <button onClick={() => toggleComplete(day.id)} style={{
-          width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-          background: isComplete ? '#2C7A2C' : meta.color,
+        <button type="button" onClick={() => toggleComplete(day.id)} style={{
+          width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
+          background: isComplete ? 'var(--success)' : meta.color,
           color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
         }}>{isComplete ? '✓ Voltooid' : 'Markeer voltooid'}</button>
       </div>
 
-      <div style={{
-        marginTop: '20px', background: 'white', borderRadius: '16px',
-        padding: '18px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+      <div className="info-card" style={{
+        marginTop: '20px', background: 'var(--surface)', borderRadius: '12px',
+        padding: '18px',
       }}>
-        <div style={{ fontSize: '11px', color: '#999', fontWeight: 700, letterSpacing: '1px', marginBottom: '10px' }}>
+        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>
           VANDAAG NIET VERGETEN
         </div>
-        <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#444', lineHeight: 1.7 }}>
+        <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--muted)', lineHeight: 1.7 }}>
           <li>130g eiwit (verdeel over 4-5 momenten)</li>
           <li>2L water</li>
           <li>{overview.kcal} kcal target</li>
@@ -770,11 +757,24 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact 
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const dateStr = new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  const open = () => onSelectDay(day);
 
   return (
-    <div onClick={() => onSelectDay(day)} style={{
-      background: 'white', borderRadius: '14px', padding: '14px', marginBottom: '10px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: `4px solid ${meta.color}`,
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open();
+        }
+      }}
+      aria-label={`${day.title}, ${dateStr}`}
+      className="day-card"
+      style={{
+      background: 'var(--surface)', borderRadius: '12px', padding: '14px', marginBottom: '10px',
+      borderLeft: `4px solid ${meta.color}`,
       cursor: 'pointer', opacity: isComplete ? 0.6 : 1,
       display: 'flex', alignItems: 'center', gap: '12px',
     }}>
@@ -794,16 +794,16 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact 
           {day.title} {day.intense && '🔥'} {day.big && '⭐'}
         </div>
         {!compact && day.target && (
-          <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{day.target}</div>
+          <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '2px' }}>{day.target}</div>
         )}
       </div>
-      <button onClick={(e) => { e.stopPropagation(); toggleComplete(day.id); }} style={{
-        width: '32px', height: '32px', borderRadius: '50%',
-        border: `2px solid ${isComplete ? '#2C7A2C' : '#ddd'}`,
-        background: isComplete ? '#2C7A2C' : 'white',
+      <button type="button" aria-label={isComplete ? `${day.title} niet voltooid markeren` : `${day.title} voltooid markeren`} onClick={(e) => { e.stopPropagation(); toggleComplete(day.id); }} style={{
+        width: '44px', height: '44px', minWidth: '44px', borderRadius: '999px',
+        border: `2px solid ${isComplete ? 'var(--success)' : 'var(--line)'}`,
+        background: isComplete ? 'var(--success)' : 'white',
         color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 700,
         flexShrink: 0,
-      }}>{isComplete ? '✓' : ''}</button>
+      }}>{isComplete ? '✓' : <span className="sr-only">Niet voltooid</span>}</button>
     </div>
   );
 }
@@ -813,22 +813,22 @@ function DayDetail({ day, onClose, completed, toggleComplete }) {
   const isComplete = !!completed[day.id];
 
   return (
-    <div onClick={onClose} style={{
+    <div role="presentation" onClick={onClose} style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200,
       display: 'flex', alignItems: 'flex-end',
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'white', width: '100%', maxHeight: '85vh', overflowY: 'auto',
-        borderTopLeftRadius: '24px', borderTopRightRadius: '24px', padding: '24px',
+      <div role="dialog" aria-modal="true" aria-labelledby="day-detail-title" onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', width: '100%', maxHeight: '85vh', overflowY: 'auto',
+        borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px',
       }}>
         <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <span style={{ fontSize: '32px' }}>{meta.icon}</span>
+          <span aria-hidden="true" style={{ fontSize: '32px' }}>{meta.icon}</span>
           <div>
             <div style={{ fontSize: '12px', color: meta.color, fontWeight: 700, letterSpacing: '1px' }}>
               {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
             </div>
-            <div style={{ fontSize: '24px', fontWeight: 700 }}>{day.title}</div>
+            <div id="day-detail-title" style={{ fontSize: '24px', fontWeight: 700 }}>{day.title}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -838,13 +838,13 @@ function DayDetail({ day, onClose, completed, toggleComplete }) {
           {day.target && <Tag label={`🎯 ${day.target}`} bg="#FFF4DD" color="#B86E00" />}
         </div>
         {day.desc && (
-          <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.6, marginBottom: '20px',
-            background: '#f8f9fb', padding: '16px', borderRadius: '12px' }}>
+          <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '20px',
+            background: 'var(--surface-2)', padding: '16px', borderRadius: '8px' }}>
             {day.desc}
           </div>
         )}
-        <button onClick={() => { toggleComplete(day.id); onClose(); }} style={{
-          width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+        <button type="button" onClick={() => { toggleComplete(day.id); onClose(); }} style={{
+          width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
           background: isComplete ? '#666' : meta.color,
           color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
         }}>{isComplete ? '✗ Markeer als niet voltooid' : '✓ Voltooi deze dag'}</button>
@@ -855,20 +855,19 @@ function DayDetail({ day, onClose, completed, toggleComplete }) {
 
 function Tag({ label, bg, color }) {
   return (
-    <div style={{ background: bg, color, padding: '6px 12px', borderRadius: '10px', fontSize: '13px', fontWeight: 600 }}>
+    <span style={{ background: bg, color, padding: '6px 12px', borderRadius: '999px', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>
       {label}
-    </div>
+    </span>
   );
 }
 
 function InfoCard({ children, style }) {
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '14px',
+    <div className="info-card" style={{
+      background: 'var(--surface)',
+      borderRadius: '12px',
       padding: '16px',
       marginBottom: '12px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
       ...style,
     }}>
       {children}
@@ -879,34 +878,34 @@ function InfoCard({ children, style }) {
 function SectionTitle({ title, subtitle }) {
   return (
     <div style={{ margin: '18px 4px 10px' }}>
-      <div style={{ fontSize: '12px', fontWeight: 700, color: '#003D7A', letterSpacing: '1px', textTransform: 'uppercase' }}>{title}</div>
-      {subtitle && <div style={{ fontSize: '13px', color: '#666', marginTop: '4px', lineHeight: 1.4 }}>{subtitle}</div>}
+      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent-strong)', textTransform: 'uppercase' }}>{title}</div>
+      {subtitle && <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px', lineHeight: 1.4 }}>{subtitle}</div>}
     </div>
   );
 }
 
 function Segmented({ options, value, onChange }) {
   return (
-    <div style={{
+    <div role="tablist" aria-label="Plansecties" style={{
       display: 'flex',
       overflowX: 'auto',
       gap: '4px',
-      background: 'white',
+      background: 'var(--surface)',
       borderRadius: '12px',
       padding: '4px',
       margin: '14px 0',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+      border: '1px solid var(--line)',
     }}>
       {options.map(option => (
-        <button key={option.key} onClick={() => onChange(option.key)} style={{
+        <button key={option.key} type="button" role="tab" aria-selected={value === option.key} onClick={() => onChange(option.key)} style={{
           flex: '1 0 auto',
           padding: '9px 10px',
           border: 'none',
-          borderRadius: '9px',
-          background: value === option.key ? '#003D7A' : 'transparent',
-          color: value === option.key ? 'white' : '#555',
+          borderRadius: '8px',
+          background: value === option.key ? 'var(--accent)' : 'transparent',
+          color: value === option.key ? 'white' : 'var(--muted)',
           fontSize: '13px',
-          fontWeight: 600,
+          fontWeight: 700,
           cursor: 'pointer',
         }}>{option.label}</button>
       ))}
@@ -916,16 +915,16 @@ function Segmented({ options, value, onChange }) {
 
 function MetricTile({ label, value }) {
   return (
-    <div style={{ background: '#F0F4FA', borderRadius: '10px', padding: '10px' }}>
-      <div style={{ fontSize: '11px', color: '#666', fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '4px', color: '#003D7A' }}>{value}</div>
+    <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '10px', border: '1px solid var(--line)' }}>
+      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: '14px', fontWeight: 800, marginTop: '4px', color: 'var(--accent-strong)' }}>{value}</div>
     </div>
   );
 }
 
 function SimpleList({ items }) {
   return (
-    <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: '#444', lineHeight: 1.65 }}>
+    <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: 'var(--muted)', lineHeight: 1.65 }}>
       {items.map(item => <li key={item}>{item}</li>)}
     </ul>
   );
@@ -1076,14 +1075,14 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
             <input type="checkbox" checked={form.hrvLowSignal} onChange={e => update('hrvLowSignal', e.target.checked)} />
             HRV 3 dagen meer dan 20% laag
           </label>
-          <Field label="Notities">
-            <textarea value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder="Hoe voel je je?" style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+          <Field label="Notities" htmlFor="measurement-notes">
+            <textarea id="measurement-notes" value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder="Hoe voel je je?" style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
           </Field>
           <button type="submit" style={{
             width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
             background: '#003D7A', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
           }}>Meetmoment opslaan</button>
-          {message && <div style={{ fontSize: '13px', color: message.includes('opgeslagen') || message.includes('Melding aan') ? '#2C7A2C' : '#DC3545', marginTop: '10px', textAlign: 'center' }}>{message}</div>}
+          {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: message.includes('opgeslagen') || message.includes('Melding aan') ? 'var(--success)' : 'var(--danger)', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
         </InfoCard>
       </form>
 
@@ -1104,9 +1103,10 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
 }
 
 function MetricInput({ label, value, onChange, placeholder }) {
+  const id = `metric-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   return (
-    <Field label={label}>
-      <input type="number" inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
+    <Field label={label} htmlFor={id}>
+      <input id={id} type="number" inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
     </Field>
   );
 }
@@ -1159,10 +1159,9 @@ function LogView({ logs, setShowLogForm, deleteLog }) {
   return (
     <div>
       {logs.length > 0 && (
-        <div style={{
-          background: 'linear-gradient(135deg, #003D7A 0%, #0058B0 100%)',
-          color: 'white', padding: '20px', borderRadius: '16px',
-          marginBottom: '20px', boxShadow: '0 4px 20px rgba(0, 61, 122, 0.15)',
+        <div className="premium-card" style={{
+          padding: '20px', borderRadius: '12px',
+          marginBottom: '20px',
         }}>
           <div style={{ fontSize: '11px', opacity: 0.85, fontWeight: 700, letterSpacing: '1px' }}>JOUW STATS</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
@@ -1191,10 +1190,10 @@ function LogView({ logs, setShowLogForm, deleteLog }) {
       )}
 
       {logs.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>📊</div>
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)' }}>
+          <div aria-hidden="true" style={{ fontSize: '48px', marginBottom: '12px' }}>📊</div>
           <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '6px' }}>Nog geen workouts gelogd</div>
-          <div style={{ fontSize: '14px', color: '#888', marginBottom: '20px' }}>
+          <div style={{ fontSize: '14px', color: 'var(--muted-2)', marginBottom: '20px' }}>
             Tik op de + knop om je eerste Apple Watch workout in te voeren.
           </div>
         </div>
@@ -1219,9 +1218,8 @@ function LogCard({ log, deleteLog }) {
   }
 
   return (
-    <div style={{
-      background: 'white', borderRadius: '14px', padding: '14px', marginBottom: '10px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+    <div className="log-card" style={{
+      background: 'var(--surface)', borderRadius: '12px', padding: '14px', marginBottom: '10px',
       borderLeft: `4px solid ${log.type === 'cycle' ? '#003D7A' : '#7A3000'}`,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -1230,7 +1228,7 @@ function LogCard({ log, deleteLog }) {
             {new Date(log.date).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
           </div>
           <div style={{ fontSize: '16px', fontWeight: 600, marginTop: '4px' }}>
-            {log.type === 'cycle' ? '🚴 Fiets' : log.type === 'strength' ? '💪 Kracht' : '🚶 Wandelen'} • {log.duration} min
+            {log.type === 'cycle' ? 'Fiets' : log.type === 'strength' ? 'Kracht' : 'Wandelen'} • {log.duration} min
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '13px', color: '#555' }}>
             {log.distance && <span>📏 {log.distance} km</span>}
@@ -1242,10 +1240,10 @@ function LogCard({ log, deleteLog }) {
             <div style={{ fontSize: '13px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>"{log.notes}"</div>
           )}
         </div>
-        <button onClick={() => deleteLog(log.id)} style={{
+        <button type="button" aria-label="Log verwijderen" onClick={() => deleteLog(log.id)} style={{
           background: 'transparent', border: 'none', color: '#999',
           fontSize: '16px', cursor: 'pointer', padding: '4px 8px',
-        }}>🗑</button>
+        }}>×</button>
       </div>
     </div>
   );
@@ -1288,22 +1286,22 @@ function LogForm({ onSave, onClose, todayPlan }) {
   }
 
   return (
-    <div onClick={onClose} style={{
+    <div role="presentation" onClick={onClose} style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200,
       display: 'flex', alignItems: 'flex-end',
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'white', width: '100%', maxHeight: '90vh', overflowY: 'auto',
-        borderTopLeftRadius: '24px', borderTopRightRadius: '24px', padding: '24px',
+      <div role="dialog" aria-modal="true" aria-labelledby="log-form-title" onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+        borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px',
       }}>
         <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
-        <h2 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700 }}>Workout loggen</h2>
-        <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#888' }}>
+        <h2 id="log-form-title" style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700 }}>Workout loggen</h2>
+        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--muted)' }}>
           Voer in van je Apple Watch. Krijg direct inzicht hoe het past bij je plan.
         </p>
 
-        <Field label="Datum">
-          <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
+        <Field label="Datum" htmlFor="log-date">
+          <input id="log-date" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
         </Field>
 
         <Field label="Type">
@@ -1313,40 +1311,40 @@ function LogForm({ onSave, onClose, todayPlan }) {
               { key: 'strength', label: '💪 Kracht' },
               { key: 'walk', label: '🚶 Wandelen' },
             ].map(t => (
-              <button key={t.key} onClick={() => setForm({ ...form, type: t.key })} style={{
+              <button key={t.key} type="button" aria-pressed={form.type === t.key} onClick={() => setForm({ ...form, type: t.key })} style={{
                 flex: 1, padding: '10px', borderRadius: '10px',
-                border: form.type === t.key ? '2px solid #003D7A' : '2px solid #e5e5e5',
-                background: form.type === t.key ? '#E5EDF7' : 'white',
+                border: form.type === t.key ? '2px solid var(--accent)' : '2px solid var(--line)',
+                background: form.type === t.key ? '#e8f4f1' : 'white',
                 fontSize: '14px', fontWeight: 600, cursor: 'pointer',
               }}>{t.label}</button>
             ))}
           </div>
         </Field>
 
-        <Field label="Duur (min) *">
-          <input type="number" inputMode="decimal" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} placeholder="bijv. 45" style={inputStyle} />
+        <Field label="Duur (min) *" htmlFor="log-duration">
+          <input id="log-duration" type="number" inputMode="decimal" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} placeholder="bijv. 45" style={inputStyle} />
         </Field>
 
         {form.type === 'cycle' && (
-          <Field label="Afstand (km)">
-            <input type="number" inputMode="decimal" step="0.1" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} placeholder="bijv. 12.5" style={inputStyle} />
+          <Field label="Afstand (km)" htmlFor="log-distance">
+            <input id="log-distance" type="number" inputMode="decimal" step="0.1" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} placeholder="bijv. 12.5" style={inputStyle} />
           </Field>
         )}
 
-        <Field label="Gemiddelde HR (bpm)">
-          <input type="number" inputMode="numeric" value={form.avgHR} onChange={e => setForm({ ...form, avgHR: e.target.value })} placeholder="bijv. 142" style={inputStyle} />
+        <Field label="Gemiddelde HR (bpm)" htmlFor="log-avg-hr">
+          <input id="log-avg-hr" type="number" inputMode="numeric" value={form.avgHR} onChange={e => setForm({ ...form, avgHR: e.target.value })} placeholder="bijv. 142" style={inputStyle} />
         </Field>
 
-        <Field label="Max HR (bpm)">
-          <input type="number" inputMode="numeric" value={form.maxHR} onChange={e => setForm({ ...form, maxHR: e.target.value })} placeholder="bijv. 168" style={inputStyle} />
+        <Field label="Max HR (bpm)" htmlFor="log-max-hr">
+          <input id="log-max-hr" type="number" inputMode="numeric" value={form.maxHR} onChange={e => setForm({ ...form, maxHR: e.target.value })} placeholder="bijv. 168" style={inputStyle} />
         </Field>
 
-        <Field label="Calorieën">
-          <input type="number" inputMode="numeric" value={form.kcal} onChange={e => setForm({ ...form, kcal: e.target.value })} placeholder="bijv. 380" style={inputStyle} />
+        <Field label="Calorieën" htmlFor="log-kcal">
+          <input id="log-kcal" type="number" inputMode="numeric" value={form.kcal} onChange={e => setForm({ ...form, kcal: e.target.value })} placeholder="bijv. 380" style={inputStyle} />
         </Field>
 
-        <Field label="Notities (optioneel)">
-          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Hoe voelde het? Wind? Stops?" rows={2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+        <Field label="Notities (optioneel)" htmlFor="log-notes">
+          <textarea id="log-notes" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Hoe voelde het? Wind? Stops?" rows={2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
         </Field>
 
         {analysis && (
@@ -1365,13 +1363,13 @@ function LogForm({ onSave, onClose, todayPlan }) {
         )}
 
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={onClose} style={{
-            flex: 1, padding: '14px', borderRadius: '12px', border: '2px solid #e5e5e5',
+          <button type="button" onClick={onClose} style={{
+            flex: 1, padding: '14px', borderRadius: '8px', border: '2px solid var(--line)',
             background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
           }}>Annuleren</button>
-          <button onClick={handleSubmit} style={{
-            flex: 2, padding: '14px', borderRadius: '12px', border: 'none',
-            background: '#003D7A', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+          <button type="button" onClick={handleSubmit} style={{
+            flex: 2, padding: '14px', borderRadius: '8px', border: 'none',
+            background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
           }}>Opslaan</button>
         </div>
       </div>
@@ -1379,17 +1377,22 @@ function LogForm({ onSave, onClose, todayPlan }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, children, htmlFor, help }) {
   return (
     <div style={{ marginBottom: '14px' }}>
-      <div style={{ fontSize: '12px', color: '#666', fontWeight: 600, marginBottom: '6px' }}>{label}</div>
+      {htmlFor ? (
+        <label htmlFor={htmlFor} style={{ display: 'block', fontSize: '13px', color: 'var(--muted)', fontWeight: 700, marginBottom: '6px' }}>{label}</label>
+      ) : (
+        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 700, marginBottom: '6px' }}>{label}</div>
+      )}
+      {help && <div style={{ fontSize: '12px', color: 'var(--muted-2)', margin: '-2px 0 6px' }}>{help}</div>}
       {children}
     </div>
   );
 }
 
 const inputStyle = {
-  width: '100%', padding: '12px', borderRadius: '10px',
-  border: '2px solid #e5e5e5', fontSize: '15px',
+  width: '100%', padding: '12px', borderRadius: '8px',
+  border: '2px solid var(--line)', fontSize: '15px',
   outline: 'none', background: 'white', boxSizing: 'border-box',
 };
