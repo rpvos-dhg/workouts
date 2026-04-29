@@ -77,22 +77,8 @@ function Auth() {
   };
 
   return (
-    <main style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-    }}>
-      <div style={{
-        background: 'var(--surface)',
-        borderRadius: '12px',
-        padding: '32px 24px',
-        width: '100%',
-        maxWidth: '400px',
-        boxShadow: 'var(--shadow)',
-        border: '1px solid var(--line)',
-      }}>
+    <main className="auth-shell">
+      <div className="auth-card">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div aria-hidden="true" style={{ fontSize: '42px', marginBottom: '8px' }}>🚴‍♂️</div>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '25px', fontWeight: 800, color: 'var(--accent-strong)' }}>6-Weken Plan</h1>
@@ -425,6 +411,13 @@ function App({ user }) {
         ))}
       </nav>
 
+      <DashboardStrip
+        today={today}
+        overview={currentOverview}
+        progressPct={progressPct}
+        dueMeasurement={dueMeasurement}
+      />
+
       {dueMeasurement && (
         <div style={{ padding: '16px 16px 0' }}>
           <MeasurementBanner moment={dueMeasurement} onOpen={() => openMeasurement(dueMeasurement.date)} />
@@ -447,6 +440,35 @@ function App({ user }) {
   );
 }
 
+function DashboardStrip({ today, overview, progressPct, dueMeasurement }) {
+  const meta = TYPE_META[today.type];
+  const measurementLabel = dueMeasurement
+    ? `${formatDateShort(dueMeasurement.date)} - ${dueMeasurement.title}`
+    : 'Geen open meetmoment';
+
+  return (
+    <section className="dashboard-strip" aria-label="Trainingsdashboard">
+      <div className="signal-card">
+        <div className="signal-kicker">Vandaag</div>
+        <div className="signal-value">{meta.label}: {today.title}</div>
+        <div className="signal-note">
+          {today.dur > 0 ? `${today.dur} min` : 'Geen duur'}{today.hr ? ` · HR ${today.hr}` : ''}{today.target ? ` · ${today.target}` : ''}
+        </div>
+      </div>
+      <div className="signal-card">
+        <div className="signal-kicker">Weekfocus</div>
+        <div className="signal-value">{overview.focus}</div>
+        <div className="signal-note">{overview.kcal} kcal · 130g eiwit · lange rit {overview.longRide}</div>
+      </div>
+      <div className="signal-card">
+        <div className="signal-kicker">Status</div>
+        <div className="signal-value">{Math.round(progressPct)}% voltooid</div>
+        <div className="signal-note">{measurementLabel}</div>
+      </div>
+    </section>
+  );
+}
+
 function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
@@ -454,8 +476,8 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
   const title = measurementMoment?.title || day.title;
 
   return (
-    <div>
-      <div className="info-card" style={{
+    <div className="dashboard-grid">
+      <div className="info-card hero-card" style={{
         background: 'var(--surface)', borderRadius: '12px', padding: '24px',
         border: `2px solid ${isComplete ? 'var(--success)' : meta.color}`,
       }}>
@@ -502,21 +524,34 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
         }}>{isComplete ? '✓ Voltooid' : 'Markeer voltooid'}</button>
       </div>
 
-      <div className="info-card" style={{
-        marginTop: '20px', background: 'var(--surface)', borderRadius: '12px',
-        padding: '18px',
-      }}>
-        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>
-          VANDAAG NIET VERGETEN
+      <div className="side-panel">
+        <div className="premium-card" style={{ borderRadius: '12px', padding: '18px' }}>
+          <div style={{ fontSize: '11px', opacity: 0.78, fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>
+            Dagdoelen
+          </div>
+          <div className="metric-grid">
+            <MetricTile label="Kcal" value={overview.kcal} />
+            <MetricTile label="Eiwit" value="130g" />
+            <MetricTile label="Water" value="2L" />
+          </div>
         </div>
-        <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--muted)', lineHeight: 1.7 }}>
-          <li>130g eiwit (verdeel over 4-5 momenten)</li>
-          <li>2L water</li>
-          <li>{overview.kcal} kcal target</li>
-          {['cycle', 'strength', 'walk'].includes(day.type) && <li>25-30g eiwit binnen 1u na training</li>}
-          {day.type === 'cycle' && day.dur >= 60 && <li>Snack + water mee voor lange rit</li>}
-          {day.week === 6 && <li>Extra zout + water, herstel prioriteit</li>}
-        </ul>
+
+        <div className="info-card" style={{
+          background: 'var(--surface)', borderRadius: '12px',
+          padding: '18px',
+        }}>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>
+            Vandaag niet vergeten
+          </div>
+          <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--muted)', lineHeight: 1.7 }}>
+            <li>130g eiwit (verdeel over 4-5 momenten)</li>
+            <li>2L water</li>
+            <li>{overview.kcal} kcal target</li>
+            {['cycle', 'strength', 'walk'].includes(day.type) && <li>25-30g eiwit binnen 1u na training</li>}
+            {day.type === 'cycle' && day.dur >= 60 && <li>Snack + water mee voor lange rit</li>}
+            {day.week === 6 && <li>Extra zout + water, herstel prioriteit</li>}
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -525,24 +560,24 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
 function MeasurementBanner({ moment, onOpen }) {
   const isOverdue = moment.date < getTodayString();
   return (
-    <InfoCard style={{ borderLeft: '4px solid #FFC72C', marginBottom: 0 }}>
+    <InfoCard style={{ borderLeft: '4px solid var(--action)', marginBottom: 0, background: 'linear-gradient(135deg, #fffaf0, #ffffff)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#B86E00', fontWeight: 800, letterSpacing: '1px' }}>
+          <div style={{ fontSize: '11px', color: '#8b5a10', fontWeight: 800, textTransform: 'uppercase' }}>
             {isOverdue ? 'MEETMOMENT STAAT OPEN' : 'MEETMOMENT VANDAAG'}
           </div>
           <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px' }}>
             {moment.title}
           </div>
-          <div style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>
             {formatDateShort(moment.date)} - {moment.focus}
           </div>
         </div>
         <button onClick={onOpen} style={{
           border: 'none',
-          background: '#003D7A',
+          background: 'var(--accent)',
           color: 'white',
-          borderRadius: '10px',
+          borderRadius: '8px',
           padding: '10px 12px',
           fontSize: '13px',
           fontWeight: 700,
@@ -558,9 +593,11 @@ function MeasurementBanner({ moment, onOpen }) {
 
 function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum }) {
   return (
-    <div>
-      <div style={{ marginBottom: '12px', fontSize: '13px', color: '#666', fontWeight: 500 }}>
-        Week {weekNum} • {days.filter(d => completed[d.id]).length}/{days.length} dagen voltooid
+    <div className="section-shell">
+      <div className="signal-card" style={{ marginBottom: '4px' }}>
+        <div className="signal-kicker">Weekplanning</div>
+        <div className="signal-value">Week {weekNum}</div>
+        <div className="signal-note">{days.filter(d => completed[d.id]).length}/{days.length} dagen voltooid</div>
       </div>
       {days.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} />)}
     </div>
@@ -569,16 +606,13 @@ function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum }) {
 
 function AllView({ completed, toggleComplete, onSelectDay }) {
   return (
-    <div>
+    <div className="section-shell">
       {[1, 2, 3, 4, 5, 6].map(w => {
         const wd = PLAN_DATA.filter(d => d.week === w);
         const compl = wd.filter(d => completed[d.id]).length;
         return (
           <div key={w} style={{ marginBottom: '24px' }}>
-            <div style={{
-              fontSize: '11px', fontWeight: 700, color: '#003D7A',
-              letterSpacing: '1.5px', marginBottom: '10px', padding: '0 4px',
-            }}>WEEK {w} • {compl}/{wd.length}</div>
+            <div className="signal-kicker" style={{ color: 'var(--accent-strong)', margin: '0 4px 10px' }}>Week {w} · {compl}/{wd.length}</div>
             {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} compact />)}
           </div>
         );
@@ -600,10 +634,10 @@ function PlanView({ completed, toggleComplete, onSelectDay, currentWeek }) {
 
   return (
     <div>
-      <InfoCard>
-        <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px' }}>WEEK {currentWeek} FOCUS</div>
-        <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '6px' }}>{overview.focus}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '14px' }}>
+      <InfoCard style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(238,244,239,0.94))' }}>
+        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>Week {currentWeek} focus</div>
+        <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '22px', fontWeight: 800, marginTop: '6px' }}>{overview.focus}</div>
+        <div className="metric-grid" style={{ marginTop: '14px' }}>
           <MetricTile label="Periode" value={overview.period} />
           <MetricTile label="Lange rit" value={overview.longRide} />
           <MetricTile label="Voeding" value={`${overview.kcal} kcal`} />
@@ -861,9 +895,9 @@ function Tag({ label, bg, color }) {
   );
 }
 
-function InfoCard({ children, style }) {
+function InfoCard({ children, style, className = '' }) {
   return (
-    <div className="info-card" style={{
+    <div className={`info-card ${className}`.trim()} style={{
       background: 'var(--surface)',
       borderRadius: '12px',
       padding: '16px',
@@ -984,19 +1018,20 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
   };
 
   return (
-    <div>
-      <InfoCard style={{ borderLeft: `4px solid ${alarms.length >= 2 ? '#DC3545' : '#2C7A2C'}` }}>
-        <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px' }}>GEPLANDE MEETMOMENTEN</div>
-        <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '6px' }}>{alarms.length} alarmsignalen</div>
-        <div style={{ fontSize: '13px', color: '#555', marginTop: '6px', lineHeight: 1.5 }}>{advice}</div>
-        <div style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>Weekdoel: {overview.kcal} kcal, 130g eiwit</div>
+    <div className="dashboard-grid">
+      <div>
+      <InfoCard className="hero-card" style={{ borderLeft: `4px solid ${alarms.length >= 2 ? 'var(--danger)' : 'var(--success)'}` }}>
+        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>Geplande meetmomenten</div>
+        <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '6px' }}>{alarms.length} alarmsignalen</div>
+        <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.5 }}>{advice}</div>
+        <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '8px' }}>Weekdoel: {overview.kcal} kcal, 130g eiwit</div>
         {notificationStatus !== 'granted' && (
           <button type="button" onClick={enableNotifications} style={{
             marginTop: '12px',
-            border: '1px solid #CCD8E6',
-            background: '#F7FAFE',
-            color: '#003D7A',
-            borderRadius: '10px',
+            border: '1px solid var(--line)',
+            background: 'var(--surface-3)',
+            color: 'var(--accent-strong)',
+            borderRadius: '8px',
             padding: '10px 12px',
             fontSize: '13px',
             fontWeight: 700,
@@ -1015,49 +1050,17 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
         </InfoCard>
       )}
 
-      <InfoCard>
-        <div style={{ display: 'grid', gap: '8px' }}>
-          {MEASUREMENT_MOMENTS.map(moment => {
-            const isSelected = moment.date === date;
-            const isSaved = savedMomentDates.has(moment.date);
-            const isDue = moment.date <= getTodayString() && !isSaved;
-            return (
-              <button key={moment.key} type="button" onClick={() => { setDate(moment.date); setMessage(''); }} style={{
-                textAlign: 'left',
-                border: `2px solid ${isSelected ? '#003D7A' : isDue ? '#FFC72C' : '#E5EAF1'}`,
-                background: isSelected ? '#EEF5FC' : 'white',
-                borderRadius: '12px',
-                padding: '12px',
-                cursor: 'pointer',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#1a1a1a' }}>{moment.title}</div>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: '3px' }}>Week {moment.week} - {formatDateShort(moment.date)}</div>
-                  </div>
-                  <Tag
-                    label={isSaved ? 'Opgeslagen' : isDue ? 'Nu' : 'Later'}
-                    bg={isSaved ? '#E0F0E0' : isDue ? '#FFF4DD' : '#F0F4FA'}
-                    color={isSaved ? '#2C7A2C' : isDue ? '#B86E00' : '#003D7A'}
-                  />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </InfoCard>
-
       <form onSubmit={submit}>
         <InfoCard>
           <div style={{ marginBottom: '14px' }}>
-            <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 800, letterSpacing: '1px', marginBottom: '6px' }}>
-              {currentMoment.title.toUpperCase()}
+            <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>
+              {currentMoment.title}
             </div>
-            <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5 }}>{currentMoment.focus}</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5 }}>{currentMoment.focus}</div>
           </div>
           <SimpleList items={currentMoment.items} />
           {currentMoment.photoReminder && (
-            <div style={{ margin: '10px 0 4px', padding: '10px 12px', borderRadius: '10px', background: '#FFF4DD', color: '#7A4B00', fontSize: '13px', fontWeight: 700 }}>
+            <div style={{ margin: '10px 0 4px', padding: '10px 12px', borderRadius: '8px', background: '#fff4dd', color: '#7a4b00', fontSize: '13px', fontWeight: 700 }}>
               Foto: {currentMoment.photoReminder}
             </div>
           )}
@@ -1071,7 +1074,7 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
           <MetricInput label="Stemming (1-5)" value={form.moodLevel} onChange={v => update('moodLevel', v)} placeholder="3" />
           <MetricInput label="Spierpijn (uren)" value={form.sorenessHours} onChange={v => update('sorenessHours', v)} placeholder="bijv. 24" />
           <MetricInput label="Honger (1-5)" value={form.hungerLevel} onChange={v => update('hungerLevel', v)} placeholder="3" />
-          <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: '#444', margin: '10px 0 14px' }}>
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: 'var(--muted)', margin: '10px 0 14px' }}>
             <input type="checkbox" checked={form.hrvLowSignal} onChange={e => update('hrvLowSignal', e.target.checked)} />
             HRV 3 dagen meer dan 20% laag
           </label>
@@ -1079,12 +1082,46 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
             <textarea id="measurement-notes" value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder="Hoe voel je je?" style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
           </Field>
           <button type="submit" style={{
-            width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
-            background: '#003D7A', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+            width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
+            background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
           }}>Meetmoment opslaan</button>
           {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: message.includes('opgeslagen') || message.includes('Melding aan') ? 'var(--success)' : 'var(--danger)', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
         </InfoCard>
       </form>
+      </div>
+
+      <aside className="side-panel">
+      <InfoCard>
+        <div style={{ display: 'grid', gap: '8px' }}>
+          {MEASUREMENT_MOMENTS.map(moment => {
+            const isSelected = moment.date === date;
+            const isSaved = savedMomentDates.has(moment.date);
+            const isDue = moment.date <= getTodayString() && !isSaved;
+            return (
+              <button key={moment.key} type="button" onClick={() => { setDate(moment.date); setMessage(''); }} style={{
+                textAlign: 'left',
+                border: `2px solid ${isSelected ? 'var(--accent)' : isDue ? 'var(--action)' : 'var(--line)'}`,
+                background: isSelected ? '#e8f4f1' : 'white',
+                borderRadius: '8px',
+                padding: '12px',
+                cursor: 'pointer',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--ink)' }}>{moment.title}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '3px' }}>Week {moment.week} - {formatDateShort(moment.date)}</div>
+                  </div>
+                  <Tag
+                    label={isSaved ? 'Opgeslagen' : isDue ? 'Nu' : 'Later'}
+                    bg={isSaved ? '#E0F0E0' : isDue ? '#FFF4DD' : '#F0F4FA'}
+                    color={isSaved ? '#2C7A2C' : isDue ? '#B86E00' : '#003D7A'}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </InfoCard>
 
       <SectionTitle title="Historie" />
       {checkins.filter(isMeasurementCheckin).length === 0 ? (
@@ -1098,6 +1135,7 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
           </div>
         </InfoCard>
       ))}
+      </aside>
     </div>
   );
 }
