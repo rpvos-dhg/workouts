@@ -1,6 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import {
+  Activity,
+  BarChart3,
+  Bed,
+  Bike,
+  CheckCircle2,
+  Clock3,
+  Dumbbell,
+  Flame,
+  Footprints,
+  Gauge,
+  HeartPulse,
+  LogOut,
+  MoreHorizontal,
+  Plus,
+  Star,
+  Target,
+  Trash2,
+  Trophy,
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA, TYPE_META } from '../lib/plan-data';
 import {
@@ -18,6 +38,15 @@ import {
   getWeekOverview,
   isMeasurementCheckin,
 } from '../lib/plan-content';
+
+const TYPE_ICONS = {
+  cycle: Bike,
+  strength: Dumbbell,
+  walk: Footprints,
+  rest: Bed,
+  check: BarChart3,
+  goal: Trophy,
+};
 
 export default function Home() {
   const [session, setSession] = useState(null);
@@ -80,7 +109,9 @@ function Auth() {
     <main className="auth-shell">
       <div className="auth-card">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div aria-hidden="true" style={{ fontSize: '42px', marginBottom: '8px' }}>🚴‍♂️</div>
+          <div aria-hidden="true" className="brand-mark">
+            <Bike size={30} strokeWidth={2.4} />
+          </div>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '25px', fontWeight: 800, color: 'var(--accent-strong)' }}>6-Weken Plan</h1>
           <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--muted)' }}>
             {mode === 'signup' ? 'Maak een account' : 'Log in om te starten'}
@@ -361,9 +392,9 @@ function App({ user }) {
             </div>
             <button type="button" aria-label="Menu openen" aria-expanded={showMenu} onClick={() => setShowMenu(!showMenu)} style={{
               background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)', color: 'white',
-              padding: '6px 12px', borderRadius: '999px', fontSize: '16px',
+              padding: '6px 12px', borderRadius: '999px',
               cursor: 'pointer', fontWeight: 600,
-            }}>...</button>
+            }}><MoreHorizontal size={18} aria-hidden="true" /></button>
           </div>
         </div>
         <div aria-label={`${Math.round(progressPct)} procent voltooid`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPct)} style={{ background: 'rgba(255,255,255,0.22)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
@@ -388,7 +419,7 @@ function App({ user }) {
             <button type="button" onClick={() => { setShowMenu(false); signOut(); }} style={{
               width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
-            }}>Uitloggen</button>
+            }}><LogOut size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />Uitloggen</button>
           </div>
         </div>
       )}
@@ -435,7 +466,7 @@ function App({ user }) {
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} />}
       {showLogForm && <LogForm onSave={saveLog} onClose={() => setShowLogForm(false)} todayPlan={today} />}
 
-      <button type="button" aria-label="Workout loggen" className="fab" onClick={() => setShowLogForm(true)}>+</button>
+      <button type="button" aria-label="Workout loggen" className="fab" onClick={() => setShowLogForm(true)}><Plus size={30} aria-hidden="true" /></button>
     </div>
   );
 }
@@ -486,16 +517,16 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
             {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }).toUpperCase()}
           </div>
           <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '26px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span aria-hidden="true" style={{ fontSize: '34px' }}>{meta.icon}</span>
+            <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={48} iconSize={26} />
             {title}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-          {day.dur > 0 && <Tag label={`⏱ ${day.dur} min`} bg={meta.bg} color={meta.color} />}
-          {day.hr && <Tag label={`❤️ HR ${day.hr}`} bg="#FFE5E5" color="#DC3545" />}
-          {day.speed && <Tag label={`💨 ${day.speed}`} bg="#E5F0FF" color="#003D7A" />}
-          {day.target && <Tag label={`🎯 ${day.target}`} bg="#FFF4DD" color="#B86E00" />}
+          {day.dur > 0 && <Tag icon={Clock3} label={`${day.dur} min`} bg={meta.bg} color={meta.color} />}
+          {day.hr && <Tag icon={HeartPulse} label={`HR ${day.hr}`} bg="#FFE5E5" color="#DC3545" />}
+          {day.speed && <Tag icon={Gauge} label={day.speed} bg="#E5F0FF" color="#003D7A" />}
+          {day.target && <Tag icon={Target} label={day.target} bg="#FFF4DD" color="#B86E00" />}
         </div>
 
         {day.desc && (
@@ -521,7 +552,7 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
           width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
           background: isComplete ? 'var(--success)' : meta.color,
           color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-        }}>{isComplete ? '✓ Voltooid' : 'Markeer voltooid'}</button>
+        }}>{isComplete ? 'Voltooid' : 'Markeer voltooid'}</button>
       </div>
 
       <div className="side-panel">
@@ -530,9 +561,9 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
             Dagdoelen
           </div>
           <div className="metric-grid">
-            <MetricTile label="Kcal" value={overview.kcal} />
-            <MetricTile label="Eiwit" value="130g" />
-            <MetricTile label="Water" value="2L" />
+            <MetricTile icon={Flame} label="Kcal" value={overview.kcal} />
+            <MetricTile icon={Dumbbell} label="Eiwit" value="130g" />
+            <MetricTile icon={Activity} label="Water" value="2L" />
           </div>
         </div>
 
@@ -638,9 +669,9 @@ function PlanView({ completed, toggleComplete, onSelectDay, currentWeek }) {
         <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>Week {currentWeek} focus</div>
         <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '22px', fontWeight: 800, marginTop: '6px' }}>{overview.focus}</div>
         <div className="metric-grid" style={{ marginTop: '14px' }}>
-          <MetricTile label="Periode" value={overview.period} />
-          <MetricTile label="Lange rit" value={overview.longRide} />
-          <MetricTile label="Voeding" value={`${overview.kcal} kcal`} />
+          <MetricTile icon={Clock3} label="Periode" value={overview.period} />
+          <MetricTile icon={Bike} label="Lange rit" value={overview.longRide} />
+          <MetricTile icon={Flame} label="Voeding" value={`${overview.kcal} kcal`} />
         </div>
       </InfoCard>
 
@@ -751,8 +782,8 @@ function StrengthTable({ title, rows }) {
             )}
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <Tag label={exercise.sets} bg="#F0F4FA" color="#003D7A" />
-            <Tag label={exercise.rest} bg="#FFF4DD" color="#B86E00" />
+            <Tag icon={Dumbbell} label={exercise.sets} bg="#F0F4FA" color="#003D7A" />
+            <Tag icon={Clock3} label={exercise.rest} bg="#FFF4DD" color="#B86E00" />
           </div>
           <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{exercise.notes}</div>
           {exercise.steps && (
@@ -812,11 +843,7 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact 
       cursor: 'pointer', opacity: isComplete ? 0.6 : 1,
       display: 'flex', alignItems: 'center', gap: '12px',
     }}>
-      <div style={{
-        width: '48px', height: '48px', borderRadius: '12px', background: meta.bg,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '24px', flexShrink: 0,
-      }}>{meta.icon}</div>
+      <IconBadge type={day.type} color={meta.color} bg={meta.bg} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '11px', color: meta.color, fontWeight: 700, letterSpacing: '0.5px' }}>
           {day.day.toUpperCase()} {dateStr.toUpperCase()} {day.dur > 0 ? `• ${day.dur} MIN` : ''}
@@ -825,7 +852,9 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact 
           fontSize: '15px', fontWeight: 600, marginTop: '2px',
           textDecoration: isComplete ? 'line-through' : 'none',
         }}>
-          {day.title} {day.intense && '🔥'} {day.big && '⭐'}
+          {day.title}
+          {day.intense && <Flame size={15} aria-label="Intensief" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--copper)' }} />}
+          {day.big && <Star size={15} aria-label="Belangrijk" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--action)' }} />}
         </div>
         {!compact && day.target && (
           <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '2px' }}>{day.target}</div>
@@ -837,7 +866,7 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact 
         background: isComplete ? 'var(--success)' : 'white',
         color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 700,
         flexShrink: 0,
-      }}>{isComplete ? '✓' : <span className="sr-only">Niet voltooid</span>}</button>
+      }}>{isComplete ? <CheckCircle2 size={18} aria-hidden="true" /> : <span className="sr-only">Niet voltooid</span>}</button>
     </div>
   );
 }
@@ -857,7 +886,7 @@ function DayDetail({ day, onClose, completed, toggleComplete }) {
       }}>
         <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <span aria-hidden="true" style={{ fontSize: '32px' }}>{meta.icon}</span>
+          <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={46} iconSize={24} />
           <div>
             <div style={{ fontSize: '12px', color: meta.color, fontWeight: 700, letterSpacing: '1px' }}>
               {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
@@ -866,10 +895,10 @@ function DayDetail({ day, onClose, completed, toggleComplete }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-          {day.dur > 0 && <Tag label={`⏱ ${day.dur} min`} bg={meta.bg} color={meta.color} />}
-          {day.hr && <Tag label={`❤️ ${day.hr}`} bg="#FFE5E5" color="#DC3545" />}
-          {day.speed && <Tag label={`💨 ${day.speed}`} bg="#E5F0FF" color="#003D7A" />}
-          {day.target && <Tag label={`🎯 ${day.target}`} bg="#FFF4DD" color="#B86E00" />}
+          {day.dur > 0 && <Tag icon={Clock3} label={`${day.dur} min`} bg={meta.bg} color={meta.color} />}
+          {day.hr && <Tag icon={HeartPulse} label={day.hr} bg="#FFE5E5" color="#DC3545" />}
+          {day.speed && <Tag icon={Gauge} label={day.speed} bg="#E5F0FF" color="#003D7A" />}
+          {day.target && <Tag icon={Target} label={day.target} bg="#FFF4DD" color="#B86E00" />}
         </div>
         {day.desc && (
           <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '20px',
@@ -881,15 +910,40 @@ function DayDetail({ day, onClose, completed, toggleComplete }) {
           width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
           background: isComplete ? '#666' : meta.color,
           color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
-        }}>{isComplete ? '✗ Markeer als niet voltooid' : '✓ Voltooi deze dag'}</button>
+        }}>{isComplete ? 'Markeer als niet voltooid' : 'Voltooi deze dag'}</button>
       </div>
     </div>
   );
 }
 
-function Tag({ label, bg, color }) {
+function TypeIcon({ type, size = 22, color = 'currentColor', strokeWidth = 2.2 }) {
+  const Icon = TYPE_ICONS[type] || Activity;
+  return <Icon size={size} color={color} strokeWidth={strokeWidth} aria-hidden="true" />;
+}
+
+function IconBadge({ type, color, bg, size = 48, iconSize = 24 }) {
+  return (
+    <span style={{
+      width: size,
+      height: size,
+      minWidth: size,
+      borderRadius: '12px',
+      background: bg,
+      color,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    }}>
+      <TypeIcon type={type} size={iconSize} color={color} />
+    </span>
+  );
+}
+
+function Tag({ label, bg, color, icon: Icon }) {
   return (
     <span style={{ background: bg, color, padding: '6px 12px', borderRadius: '999px', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>
+      {Icon && <Icon size={14} aria-hidden="true" style={{ marginRight: '6px' }} />}
       {label}
     </span>
   );
@@ -947,10 +1001,13 @@ function Segmented({ options, value, onChange }) {
   );
 }
 
-function MetricTile({ label, value }) {
+function MetricTile({ label, value, icon: Icon }) {
   return (
     <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '10px', border: '1px solid var(--line)' }}>
-      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {Icon && <Icon size={13} aria-hidden="true" />}
+        {label}
+      </div>
       <div style={{ fontSize: '14px', fontWeight: 800, marginTop: '4px', color: 'var(--accent-strong)' }}>{value}</div>
     </div>
   );
@@ -1045,7 +1102,7 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
       {alarms.length > 0 && (
         <InfoCard>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {alarms.map(alarm => <Tag key={alarm} label={alarm} bg="#FFE5E5" color="#DC3545" />)}
+            {alarms.map(alarm => <Tag key={alarm} icon={Activity} label={alarm} bg="#FFE5E5" color="#DC3545" />)}
           </div>
         </InfoCard>
       )}
@@ -1112,6 +1169,7 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
                     <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '3px' }}>Week {moment.week} - {formatDateShort(moment.date)}</div>
                   </div>
                   <Tag
+                    icon={isSaved ? CheckCircle2 : Clock3}
                     label={isSaved ? 'Opgeslagen' : isDue ? 'Nu' : 'Later'}
                     bg={isSaved ? '#E0F0E0' : isDue ? '#FFF4DD' : '#F0F4FA'}
                     color={isSaved ? '#2C7A2C' : isDue ? '#B86E00' : '#003D7A'}
@@ -1229,7 +1287,7 @@ function LogView({ logs, setShowLogForm, deleteLog }) {
 
       {logs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)' }}>
-          <div aria-hidden="true" style={{ fontSize: '48px', marginBottom: '12px' }}>📊</div>
+          <BarChart3 size={48} aria-hidden="true" style={{ marginBottom: '12px', color: 'var(--accent)' }} />
           <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '6px' }}>Nog geen workouts gelogd</div>
           <div style={{ fontSize: '14px', color: 'var(--muted-2)', marginBottom: '20px' }}>
             Tik op de + knop om je eerste Apple Watch workout in te voeren.
@@ -1269,10 +1327,10 @@ function LogCard({ log, deleteLog }) {
             {log.type === 'cycle' ? 'Fiets' : log.type === 'strength' ? 'Kracht' : 'Wandelen'} • {log.duration} min
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '13px', color: '#555' }}>
-            {log.distance && <span>📏 {log.distance} km</span>}
-            {speed && <span>💨 {speed} km/h</span>}
-            {log.avg_hr && <span>❤️ {log.avg_hr} bpm {zone && `(${zone})`}</span>}
-            {log.kcal && <span>🔥 {log.kcal} kcal</span>}
+            {log.distance && <StatItem icon={Target} label={`${log.distance} km`} />}
+            {speed && <StatItem icon={Gauge} label={`${speed} km/h`} />}
+            {log.avg_hr && <StatItem icon={HeartPulse} label={`${log.avg_hr} bpm ${zone ? `(${zone})` : ''}`} />}
+            {log.kcal && <StatItem icon={Flame} label={`${log.kcal} kcal`} />}
           </div>
           {log.notes && (
             <div style={{ fontSize: '13px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>"{log.notes}"</div>
@@ -1281,9 +1339,18 @@ function LogCard({ log, deleteLog }) {
         <button type="button" aria-label="Log verwijderen" onClick={() => deleteLog(log.id)} style={{
           background: 'transparent', border: 'none', color: '#999',
           fontSize: '16px', cursor: 'pointer', padding: '4px 8px',
-        }}>×</button>
+        }}><Trash2 size={16} aria-hidden="true" /></button>
       </div>
     </div>
+  );
+}
+
+function StatItem({ icon: Icon, label }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+      <Icon size={14} aria-hidden="true" />
+      {label}
+    </span>
   );
 }
 
@@ -1316,9 +1383,9 @@ function LogForm({ onSave, onClose, todayPlan }) {
     else { zone = 'Z5'; expectedSpeed = '18-22'; }
     const [low, high] = expectedSpeed.split('-').map(Number);
     let verdict = '';
-    if (speed >= low && speed <= high) verdict = '✓ Perfect, in lijn met je plan';
-    else if (speed > high) verdict = '🔥 Sneller dan verwacht — sterker dan plan';
-    else if (speed < low * 0.8) verdict = '⚠️ Trager dan verwacht — wind, vermoeidheid, of fiets-issue?';
+    if (speed >= low && speed <= high) verdict = 'Perfect, in lijn met je plan';
+    else if (speed > high) verdict = 'Sneller dan verwacht - sterker dan plan';
+    else if (speed < low * 0.8) verdict = 'Trager dan verwacht - wind, vermoeidheid, of fiets-issue?';
     else verdict = '↘ Iets onder verwachting, prima';
     analysis = { speed: speed.toFixed(1), zone, expectedSpeed, verdict };
   }
@@ -1345,16 +1412,16 @@ function LogForm({ onSave, onClose, todayPlan }) {
         <Field label="Type">
           <div style={{ display: 'flex', gap: '8px' }}>
             {[
-              { key: 'cycle', label: '🚴 Fiets' },
-              { key: 'strength', label: '💪 Kracht' },
-              { key: 'walk', label: '🚶 Wandelen' },
+              { key: 'cycle', label: 'Fiets', Icon: Bike },
+              { key: 'strength', label: 'Kracht', Icon: Dumbbell },
+              { key: 'walk', label: 'Wandelen', Icon: Footprints },
             ].map(t => (
               <button key={t.key} type="button" aria-pressed={form.type === t.key} onClick={() => setForm({ ...form, type: t.key })} style={{
                 flex: 1, padding: '10px', borderRadius: '10px',
                 border: form.type === t.key ? '2px solid var(--accent)' : '2px solid var(--line)',
                 background: form.type === t.key ? '#e8f4f1' : 'white',
                 fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              }}>{t.label}</button>
+              }}><t.Icon size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '6px' }} />{t.label}</button>
             ))}
           </div>
         </Field>
