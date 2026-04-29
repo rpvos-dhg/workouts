@@ -13,6 +13,57 @@ import {
   getWeekOverview,
 } from '../lib/plan-content';
 
+const EXERCISE_LINKS = {
+  'Bodyweight Squat': {
+    source: 'ACE',
+    url: 'https://www.acefitness.org/resources/everyone/exercise-library/135/bodyweight-squat/',
+  },
+  'Reverse Lunge': {
+    source: 'ExRx',
+    url: 'https://exrx.net/WeightExercises/Quadriceps/BWRearLunge',
+  },
+  'Push-up': {
+    source: 'ACE',
+    url: 'https://www.acefitness.org/resources/everyone/exercise-library/41/push-up/',
+  },
+  'Glute Bridge': {
+    source: 'ACE',
+    url: 'https://www.acefitness.org/resources/everyone/exercise-library/49/glute-bridge/',
+  },
+  Plank: {
+    source: 'ACE',
+    url: 'https://www.acefitness.org/resources/everyone/exercise-library/32/front-plank/',
+  },
+  'Ab Roller knieend': {
+    source: 'Healthline',
+    url: 'https://www.healthline.com/health/fitness-exercise/exercise-wheel',
+  },
+  'Bulgarian Split Squat': {
+    source: 'ExRx',
+    url: 'https://exrx.net/WeightExercises/Quadriceps/BWSingleLegSplitSquat',
+  },
+  'Single-leg Hip Hinge': {
+    source: 'ExRx',
+    url: 'https://exrx.net/WeightExercises/GluteusMaximus/BWSingleLegStiffLegDeadlift',
+  },
+  'Pike Push-up': {
+    source: 'NASM',
+    url: 'https://www.nasm.org/resource-center/exercise-library/pike-push-up',
+  },
+  'Superman / Y-T-W': {
+    source: 'Elite Performance Institute',
+    url: 'https://elite-performance-institute.com/exercise-library/shoulder-exercises/ytw-exercise/',
+  },
+  'Side Plank': {
+    source: 'ACE',
+    url: 'https://www.acefitness.org/resources/everyone/exercise-library/101/side-plank-with-straight-leg/',
+  },
+  'Dead Bug': {
+    source: 'NASM',
+    url: 'https://www.nasm.org/resource-center/exercise-library/dead-bug',
+  },
+};
+
 export default function Home() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -661,25 +712,46 @@ function StrengthTable({ title, rows }) {
   return (
     <div>
       <SectionTitle title={title} />
-      {rows.map(([exercise, sets, rest, notes, steps]) => (
-        <InfoCard key={exercise}>
-          <ExerciseVisual exercise={exercise} />
-          <div style={{ fontWeight: 700, marginTop: '12px' }}>{exercise}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <Tag label={sets} bg="#F0F4FA" color="#003D7A" />
-            <Tag label={rest} bg="#FFF4DD" color="#B86E00" />
-          </div>
-          <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{notes}</div>
-          {steps && (
-            <div style={{ marginTop: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Uitvoering
-              </div>
-              <SimpleList items={steps} />
+      {rows.map(([exercise, sets, rest, notes, steps]) => {
+        const link = EXERCISE_LINKS[exercise];
+        return (
+          <InfoCard key={exercise}>
+            <ExerciseVisual exercise={exercise} />
+            <div style={{ fontWeight: 700, marginTop: '12px' }}>{exercise}</div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+              <Tag label={sets} bg="#F0F4FA" color="#003D7A" />
+              <Tag label={rest} bg="#FFF4DD" color="#B86E00" />
             </div>
-          )}
-        </InfoCard>
-      ))}
+            <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{notes}</div>
+            {steps && (
+              <div style={{ marginTop: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  Uitvoering
+                </div>
+                <SimpleList items={steps} />
+              </div>
+            )}
+            {link && (
+              <a href={link.url} target="_blank" rel="noopener noreferrer" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginTop: '12px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                background: '#F0F4FA',
+                color: '#003D7A',
+                fontSize: '13px',
+                fontWeight: 800,
+                textDecoration: 'none',
+              }}>
+                Bekijk uitleg bij {link.source}
+                <span aria-hidden="true">Open</span>
+              </a>
+            )}
+          </InfoCard>
+        );
+      })}
     </div>
   );
 }
