@@ -460,10 +460,10 @@ function Auth({ t, lang, setLang }) {
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder={t('passwordPlaceholder')}
+            placeholder={mode === 'signup' ? t('passwordPlaceholder') : t('password')}
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             required
-            minLength={6}
+            minLength={mode === 'signup' ? 6 : undefined}
             style={inputStyle}
           />
           </Field>
@@ -519,7 +519,7 @@ function Auth({ t, lang, setLang }) {
   );
 }
 
-function LanguageToggle({ t, lang, setLang }) {
+function LanguageToggle({ t, lang, setLang, onChange }) {
   return (
     <div role="group" aria-label={t('language')} style={{
       display: 'inline-flex',
@@ -536,7 +536,10 @@ function LanguageToggle({ t, lang, setLang }) {
         <button
           key={key}
           type="button"
-          onClick={() => setLang(key)}
+          onClick={() => {
+            setLang(key);
+            onChange?.(key);
+          }}
           aria-pressed={lang === key}
           style={{
             minHeight: '32px',
@@ -782,7 +785,7 @@ function App({ user, t, lang, setLang }) {
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
             }}><LogOut size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('logout')}</button>
             <div style={{ padding: '8px 8px 4px' }}>
-              <LanguageToggle t={t} lang={lang} setLang={setLang} />
+              <LanguageToggle t={t} lang={lang} setLang={setLang} onChange={() => setShowMenu(false)} />
             </div>
           </div>
         </div>
