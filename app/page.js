@@ -48,9 +48,329 @@ const TYPE_ICONS = {
   goal: Trophy,
 };
 
+const I18N = {
+  nl: {
+    loading: 'Laden...',
+    appTitle: '6-Weken Plan',
+    createAccount: 'Maak een account',
+    loginToStart: 'Log in om te starten',
+    email: 'E-mail',
+    password: 'Wachtwoord',
+    minPassword: 'Minimaal 6 tekens.',
+    passwordPlaceholder: 'Wachtwoord (min 6 tekens)',
+    busy: 'Bezig...',
+    signUp: 'Maak account',
+    signIn: 'Inloggen',
+    confirmEmail: 'Check je mail voor bevestigingslink!',
+    noAccount: 'Nog geen account? Maak er een',
+    hasAccount: 'Heb je al een account? Inloggen',
+    language: 'Taal',
+    dutch: 'NL',
+    english: 'EN',
+    weekOf: 'Week {week} van 6',
+    logout: 'Uitloggen',
+    openMenu: 'Menu openen',
+    workoutLog: 'Workout loggen',
+    navToday: 'Vandaag',
+    navWeek: 'Wk {week}',
+    navPlan: 'Plan',
+    navMeasure: 'Meet',
+    navLog: 'Log',
+    sync: 'Synchroniseren...',
+    progressLabel: '{progress} procent voltooid',
+    completedPct: '{progress}% voltooid',
+    today: 'Vandaag',
+    noDuration: 'Geen duur',
+    weekFocus: 'Weekfocus',
+    longRide: 'lange rit',
+    status: 'Status',
+    noOpenMeasurement: 'Geen open meetmoment',
+    openMeasurement: 'Open meetmoment',
+    completed: 'Voltooid',
+    markComplete: 'Markeer voltooid',
+    dayGoals: 'Dagdoelen',
+    protein: 'Eiwit',
+    water: 'Water',
+    rememberToday: 'Vandaag niet vergeten',
+    proteinReminder: '130g eiwit (verdeel over 4-5 momenten)',
+    waterReminder: '2L water',
+    kcalTarget: '{kcal} kcal target',
+    postTrainingProtein: '25-30g eiwit binnen 1u na training',
+    longRideSnack: 'Snack + water mee voor lange rit',
+    week6Recovery: 'Extra zout + water, herstel prioriteit',
+    measurementOpen: 'MEETMOMENT STAAT OPEN',
+    measurementToday: 'MEETMOMENT VANDAAG',
+    open: 'Open',
+    weekPlanning: 'Weekplanning',
+    daysCompleted: '{done}/{total} dagen voltooid',
+    days: 'Dagen',
+    zones: 'Zones',
+    nutrition: 'Voeding',
+    strength: 'Kracht',
+    tips: 'Tips',
+    weekFocusLabel: 'Week {week} focus',
+    period: 'Periode',
+    heartZones: 'Hartslagzones',
+    heartZonesSub: 'Hartslag is leidend; snelheid is referentie.',
+    yourReference: 'Jouw referentie',
+    referenceSub: 'Waarom deze snelheden realistisch zijn.',
+    nutritionSub: '{kcal} kcal deze week, 130g eiwit per dag.',
+    proteinSources: 'Eiwitbronnen',
+    sampleDay: 'Voorbeelddag',
+    strengthTraining: 'Krachttraining',
+    schemaA: 'Schema A - woensdag',
+    schemaB: 'Schema B - zondag',
+    explanation: 'Uitleg {source}',
+    execution: 'Uitvoering',
+    realisticEnd: 'Reeel eindbeeld',
+    notCompleted: 'Niet voltooid',
+    markIncomplete: 'Markeer als niet voltooid',
+    completeDay: 'Voltooi deze dag',
+    planSections: 'Plansecties',
+    plannedMeasurements: 'Geplande meetmomenten',
+    alarmSignals: '{count} alarmsignalen',
+    adviceWeek6: '2+ signalen: herstel prioriteit, houd 2700 kcal aan en push niet.',
+    adviceBackOff: '2+ signalen: schakel terug naar ongeveer 2550 kcal en push niet.',
+    adviceOk: 'Onder de drempel: houd het plan aan tot het volgende meetmoment.',
+    weekGoal: 'Weekdoel: {kcal} kcal, 130g eiwit',
+    notificationUnsupported: 'Browsermeldingen worden hier niet ondersteund',
+    notificationOn: 'Melding aan: zolang de app open is krijg je een signaal bij een meetmoment',
+    notificationOff: 'Melding niet aangezet',
+    enableMeasurementNotification: 'Meetmoment-melding aanzetten',
+    measurementSaved: 'Meetmoment opgeslagen',
+    weight: 'Gewicht (kg)',
+    waist: 'Buikomtrek (cm)',
+    sleep: 'Slaap (uren)',
+    restingHr: 'Rusthartslag',
+    energy: 'Energie (1-5)',
+    mood: 'Stemming (1-5)',
+    soreness: 'Spierpijn (uren)',
+    hunger: 'Honger (1-5)',
+    hrvLow: 'HRV 3 dagen meer dan 20% laag',
+    notes: 'Notities',
+    howFeel: 'Hoe voel je je?',
+    saveMeasurement: 'Meetmoment opslaan',
+    later: 'Later',
+    now: 'Nu',
+    saved: 'Opgeslagen',
+    history: 'Historie',
+    noMeasurements: 'Nog geen meetmomenten opgeslagen.',
+    sleepShort: '{hours}u slaap',
+    alarmRestingHr: 'Rusthartslag +5 bpm',
+    alarmSleep: 'Slaap < 7 uur',
+    alarmMood: 'Lage stemming',
+    alarmSoreness: 'Spierpijn > 72u',
+    alarmHunger: 'Constante honger',
+    alarmHrv: 'HRV 3 dagen laag',
+    yourStats: 'JOUW STATS',
+    workoutsLogged: 'Workouts gelogd',
+    avgSpeed: 'Gem. snelheid',
+    avgHr: 'Gem. HR',
+    cycleRides: 'Fiets ritten',
+    noWorkouts: 'Nog geen workouts gelogd',
+    noWorkoutsHelp: 'Tik op de + knop om je eerste Apple Watch workout in te voeren.',
+    deleteLog: 'Log verwijderen',
+    deleteConfirm: 'Verwijder deze log?',
+    durationRequired: 'Vul minstens duur in',
+    logSubtitle: 'Voer in van je Apple Watch. Krijg direct inzicht hoe het past bij je plan.',
+    date: 'Datum',
+    type: 'Type',
+    cycle: 'Fiets',
+    walk: 'Wandelen',
+    rest: 'Rust',
+    check: 'Meten',
+    measure: 'Meten',
+    goal: 'Doel',
+    duration: 'Duur (min) *',
+    distance: 'Afstand (km)',
+    avgHrFull: 'Gemiddelde HR (bpm)',
+    maxHr: 'Max HR (bpm)',
+    calories: 'Calorieën',
+    optionalNotes: 'Notities (optioneel)',
+    workoutNotesPlaceholder: 'Hoe voelde het? Wind? Stops?',
+    analysis: 'ANALYSE',
+    expected: '{speed} km/h verwacht',
+    verdictPerfect: 'Perfect, in lijn met je plan',
+    verdictStrong: 'Sneller dan verwacht - sterker dan plan',
+    verdictSlow: 'Trager dan verwacht - wind, vermoeidheid, of fiets-issue?',
+    verdictSlightlyLow: 'Iets onder verwachting, prima',
+    cancel: 'Annuleren',
+    save: 'Opslaan',
+  },
+  en: {
+    loading: 'Loading...',
+    appTitle: '6-Week Plan',
+    createAccount: 'Create an account',
+    loginToStart: 'Log in to start',
+    email: 'Email',
+    password: 'Password',
+    minPassword: 'At least 6 characters.',
+    passwordPlaceholder: 'Password (min 6 chars)',
+    busy: 'Working...',
+    signUp: 'Create account',
+    signIn: 'Log in',
+    confirmEmail: 'Check your email for the confirmation link.',
+    noAccount: 'No account yet? Create one',
+    hasAccount: 'Already have an account? Log in',
+    language: 'Language',
+    dutch: 'NL',
+    english: 'EN',
+    weekOf: 'Week {week} of 6',
+    logout: 'Log out',
+    openMenu: 'Open menu',
+    workoutLog: 'Log workout',
+    navToday: 'Today',
+    navWeek: 'Wk {week}',
+    navPlan: 'Plan',
+    navMeasure: 'Measure',
+    navLog: 'Log',
+    sync: 'Syncing...',
+    progressLabel: '{progress} percent complete',
+    completedPct: '{progress}% complete',
+    today: 'Today',
+    noDuration: 'No duration',
+    weekFocus: 'Week focus',
+    longRide: 'long ride',
+    status: 'Status',
+    noOpenMeasurement: 'No open measurement',
+    openMeasurement: 'Open measurement',
+    completed: 'Completed',
+    markComplete: 'Mark complete',
+    dayGoals: 'Day goals',
+    protein: 'Protein',
+    water: 'Water',
+    rememberToday: 'Do not forget today',
+    proteinReminder: '130g protein, spread across 4-5 moments',
+    waterReminder: '2L water',
+    kcalTarget: '{kcal} kcal target',
+    postTrainingProtein: '25-30g protein within 1h after training',
+    longRideSnack: 'Bring snack + water for long rides',
+    week6Recovery: 'Extra salt + water, recovery first',
+    measurementOpen: 'MEASUREMENT OPEN',
+    measurementToday: 'MEASUREMENT TODAY',
+    open: 'Open',
+    weekPlanning: 'Week planning',
+    daysCompleted: '{done}/{total} days complete',
+    days: 'Days',
+    zones: 'Zones',
+    nutrition: 'Nutrition',
+    strength: 'Strength',
+    tips: 'Tips',
+    weekFocusLabel: 'Week {week} focus',
+    period: 'Period',
+    heartZones: 'Heart-rate zones',
+    heartZonesSub: 'Heart rate is leading; speed is a reference.',
+    yourReference: 'Your reference',
+    referenceSub: 'Why these speeds are realistic.',
+    nutritionSub: '{kcal} kcal this week, 130g protein per day.',
+    proteinSources: 'Protein sources',
+    sampleDay: 'Sample day',
+    strengthTraining: 'Strength training',
+    schemaA: 'Program A - Wednesday',
+    schemaB: 'Program B - Sunday',
+    explanation: 'Guide {source}',
+    execution: 'How to do it',
+    realisticEnd: 'Realistic end state',
+    notCompleted: 'Not completed',
+    markIncomplete: 'Mark incomplete',
+    completeDay: 'Complete this day',
+    planSections: 'Plan sections',
+    plannedMeasurements: 'Planned measurements',
+    alarmSignals: '{count} warning signals',
+    adviceWeek6: '2+ signals: prioritize recovery, keep 2700 kcal and do not push.',
+    adviceBackOff: '2+ signals: move back toward about 2550 kcal and do not push.',
+    adviceOk: 'Below threshold: keep following the plan until the next measurement.',
+    weekGoal: 'Week target: {kcal} kcal, 130g protein',
+    notificationUnsupported: 'Browser notifications are not supported here',
+    notificationOn: 'Notifications on: while the app is open you will get a measurement signal',
+    notificationOff: 'Notification not enabled',
+    enableMeasurementNotification: 'Enable measurement reminder',
+    measurementSaved: 'Measurement saved',
+    weight: 'Weight (kg)',
+    waist: 'Waist (cm)',
+    sleep: 'Sleep (hours)',
+    restingHr: 'Resting HR',
+    energy: 'Energy (1-5)',
+    mood: 'Mood (1-5)',
+    soreness: 'Soreness (hours)',
+    hunger: 'Hunger (1-5)',
+    hrvLow: 'HRV 3 days more than 20% low',
+    notes: 'Notes',
+    howFeel: 'How do you feel?',
+    saveMeasurement: 'Save measurement',
+    later: 'Later',
+    now: 'Now',
+    saved: 'Saved',
+    history: 'History',
+    noMeasurements: 'No measurements saved yet.',
+    sleepShort: '{hours}h sleep',
+    alarmRestingHr: 'Resting HR +5 bpm',
+    alarmSleep: 'Sleep < 7 hours',
+    alarmMood: 'Low mood',
+    alarmSoreness: 'Soreness > 72h',
+    alarmHunger: 'Constant hunger',
+    alarmHrv: 'HRV low for 3 days',
+    yourStats: 'YOUR STATS',
+    workoutsLogged: 'Workouts logged',
+    avgSpeed: 'Avg. speed',
+    avgHr: 'Avg. HR',
+    cycleRides: 'Bike rides',
+    noWorkouts: 'No workouts logged yet',
+    noWorkoutsHelp: 'Tap the + button to enter your first Apple Watch workout.',
+    deleteLog: 'Delete log',
+    deleteConfirm: 'Delete this log?',
+    durationRequired: 'Enter at least duration',
+    logSubtitle: 'Enter data from your Apple Watch. See how it fits your plan.',
+    date: 'Date',
+    type: 'Type',
+    cycle: 'Bike',
+    walk: 'Walk',
+    rest: 'Rest',
+    check: 'Measure',
+    measure: 'Measure',
+    goal: 'Goal',
+    duration: 'Duration (min) *',
+    distance: 'Distance (km)',
+    avgHrFull: 'Average HR (bpm)',
+    maxHr: 'Max HR (bpm)',
+    calories: 'Calories',
+    optionalNotes: 'Notes (optional)',
+    workoutNotesPlaceholder: 'How did it feel? Wind? Stops?',
+    analysis: 'ANALYSIS',
+    expected: '{speed} km/h expected',
+    verdictPerfect: 'Perfect, aligned with your plan',
+    verdictStrong: 'Faster than expected - stronger than plan',
+    verdictSlow: 'Slower than expected - wind, fatigue, or bike issue?',
+    verdictSlightlyLow: 'Slightly below expectation, fine',
+    cancel: 'Cancel',
+    save: 'Save',
+  },
+};
+
+function formatText(text, values = {}) {
+  return String(text).replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
+}
+
+function makeT(lang) {
+  return (key, values) => formatText(I18N[lang]?.[key] ?? I18N.nl[key] ?? key, values);
+}
+
 export default function Home() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState('nl');
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem('workouts-lang');
+    if (saved === 'en' || saved === 'nl') setLang(saved);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem('workouts-lang', lang);
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  const t = makeT(lang);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -65,20 +385,20 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) return <Loading />;
-  if (!session) return <Auth />;
-  return <App user={session.user} />;
+  if (loading) return <Loading t={t} />;
+  if (!session) return <Auth t={t} lang={lang} setLang={setLang} />;
+  return <App user={session.user} t={t} lang={lang} setLang={setLang} />;
 }
 
-function Loading() {
+function Loading({ t }) {
   return (
     <div role="status" aria-live="polite" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'var(--accent-strong)', fontSize: '16px', fontWeight: 700 }}>Laden...</div>
+      <div style={{ color: 'var(--accent-strong)', fontSize: '16px', fontWeight: 700 }}>{t('loading')}</div>
     </div>
   );
 }
 
-function Auth() {
+function Auth({ t, lang, setLang }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState('signin');
@@ -93,7 +413,7 @@ function Auth() {
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMsg('Check je mail voor bevestigingslink!');
+        setMsg(t('confirmEmail'));
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -108,36 +428,39 @@ function Auth() {
   return (
     <main className="auth-shell">
       <div className="auth-card">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+          <LanguageToggle t={t} lang={lang} setLang={setLang} />
+        </div>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div aria-hidden="true" className="brand-mark">
             <Bike size={30} strokeWidth={2.4} />
           </div>
-          <h1 style={{ margin: 0, fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '25px', fontWeight: 800, color: 'var(--accent-strong)' }}>6-Weken Plan</h1>
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '25px', fontWeight: 800, color: 'var(--accent-strong)' }}>{t('appTitle')}</h1>
           <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--muted)' }}>
-            {mode === 'signup' ? 'Maak een account' : 'Log in om te starten'}
+            {mode === 'signup' ? t('createAccount') : t('loginToStart')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <Field label="E-mail" htmlFor="auth-email">
+          <Field label={t('email')} htmlFor="auth-email">
           <input
             id="auth-email"
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="E-mail"
+            placeholder={t('email')}
             autoComplete="email"
             required
             style={inputStyle}
           />
           </Field>
-          <Field label="Wachtwoord" htmlFor="auth-password" help={mode === 'signup' ? 'Minimaal 6 tekens.' : undefined}>
+          <Field label={t('password')} htmlFor="auth-password" help={mode === 'signup' ? t('minPassword') : undefined}>
           <input
             id="auth-password"
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Wachtwoord (min 6 tekens)"
+            placeholder={t('passwordPlaceholder')}
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             required
             minLength={6}
@@ -159,7 +482,7 @@ function Auth() {
               cursor: busy ? 'not-allowed' : 'pointer',
             }}
           >
-            {busy ? 'Bezig...' : mode === 'signup' ? 'Maak account' : 'Inloggen'}
+            {busy ? t('busy') : mode === 'signup' ? t('signUp') : t('signIn')}
           </button>
         </form>
 
@@ -168,8 +491,8 @@ function Auth() {
             marginTop: '14px',
             padding: '12px',
             borderRadius: '8px',
-            background: msg.includes('Check') ? '#e7f6ef' : '#fdeaea',
-            color: msg.includes('Check') ? 'var(--success)' : 'var(--danger)',
+            background: msg === t('confirmEmail') ? '#e7f6ef' : '#fdeaea',
+            color: msg === t('confirmEmail') ? 'var(--success)' : 'var(--danger)',
             fontSize: '13px',
             textAlign: 'center',
             fontWeight: 700,
@@ -189,14 +512,52 @@ function Auth() {
             marginTop: '8px',
           }}
         >
-          {mode === 'signin' ? 'Nog geen account? Maak er een' : 'Heb je al een account? Inloggen'}
+          {mode === 'signin' ? t('noAccount') : t('hasAccount')}
         </button>
       </div>
     </main>
   );
 }
 
-function App({ user }) {
+function LanguageToggle({ t, lang, setLang }) {
+  return (
+    <div role="group" aria-label={t('language')} style={{
+      display: 'inline-flex',
+      gap: '3px',
+      padding: '3px',
+      border: '1px solid var(--line)',
+      borderRadius: '999px',
+      background: 'rgba(255,255,255,0.78)',
+    }}>
+      {[
+        ['nl', t('dutch')],
+        ['en', t('english')],
+      ].map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => setLang(key)}
+          aria-pressed={lang === key}
+          style={{
+            minHeight: '32px',
+            padding: '5px 10px',
+            border: 'none',
+            borderRadius: '999px',
+            background: lang === key ? 'var(--accent)' : 'transparent',
+            color: lang === key ? 'white' : 'var(--muted)',
+            fontSize: '12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function App({ user, t, lang, setLang }) {
   const [completed, setCompleted] = useState({});
   const [logs, setLogs] = useState([]);
   const [checkins, setCheckins] = useState([]);
@@ -302,7 +663,7 @@ function App({ user }) {
   };
 
   const deleteLog = async (id) => {
-    if (!confirm('Verwijder deze log?')) return;
+    if (!confirm(t('deleteConfirm'))) return;
     await supabase.from('workout_logs').delete().eq('id', id);
     setLogs(logs.filter(l => l.id !== id));
   };
@@ -369,19 +730,19 @@ function App({ user }) {
     if (Notification.permission !== 'granted') return;
     const storageKey = `measurement-notification-${dueMeasurement.key}-${dueMeasurement.date}`;
     if (window.localStorage.getItem(storageKey)) return;
-    new Notification(`Meetmoment: ${dueMeasurement.title}`, {
-      body: `${formatDateShort(dueMeasurement.date)} - open de app om je meting vast te leggen.`,
+    new Notification(`${t('navMeasure')}: ${dueMeasurement.title}`, {
+      body: `${formatDateShort(dueMeasurement.date)} - ${t('openMeasurement').toLowerCase()}.`,
     });
     window.localStorage.setItem(storageKey, 'sent');
-  }, [dueMeasurement]);
+  }, [dueMeasurement, t]);
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
-            <div style={{ fontSize: '12px', opacity: 0.86, fontWeight: 700, textTransform: 'uppercase' }}>Week {currentWeek} van 6</div>
-            <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '4px' }}>6-Weken Plan</div>
+            <div style={{ fontSize: '12px', opacity: 0.86, fontWeight: 700, textTransform: 'uppercase' }}>{t('weekOf', { week: currentWeek })}</div>
+            <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '4px' }}>{t('appTitle')}</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <div style={{
@@ -390,19 +751,19 @@ function App({ user }) {
             }}>
               {completedCount}/{totalCount}
             </div>
-            <button type="button" aria-label="Menu openen" aria-expanded={showMenu} onClick={() => setShowMenu(!showMenu)} style={{
+            <button type="button" aria-label={t('openMenu')} aria-expanded={showMenu} onClick={() => setShowMenu(!showMenu)} style={{
               background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)', color: 'white',
               padding: '6px 12px', borderRadius: '999px',
               cursor: 'pointer', fontWeight: 600,
             }}><MoreHorizontal size={18} aria-hidden="true" /></button>
           </div>
         </div>
-        <div aria-label={`${Math.round(progressPct)} procent voltooid`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPct)} style={{ background: 'rgba(255,255,255,0.22)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
+        <div aria-label={t('progressLabel', { progress: Math.round(progressPct) })} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPct)} style={{ background: 'rgba(255,255,255,0.22)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
           <div style={{ background: 'var(--action)', height: '100%', width: `${progressPct}%`, borderRadius: '999px', transition: 'width 0.4s ease' }} />
         </div>
         <div style={{ fontSize: '12px', opacity: 0.88, marginTop: '8px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-          <span>{Math.round(progressPct)}% voltooid</span>
-          {syncing && <span role="status" aria-live="polite">Synchroniseren...</span>}
+          <span>{t('completedPct', { progress: Math.round(progressPct) })}</span>
+          {syncing && <span role="status" aria-live="polite">{t('sync')}</span>}
           {!syncing && <span style={{ opacity: 0.6 }}>{user.email}</span>}
         </div>
       </header>
@@ -419,18 +780,21 @@ function App({ user }) {
             <button type="button" onClick={() => { setShowMenu(false); signOut(); }} style={{
               width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
-            }}><LogOut size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />Uitloggen</button>
+            }}><LogOut size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('logout')}</button>
+            <div style={{ padding: '8px 8px 4px' }}>
+              <LanguageToggle t={t} lang={lang} setLang={setLang} />
+            </div>
           </div>
         </div>
       )}
 
       <nav className="app-nav" aria-label="Hoofdnavigatie">
         {[
-          { key: 'today', label: 'Vandaag' },
-          { key: 'week', label: `Wk ${currentWeek}` },
-          { key: 'plan', label: 'Plan' },
-          { key: 'checkin', label: 'Meet' },
-          { key: 'log', label: 'Log' },
+          { key: 'today', label: t('navToday') },
+          { key: 'week', label: t('navWeek', { week: currentWeek }) },
+          { key: 'plan', label: t('navPlan') },
+          { key: 'checkin', label: t('navMeasure') },
+          { key: 'log', label: t('navLog') },
         ].map(t => (
           <button key={t.key} type="button" aria-current={view === t.key ? 'page' : undefined} onClick={() => setView(t.key)} style={{
             flex: 1, padding: '10px', border: 'none',
@@ -447,60 +811,61 @@ function App({ user }) {
         overview={currentOverview}
         progressPct={progressPct}
         dueMeasurement={dueMeasurement}
+        t={t}
       />
 
       {dueMeasurement && (
         <div style={{ padding: '16px 16px 0' }}>
-          <MeasurementBanner moment={dueMeasurement} onOpen={() => openMeasurement(dueMeasurement.date)} />
+          <MeasurementBanner moment={dueMeasurement} onOpen={() => openMeasurement(dueMeasurement.date)} t={t} />
         </div>
       )}
 
       <main className="view-main" style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} />}
-        {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} />}
-        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} />}
-        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} />}
-        {view === 'log' && <LogView logs={logs} setShowLogForm={setShowLogForm} deleteLog={deleteLog} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} t={t} />}
+        {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} t={t} />}
+        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} t={t} />}
+        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
+        {view === 'log' && <LogView logs={logs} setShowLogForm={setShowLogForm} deleteLog={deleteLog} t={t} />}
       </main>
 
-      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} />}
-      {showLogForm && <LogForm onSave={saveLog} onClose={() => setShowLogForm(false)} todayPlan={today} />}
+      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} t={t} />}
+      {showLogForm && <LogForm onSave={saveLog} onClose={() => setShowLogForm(false)} todayPlan={today} t={t} />}
 
-      <button type="button" aria-label="Workout loggen" className="fab" onClick={() => setShowLogForm(true)}><Plus size={30} aria-hidden="true" /></button>
+      <button type="button" aria-label={t('workoutLog')} className="fab" onClick={() => setShowLogForm(true)}><Plus size={30} aria-hidden="true" /></button>
     </div>
   );
 }
 
-function DashboardStrip({ today, overview, progressPct, dueMeasurement }) {
+function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   const meta = TYPE_META[today.type];
   const measurementLabel = dueMeasurement
     ? `${formatDateShort(dueMeasurement.date)} - ${dueMeasurement.title}`
-    : 'Geen open meetmoment';
+    : t('noOpenMeasurement');
 
   return (
     <section className="dashboard-strip" aria-label="Trainingsdashboard">
       <div className="signal-card">
-        <div className="signal-kicker">Vandaag</div>
-        <div className="signal-value">{meta.label}: {today.title}</div>
+        <div className="signal-kicker">{t('today')}</div>
+        <div className="signal-value">{t(today.type) || meta.label}: {today.title}</div>
         <div className="signal-note">
-          {today.dur > 0 ? `${today.dur} min` : 'Geen duur'}{today.hr ? ` · HR ${today.hr}` : ''}{today.target ? ` · ${today.target}` : ''}
+          {today.dur > 0 ? `${today.dur} min` : t('noDuration')}{today.hr ? ` · HR ${today.hr}` : ''}{today.target ? ` · ${today.target}` : ''}
         </div>
       </div>
       <div className="signal-card">
-        <div className="signal-kicker">Weekfocus</div>
+        <div className="signal-kicker">{t('weekFocus')}</div>
         <div className="signal-value">{overview.focus}</div>
-        <div className="signal-note">{overview.kcal} kcal · 130g eiwit · lange rit {overview.longRide}</div>
+        <div className="signal-note">{overview.kcal} kcal · 130g {t('protein').toLowerCase()} · {t('longRide')} {overview.longRide}</div>
       </div>
       <div className="signal-card">
-        <div className="signal-kicker">Status</div>
-        <div className="signal-value">{Math.round(progressPct)}% voltooid</div>
+        <div className="signal-kicker">{t('status')}</div>
+        <div className="signal-value">{t('completedPct', { progress: Math.round(progressPct) })}</div>
         <div className="signal-note">{measurementLabel}</div>
       </div>
     </section>
   );
 }
 
-function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement }) {
+function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
@@ -543,7 +908,7 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
               border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px',
               fontWeight: 700, cursor: 'pointer',
             }}>
-              Open meetmoment
+              {t('openMeasurement')}
             </button>
           </div>
         )}
@@ -552,18 +917,18 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
           width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
           background: isComplete ? 'var(--success)' : meta.color,
           color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-        }}>{isComplete ? 'Voltooid' : 'Markeer voltooid'}</button>
+        }}>{isComplete ? t('completed') : t('markComplete')}</button>
       </div>
 
       <div className="side-panel">
         <div className="premium-card" style={{ borderRadius: '12px', padding: '18px' }}>
           <div style={{ fontSize: '11px', opacity: 0.78, fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>
-            Dagdoelen
+            {t('dayGoals')}
           </div>
           <div className="metric-grid">
             <MetricTile icon={Flame} label="Kcal" value={overview.kcal} />
-            <MetricTile icon={Dumbbell} label="Eiwit" value="130g" />
-            <MetricTile icon={Activity} label="Water" value="2L" />
+            <MetricTile icon={Dumbbell} label={t('protein')} value="130g" />
+            <MetricTile icon={Activity} label={t('water')} value="2L" />
           </div>
         </div>
 
@@ -572,15 +937,15 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
           padding: '18px',
         }}>
           <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>
-            Vandaag niet vergeten
+            {t('rememberToday')}
           </div>
           <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--muted)', lineHeight: 1.7 }}>
-            <li>130g eiwit (verdeel over 4-5 momenten)</li>
-            <li>2L water</li>
-            <li>{overview.kcal} kcal target</li>
-            {['cycle', 'strength', 'walk'].includes(day.type) && <li>25-30g eiwit binnen 1u na training</li>}
-            {day.type === 'cycle' && day.dur >= 60 && <li>Snack + water mee voor lange rit</li>}
-            {day.week === 6 && <li>Extra zout + water, herstel prioriteit</li>}
+            <li>{t('proteinReminder')}</li>
+            <li>{t('waterReminder')}</li>
+            <li>{t('kcalTarget', { kcal: overview.kcal })}</li>
+            {['cycle', 'strength', 'walk'].includes(day.type) && <li>{t('postTrainingProtein')}</li>}
+            {day.type === 'cycle' && day.dur >= 60 && <li>{t('longRideSnack')}</li>}
+            {day.week === 6 && <li>{t('week6Recovery')}</li>}
           </ul>
         </div>
       </div>
@@ -588,14 +953,14 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
   );
 }
 
-function MeasurementBanner({ moment, onOpen }) {
+function MeasurementBanner({ moment, onOpen, t }) {
   const isOverdue = moment.date < getTodayString();
   return (
     <InfoCard style={{ borderLeft: '4px solid var(--action)', marginBottom: 0, background: 'linear-gradient(135deg, #fffaf0, #ffffff)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: '11px', color: '#8b5a10', fontWeight: 800, textTransform: 'uppercase' }}>
-            {isOverdue ? 'MEETMOMENT STAAT OPEN' : 'MEETMOMENT VANDAAG'}
+            {isOverdue ? t('measurementOpen') : t('measurementToday')}
           </div>
           <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px' }}>
             {moment.title}
@@ -615,27 +980,27 @@ function MeasurementBanner({ moment, onOpen }) {
           cursor: 'pointer',
           flex: '0 0 auto',
         }}>
-          Open
+          {t('open')}
         </button>
       </div>
     </InfoCard>
   );
 }
 
-function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum }) {
+function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum, t }) {
   return (
     <div className="section-shell">
       <div className="signal-card" style={{ marginBottom: '4px' }}>
-        <div className="signal-kicker">Weekplanning</div>
+        <div className="signal-kicker">{t('weekPlanning')}</div>
         <div className="signal-value">Week {weekNum}</div>
-        <div className="signal-note">{days.filter(d => completed[d.id]).length}/{days.length} dagen voltooid</div>
+        <div className="signal-note">{t('daysCompleted', { done: days.filter(d => completed[d.id]).length, total: days.length })}</div>
       </div>
-      {days.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} />)}
+      {days.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} t={t} />)}
     </div>
   );
 }
 
-function AllView({ completed, toggleComplete, onSelectDay }) {
+function AllView({ completed, toggleComplete, onSelectDay, t }) {
   return (
     <div className="section-shell">
       {[1, 2, 3, 4, 5, 6].map(w => {
@@ -644,7 +1009,7 @@ function AllView({ completed, toggleComplete, onSelectDay }) {
         return (
           <div key={w} style={{ marginBottom: '24px' }}>
             <div className="signal-kicker" style={{ color: 'var(--accent-strong)', margin: '0 4px 10px' }}>Week {w} · {compl}/{wd.length}</div>
-            {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} compact />)}
+            {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} compact t={t} />)}
           </div>
         );
       })}
@@ -652,44 +1017,44 @@ function AllView({ completed, toggleComplete, onSelectDay }) {
   );
 }
 
-function PlanView({ completed, toggleComplete, onSelectDay, currentWeek }) {
+function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, t }) {
   const [section, setSection] = useState('days');
   const overview = getWeekOverview(currentWeek);
   const sections = [
-    { key: 'days', label: 'Dagen' },
-    { key: 'zones', label: 'Zones' },
-    { key: 'food', label: 'Voeding' },
-    { key: 'strength', label: 'Kracht' },
-    { key: 'tips', label: 'Tips' },
+    { key: 'days', label: t('days') },
+    { key: 'zones', label: t('zones') },
+    { key: 'food', label: t('nutrition') },
+    { key: 'strength', label: t('strength') },
+    { key: 'tips', label: t('tips') },
   ];
 
   return (
     <div>
       <InfoCard style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(238,244,239,0.94))' }}>
-        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>Week {currentWeek} focus</div>
+        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('weekFocusLabel', { week: currentWeek })}</div>
         <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '22px', fontWeight: 800, marginTop: '6px' }}>{overview.focus}</div>
         <div className="metric-grid" style={{ marginTop: '14px' }}>
-          <MetricTile icon={Clock3} label="Periode" value={overview.period} />
-          <MetricTile icon={Bike} label="Lange rit" value={overview.longRide} />
-          <MetricTile icon={Flame} label="Voeding" value={`${overview.kcal} kcal`} />
+          <MetricTile icon={Clock3} label={t('period')} value={overview.period} />
+          <MetricTile icon={Bike} label={t('longRide')} value={overview.longRide} />
+          <MetricTile icon={Flame} label={t('nutrition')} value={`${overview.kcal} kcal`} />
         </div>
       </InfoCard>
 
-      <Segmented options={sections} value={section} onChange={setSection} />
+      <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} />
 
-      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} />}
-      {section === 'zones' && <ZonesSection />}
-      {section === 'food' && <NutritionSection currentWeek={currentWeek} />}
-      {section === 'strength' && <StrengthSection />}
-      {section === 'tips' && <TipsSection />}
+      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} t={t} />}
+      {section === 'zones' && <ZonesSection t={t} />}
+      {section === 'food' && <NutritionSection currentWeek={currentWeek} t={t} />}
+      {section === 'strength' && <StrengthSection t={t} />}
+      {section === 'tips' && <TipsSection t={t} />}
     </div>
   );
 }
 
-function ZonesSection() {
+function ZonesSection({ t }) {
   return (
     <div>
-      <SectionTitle title="Hartslagzones" subtitle="Hartslag is leidend; snelheid is referentie." />
+      <SectionTitle title={t('heartZones')} subtitle={t('heartZonesSub')} />
       {HEART_ZONES.map(zone => (
         <InfoCard key={zone.zone}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
@@ -705,7 +1070,7 @@ function ZonesSection() {
           <div style={{ fontSize: '13px', color: '#444', marginTop: '10px' }}>{zone.goal}</div>
         </InfoCard>
       ))}
-      <SectionTitle title="Jouw referentie" subtitle="Waarom deze snelheden realistisch zijn." />
+      <SectionTitle title={t('yourReference')} subtitle={t('referenceSub')} />
       {PERFORMANCE_REFERENCES.map(item => (
         <InfoCard key={item.label}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
@@ -721,15 +1086,15 @@ function ZonesSection() {
   );
 }
 
-function NutritionSection({ currentWeek }) {
+function NutritionSection({ currentWeek, t }) {
   const overview = getWeekOverview(currentWeek);
   return (
     <div>
-      <SectionTitle title="Voeding" subtitle={`${overview.kcal} kcal deze week, 130g eiwit per dag.`} />
+      <SectionTitle title={t('nutrition')} subtitle={t('nutritionSub', { kcal: overview.kcal })} />
       <InfoCard>
         <SimpleList items={NUTRITION_GUIDE.rules} />
       </InfoCard>
-      <SectionTitle title="Eiwitbronnen" />
+      <SectionTitle title={t('proteinSources')} />
       {NUTRITION_GUIDE.proteinSources.map(([name, portion, protein, tip]) => (
         <InfoCard key={name}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.7fr', gap: '8px', alignItems: 'center' }}>
@@ -740,7 +1105,7 @@ function NutritionSection({ currentWeek }) {
           <div style={{ fontSize: '13px', color: '#666', marginTop: '6px' }}>{tip}</div>
         </InfoCard>
       ))}
-      <SectionTitle title="Voorbeelddag" />
+      <SectionTitle title={t('sampleDay')} />
       <InfoCard>
         <SimpleList items={NUTRITION_GUIDE.sampleDay} />
       </InfoCard>
@@ -748,17 +1113,17 @@ function NutritionSection({ currentWeek }) {
   );
 }
 
-function StrengthSection() {
+function StrengthSection({ t }) {
   return (
     <div>
-      <SectionTitle title="Krachttraining" subtitle={STRENGTH_GUIDE.intro} />
-      <StrengthTable title="Schema A - woensdag" rows={STRENGTH_GUIDE.A} />
-      <StrengthTable title="Schema B - zondag" rows={STRENGTH_GUIDE.B} />
+      <SectionTitle title={t('strengthTraining')} subtitle={STRENGTH_GUIDE.intro} />
+      <StrengthTable title={t('schemaA')} rows={STRENGTH_GUIDE.A} t={t} />
+      <StrengthTable title={t('schemaB')} rows={STRENGTH_GUIDE.B} t={t} />
     </div>
   );
 }
 
-function StrengthTable({ title, rows }) {
+function StrengthTable({ title, rows, t }) {
   return (
     <div>
       <SectionTitle title={title} />
@@ -777,7 +1142,7 @@ function StrengthTable({ title, rows }) {
                 fontWeight: 800,
                 textDecoration: 'none',
               }}>
-                Uitleg {exercise.guideSource}
+                {t('explanation', { source: exercise.guideSource })}
               </a>
             )}
           </div>
@@ -789,7 +1154,7 @@ function StrengthTable({ title, rows }) {
           {exercise.steps && (
             <div style={{ marginTop: '12px' }}>
               <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Uitvoering
+                {t('execution')}
               </div>
               <SimpleList items={exercise.steps} />
             </div>
@@ -800,7 +1165,7 @@ function StrengthTable({ title, rows }) {
   );
 }
 
-function TipsSection() {
+function TipsSection({ t }) {
   return (
     <div>
       {PRACTICAL_TIPS.map(group => (
@@ -809,7 +1174,7 @@ function TipsSection() {
           <SimpleList items={group.items} />
         </InfoCard>
       ))}
-      <SectionTitle title="Reeel eindbeeld" />
+      <SectionTitle title={t('realisticEnd')} />
       <InfoCard>
         <SimpleList items={END_GOALS} />
       </InfoCard>
@@ -817,7 +1182,7 @@ function TipsSection() {
   );
 }
 
-function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact }) {
+function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact, t }) {
   const day = rawDay.type === 'check' ? { ...rawDay, title: getMeasurementTitle(rawDay.date) } : rawDay;
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
@@ -860,18 +1225,18 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact 
           <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '2px' }}>{day.target}</div>
         )}
       </div>
-      <button type="button" aria-label={isComplete ? `${day.title} niet voltooid markeren` : `${day.title} voltooid markeren`} onClick={(e) => { e.stopPropagation(); toggleComplete(day.id); }} style={{
+      <button type="button" aria-label={isComplete ? `${day.title} ${t('markIncomplete')}` : `${day.title} ${t('markComplete')}`} onClick={(e) => { e.stopPropagation(); toggleComplete(day.id); }} style={{
         width: '44px', height: '44px', minWidth: '44px', borderRadius: '999px',
         border: `2px solid ${isComplete ? 'var(--success)' : 'var(--line)'}`,
         background: isComplete ? 'var(--success)' : 'white',
         color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 700,
         flexShrink: 0,
-      }}>{isComplete ? <CheckCircle2 size={18} aria-hidden="true" /> : <span className="sr-only">Niet voltooid</span>}</button>
+      }}>{isComplete ? <CheckCircle2 size={18} aria-hidden="true" /> : <span className="sr-only">{t('notCompleted')}</span>}</button>
     </div>
   );
 }
 
-function DayDetail({ day, onClose, completed, toggleComplete }) {
+function DayDetail({ day, onClose, completed, toggleComplete, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
 
@@ -910,7 +1275,7 @@ function DayDetail({ day, onClose, completed, toggleComplete }) {
           width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
           background: isComplete ? '#666' : meta.color,
           color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
-        }}>{isComplete ? 'Markeer als niet voltooid' : 'Voltooi deze dag'}</button>
+        }}>{isComplete ? t('markIncomplete') : t('completeDay')}</button>
       </div>
     </div>
   );
@@ -972,9 +1337,9 @@ function SectionTitle({ title, subtitle }) {
   );
 }
 
-function Segmented({ options, value, onChange }) {
+function Segmented({ options, value, onChange, ariaLabel = 'Tabs' }) {
   return (
-    <div role="tablist" aria-label="Plansecties" style={{
+    <div role="tablist" aria-label={ariaLabel} style={{
       display: 'flex',
       overflowX: 'auto',
       gap: '4px',
@@ -1021,7 +1386,7 @@ function SimpleList({ items }) {
   );
 }
 
-function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMeasurementDate }) {
+function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMeasurementDate, t }) {
   const today = getTodayString();
   const selectedMoment = selectedMeasurementDate ? getMeasurementMomentByDate(selectedMeasurementDate) : null;
   const suggestedMoment = selectedMoment || dueMeasurement || getSuggestedMeasurementMoment(checkins, today);
@@ -1047,41 +1412,41 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
     }
   }, []);
 
-  const alarms = getAlarmSignals(form);
+  const alarms = getAlarmSignals(form, t);
   const selectedWeek = currentMoment.week || currentWeek;
   const overview = getWeekOverview(selectedWeek);
   const advice = alarms.length >= 2
     ? selectedWeek === 6
-      ? '2+ signalen: herstel prioriteit, houd 2700 kcal aan en push niet.'
-      : '2+ signalen: schakel terug naar ongeveer 2550 kcal en push niet.'
-    : 'Onder de drempel: houd het plan aan tot het volgende meetmoment.';
+      ? t('adviceWeek6')
+      : t('adviceBackOff')
+    : t('adviceOk');
 
   const update = (key, value) => setForm({ ...form, [key]: value });
   const enableNotifications = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
-      setMessage('Browsermeldingen worden hier niet ondersteund');
+      setMessage(t('notificationUnsupported'));
       return;
     }
     const permission = await Notification.requestPermission();
     setNotificationStatus(permission);
     setMessage(permission === 'granted'
-      ? 'Melding aan: zolang de app open is krijg je een signaal bij een meetmoment'
-      : 'Melding niet aangezet');
+      ? t('notificationOn')
+      : t('notificationOff'));
   };
   const submit = async (e) => {
     e.preventDefault();
     const { error } = await onSave(form);
-    setMessage(error ? error.message : 'Meetmoment opgeslagen');
+    setMessage(error ? error.message : t('measurementSaved'));
   };
 
   return (
     <div className="dashboard-grid">
       <div>
       <InfoCard className="hero-card" style={{ borderLeft: `4px solid ${alarms.length >= 2 ? 'var(--danger)' : 'var(--success)'}` }}>
-        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>Geplande meetmomenten</div>
-        <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '6px' }}>{alarms.length} alarmsignalen</div>
+        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('plannedMeasurements')}</div>
+        <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '6px' }}>{t('alarmSignals', { count: alarms.length })}</div>
         <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.5 }}>{advice}</div>
-        <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '8px' }}>Weekdoel: {overview.kcal} kcal, 130g eiwit</div>
+        <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '8px' }}>{t('weekGoal', { kcal: overview.kcal })}</div>
         {notificationStatus !== 'granted' && (
           <button type="button" onClick={enableNotifications} style={{
             marginTop: '12px',
@@ -1094,7 +1459,7 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
             fontWeight: 700,
             cursor: 'pointer',
           }}>
-            Meetmoment-melding aanzetten
+            {t('enableMeasurementNotification')}
           </button>
         )}
       </InfoCard>
@@ -1122,27 +1487,27 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
             </div>
           )}
           <div style={{ height: '12px' }} />
-          <MetricInput label="Gewicht (kg)" value={form.weightKg} onChange={v => update('weightKg', v)} placeholder="bijv. 88.4" />
-          <MetricInput label="Buikomtrek (cm)" value={form.waistCm} onChange={v => update('waistCm', v)} placeholder="bijv. 96" />
-          <MetricInput label="Slaap (uren)" value={form.sleepHours} onChange={v => update('sleepHours', v)} placeholder="bijv. 7.5" />
-          <MetricInput label="Rusthartslag" value={form.restingHr} onChange={v => update('restingHr', v)} placeholder="bijv. 56" />
+          <MetricInput label={t('weight')} value={form.weightKg} onChange={v => update('weightKg', v)} placeholder="bijv. 88.4" />
+          <MetricInput label={t('waist')} value={form.waistCm} onChange={v => update('waistCm', v)} placeholder="bijv. 96" />
+          <MetricInput label={t('sleep')} value={form.sleepHours} onChange={v => update('sleepHours', v)} placeholder="bijv. 7.5" />
+          <MetricInput label={t('restingHr')} value={form.restingHr} onChange={v => update('restingHr', v)} placeholder="bijv. 56" />
           <MetricInput label="HRV" value={form.hrv} onChange={v => update('hrv', v)} placeholder="optioneel" />
-          <MetricInput label="Energie (1-5)" value={form.energyLevel} onChange={v => update('energyLevel', v)} placeholder="3" />
-          <MetricInput label="Stemming (1-5)" value={form.moodLevel} onChange={v => update('moodLevel', v)} placeholder="3" />
-          <MetricInput label="Spierpijn (uren)" value={form.sorenessHours} onChange={v => update('sorenessHours', v)} placeholder="bijv. 24" />
-          <MetricInput label="Honger (1-5)" value={form.hungerLevel} onChange={v => update('hungerLevel', v)} placeholder="3" />
+          <MetricInput label={t('energy')} value={form.energyLevel} onChange={v => update('energyLevel', v)} placeholder="3" />
+          <MetricInput label={t('mood')} value={form.moodLevel} onChange={v => update('moodLevel', v)} placeholder="3" />
+          <MetricInput label={t('soreness')} value={form.sorenessHours} onChange={v => update('sorenessHours', v)} placeholder="bijv. 24" />
+          <MetricInput label={t('hunger')} value={form.hungerLevel} onChange={v => update('hungerLevel', v)} placeholder="3" />
           <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: 'var(--muted)', margin: '10px 0 14px' }}>
             <input type="checkbox" checked={form.hrvLowSignal} onChange={e => update('hrvLowSignal', e.target.checked)} />
-            HRV 3 dagen meer dan 20% laag
+            {t('hrvLow')}
           </label>
-          <Field label="Notities" htmlFor="measurement-notes">
-            <textarea id="measurement-notes" value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder="Hoe voel je je?" style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+          <Field label={t('notes')} htmlFor="measurement-notes">
+            <textarea id="measurement-notes" value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder={t('howFeel')} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
           </Field>
           <button type="submit" style={{
             width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
             background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-          }}>Meetmoment opslaan</button>
-          {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: message.includes('opgeslagen') || message.includes('Melding aan') ? 'var(--success)' : 'var(--danger)', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
+          }}>{t('saveMeasurement')}</button>
+          {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: [t('measurementSaved'), t('notificationOn')].includes(message) ? 'var(--success)' : 'var(--danger)', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
         </InfoCard>
       </form>
       </div>
@@ -1170,7 +1535,7 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
                   </div>
                   <Tag
                     icon={isSaved ? CheckCircle2 : Clock3}
-                    label={isSaved ? 'Opgeslagen' : isDue ? 'Nu' : 'Later'}
+                    label={isSaved ? t('saved') : isDue ? t('now') : t('later')}
                     bg={isSaved ? '#E0F0E0' : isDue ? '#FFF4DD' : '#F0F4FA'}
                     color={isSaved ? '#2C7A2C' : isDue ? '#B86E00' : '#003D7A'}
                   />
@@ -1181,15 +1546,15 @@ function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, selectedMe
         </div>
       </InfoCard>
 
-      <SectionTitle title="Historie" />
+      <SectionTitle title={t('history')} />
       {checkins.filter(isMeasurementCheckin).length === 0 ? (
-        <InfoCard><div style={{ fontSize: '13px', color: '#666' }}>Nog geen meetmomenten opgeslagen.</div></InfoCard>
+        <InfoCard><div style={{ fontSize: '13px', color: '#666' }}>{t('noMeasurements')}</div></InfoCard>
       ) : checkins.filter(isMeasurementCheckin).map(item => (
         <InfoCard key={item.id || item.date}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
             <div style={{ fontWeight: 700 }}>{getMeasurementTitle(item.date)}</div>
             <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>{formatDateShort(item.date)}</div>
-            <div style={{ fontSize: '13px', color: '#666' }}>{[item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && `${item.sleep_hours}u slaap`].filter(Boolean).join(' · ')}</div>
+            <div style={{ fontSize: '13px', color: '#666' }}>{[item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && t('sleepShort', { hours: item.sleep_hours })].filter(Boolean).join(' · ')}</div>
           </div>
         </InfoCard>
       ))}
@@ -1234,18 +1599,18 @@ function formatDateShort(date) {
   return new Date(`${date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
 }
 
-function getAlarmSignals(form) {
+function getAlarmSignals(form, t = makeT('nl')) {
   const alarms = [];
-  if (Number(form.restingHr) >= 61) alarms.push('Rusthartslag +5 bpm');
-  if (Number(form.sleepHours) > 0 && Number(form.sleepHours) < 7) alarms.push('Slaap < 7 uur');
-  if (Number(form.moodLevel) > 0 && Number(form.moodLevel) <= 2) alarms.push('Lage stemming');
-  if (Number(form.sorenessHours) > 72) alarms.push('Spierpijn > 72u');
-  if (Number(form.hungerLevel) >= 5) alarms.push('Constante honger');
-  if (form.hrvLowSignal) alarms.push('HRV 3 dagen laag');
+  if (Number(form.restingHr) >= 61) alarms.push(t('alarmRestingHr'));
+  if (Number(form.sleepHours) > 0 && Number(form.sleepHours) < 7) alarms.push(t('alarmSleep'));
+  if (Number(form.moodLevel) > 0 && Number(form.moodLevel) <= 2) alarms.push(t('alarmMood'));
+  if (Number(form.sorenessHours) > 72) alarms.push(t('alarmSoreness'));
+  if (Number(form.hungerLevel) >= 5) alarms.push(t('alarmHunger'));
+  if (form.hrvLowSignal) alarms.push(t('alarmHrv'));
   return alarms;
 }
 
-function LogView({ logs, setShowLogForm, deleteLog }) {
+function LogView({ logs, setShowLogForm, deleteLog, t }) {
   const cycleLogs = logs.filter(l => l.type === 'cycle' && l.distance && l.duration);
   const avgSpeed = cycleLogs.length
     ? cycleLogs.reduce((s, l) => s + (l.distance / (l.duration / 60)), 0) / cycleLogs.length : 0;
@@ -1259,26 +1624,26 @@ function LogView({ logs, setShowLogForm, deleteLog }) {
           padding: '20px', borderRadius: '12px',
           marginBottom: '20px',
         }}>
-          <div style={{ fontSize: '11px', opacity: 0.85, fontWeight: 700, letterSpacing: '1px' }}>JOUW STATS</div>
+          <div style={{ fontSize: '11px', opacity: 0.85, fontWeight: 700, letterSpacing: '1px' }}>{t('yourStats')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
             <div>
-              <div style={{ fontSize: '12px', opacity: 0.75 }}>Workouts gelogd</div>
+              <div style={{ fontSize: '12px', opacity: 0.75 }}>{t('workoutsLogged')}</div>
               <div style={{ fontSize: '24px', fontWeight: 700 }}>{logs.length}</div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', opacity: 0.75 }}>Gem. snelheid</div>
+              <div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgSpeed')}</div>
               <div style={{ fontSize: '24px', fontWeight: 700 }}>
                 {avgSpeed > 0 ? avgSpeed.toFixed(1) : '-'} <span style={{ fontSize: '14px', opacity: 0.7 }}>km/h</span>
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', opacity: 0.75 }}>Gem. HR</div>
+              <div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgHr')}</div>
               <div style={{ fontSize: '24px', fontWeight: 700 }}>
                 {avgHR > 0 ? Math.round(avgHR) : '-'} <span style={{ fontSize: '14px', opacity: 0.7 }}>bpm</span>
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', opacity: 0.75 }}>Fiets ritten</div>
+              <div style={{ fontSize: '12px', opacity: 0.75 }}>{t('cycleRides')}</div>
               <div style={{ fontSize: '24px', fontWeight: 700 }}>{cycleLogs.length}</div>
             </div>
           </div>
@@ -1288,19 +1653,19 @@ function LogView({ logs, setShowLogForm, deleteLog }) {
       {logs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)' }}>
           <BarChart3 size={48} aria-hidden="true" style={{ marginBottom: '12px', color: 'var(--accent)' }} />
-          <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '6px' }}>Nog geen workouts gelogd</div>
+          <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '6px' }}>{t('noWorkouts')}</div>
           <div style={{ fontSize: '14px', color: 'var(--muted-2)', marginBottom: '20px' }}>
-            Tik op de + knop om je eerste Apple Watch workout in te voeren.
+            {t('noWorkoutsHelp')}
           </div>
         </div>
       ) : (
-        <div>{logs.map(log => <LogCard key={log.id} log={log} deleteLog={deleteLog} />)}</div>
+        <div>{logs.map(log => <LogCard key={log.id} log={log} deleteLog={deleteLog} t={t} />)}</div>
       )}
     </div>
   );
 }
 
-function LogCard({ log, deleteLog }) {
+function LogCard({ log, deleteLog, t }) {
   const speed = log.distance && log.duration ? (log.distance / (log.duration / 60)).toFixed(1) : null;
   let zone = null;
   if (log.avg_hr) {
@@ -1324,7 +1689,7 @@ function LogCard({ log, deleteLog }) {
             {new Date(log.date).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
           </div>
           <div style={{ fontSize: '16px', fontWeight: 600, marginTop: '4px' }}>
-            {log.type === 'cycle' ? 'Fiets' : log.type === 'strength' ? 'Kracht' : 'Wandelen'} • {log.duration} min
+            {log.type === 'cycle' ? t('cycle') : log.type === 'strength' ? t('strength') : t('walk')} • {log.duration} min
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '13px', color: '#555' }}>
             {log.distance && <StatItem icon={Target} label={`${log.distance} km`} />}
@@ -1336,7 +1701,7 @@ function LogCard({ log, deleteLog }) {
             <div style={{ fontSize: '13px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>"{log.notes}"</div>
           )}
         </div>
-        <button type="button" aria-label="Log verwijderen" onClick={() => deleteLog(log.id)} style={{
+        <button type="button" aria-label={t('deleteLog')} onClick={() => deleteLog(log.id)} style={{
           background: 'transparent', border: 'none', color: '#999',
           fontSize: '16px', cursor: 'pointer', padding: '4px 8px',
         }}><Trash2 size={16} aria-hidden="true" /></button>
@@ -1354,7 +1719,7 @@ function StatItem({ icon: Icon, label }) {
   );
 }
 
-function LogForm({ onSave, onClose, todayPlan }) {
+function LogForm({ onSave, onClose, todayPlan, t }) {
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     type: todayPlan?.type === 'strength' ? 'strength' : 'cycle',
@@ -1367,7 +1732,7 @@ function LogForm({ onSave, onClose, todayPlan }) {
   });
 
   const handleSubmit = () => {
-    if (!form.duration) return alert('Vul minstens duur in');
+    if (!form.duration) return alert(t('durationRequired'));
     onSave(form);
   };
 
@@ -1383,10 +1748,10 @@ function LogForm({ onSave, onClose, todayPlan }) {
     else { zone = 'Z5'; expectedSpeed = '18-22'; }
     const [low, high] = expectedSpeed.split('-').map(Number);
     let verdict = '';
-    if (speed >= low && speed <= high) verdict = 'Perfect, in lijn met je plan';
-    else if (speed > high) verdict = 'Sneller dan verwacht - sterker dan plan';
-    else if (speed < low * 0.8) verdict = 'Trager dan verwacht - wind, vermoeidheid, of fiets-issue?';
-    else verdict = '↘ Iets onder verwachting, prima';
+    if (speed >= low && speed <= high) verdict = t('verdictPerfect');
+    else if (speed > high) verdict = t('verdictStrong');
+    else if (speed < low * 0.8) verdict = t('verdictSlow');
+    else verdict = t('verdictSlightlyLow');
     analysis = { speed: speed.toFixed(1), zone, expectedSpeed, verdict };
   }
 
@@ -1400,56 +1765,56 @@ function LogForm({ onSave, onClose, todayPlan }) {
         borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px',
       }}>
         <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
-        <h2 id="log-form-title" style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700 }}>Workout loggen</h2>
+        <h2 id="log-form-title" style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700 }}>{t('workoutLog')}</h2>
         <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--muted)' }}>
-          Voer in van je Apple Watch. Krijg direct inzicht hoe het past bij je plan.
+          {t('logSubtitle')}
         </p>
 
-        <Field label="Datum" htmlFor="log-date">
+        <Field label={t('date')} htmlFor="log-date">
           <input id="log-date" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
         </Field>
 
-        <Field label="Type">
+        <Field label={t('type')}>
           <div style={{ display: 'flex', gap: '8px' }}>
             {[
-              { key: 'cycle', label: 'Fiets', Icon: Bike },
-              { key: 'strength', label: 'Kracht', Icon: Dumbbell },
-              { key: 'walk', label: 'Wandelen', Icon: Footprints },
-            ].map(t => (
-              <button key={t.key} type="button" aria-pressed={form.type === t.key} onClick={() => setForm({ ...form, type: t.key })} style={{
+              { key: 'cycle', label: t('cycle'), Icon: Bike },
+              { key: 'strength', label: t('strength'), Icon: Dumbbell },
+              { key: 'walk', label: t('walk'), Icon: Footprints },
+            ].map(option => (
+              <button key={option.key} type="button" aria-pressed={form.type === option.key} onClick={() => setForm({ ...form, type: option.key })} style={{
                 flex: 1, padding: '10px', borderRadius: '10px',
-                border: form.type === t.key ? '2px solid var(--accent)' : '2px solid var(--line)',
-                background: form.type === t.key ? '#e8f4f1' : 'white',
+                border: form.type === option.key ? '2px solid var(--accent)' : '2px solid var(--line)',
+                background: form.type === option.key ? '#e8f4f1' : 'white',
                 fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              }}><t.Icon size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '6px' }} />{t.label}</button>
+              }}><option.Icon size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '6px' }} />{option.label}</button>
             ))}
           </div>
         </Field>
 
-        <Field label="Duur (min) *" htmlFor="log-duration">
+        <Field label={t('duration')} htmlFor="log-duration">
           <input id="log-duration" type="number" inputMode="decimal" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} placeholder="bijv. 45" style={inputStyle} />
         </Field>
 
         {form.type === 'cycle' && (
-          <Field label="Afstand (km)" htmlFor="log-distance">
+          <Field label={t('distance')} htmlFor="log-distance">
             <input id="log-distance" type="number" inputMode="decimal" step="0.1" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} placeholder="bijv. 12.5" style={inputStyle} />
           </Field>
         )}
 
-        <Field label="Gemiddelde HR (bpm)" htmlFor="log-avg-hr">
+        <Field label={t('avgHrFull')} htmlFor="log-avg-hr">
           <input id="log-avg-hr" type="number" inputMode="numeric" value={form.avgHR} onChange={e => setForm({ ...form, avgHR: e.target.value })} placeholder="bijv. 142" style={inputStyle} />
         </Field>
 
-        <Field label="Max HR (bpm)" htmlFor="log-max-hr">
+        <Field label={t('maxHr')} htmlFor="log-max-hr">
           <input id="log-max-hr" type="number" inputMode="numeric" value={form.maxHR} onChange={e => setForm({ ...form, maxHR: e.target.value })} placeholder="bijv. 168" style={inputStyle} />
         </Field>
 
-        <Field label="Calorieën" htmlFor="log-kcal">
+        <Field label={t('calories')} htmlFor="log-kcal">
           <input id="log-kcal" type="number" inputMode="numeric" value={form.kcal} onChange={e => setForm({ ...form, kcal: e.target.value })} placeholder="bijv. 380" style={inputStyle} />
         </Field>
 
-        <Field label="Notities (optioneel)" htmlFor="log-notes">
-          <textarea id="log-notes" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Hoe voelde het? Wind? Stops?" rows={2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+        <Field label={t('optionalNotes')} htmlFor="log-notes">
+          <textarea id="log-notes" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder={t('workoutNotesPlaceholder')} rows={2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
         </Field>
 
         {analysis && (
@@ -1458,10 +1823,10 @@ function LogForm({ onSave, onClose, todayPlan }) {
             marginBottom: '16px', borderLeft: '4px solid #003D7A',
           }}>
             <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px', marginBottom: '8px' }}>
-              ANALYSE
+              {t('analysis')}
             </div>
             <div style={{ fontSize: '14px', lineHeight: 1.6 }}>
-              Gemiddeld <strong>{analysis.speed} km/h</strong> in <strong>{analysis.zone}</strong> ({analysis.expectedSpeed} km/h verwacht)
+              {t('avgSpeed')} <strong>{analysis.speed} km/h</strong> in <strong>{analysis.zone}</strong> ({t('expected', { speed: analysis.expectedSpeed })})
               <div style={{ marginTop: '6px', color: '#444' }}>{analysis.verdict}</div>
             </div>
           </div>
@@ -1471,11 +1836,11 @@ function LogForm({ onSave, onClose, todayPlan }) {
           <button type="button" onClick={onClose} style={{
             flex: 1, padding: '14px', borderRadius: '8px', border: '2px solid var(--line)',
             background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
-          }}>Annuleren</button>
+          }}>{t('cancel')}</button>
           <button type="button" onClick={handleSubmit} style={{
             flex: 2, padding: '14px', borderRadius: '8px', border: 'none',
             background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
-          }}>Opslaan</button>
+          }}>{t('save')}</button>
         </div>
       </div>
     </div>
