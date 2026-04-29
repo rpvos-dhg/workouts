@@ -6,6 +6,7 @@ import { PLAN_DATA, TYPE_META } from '../lib/plan-data';
 import {
   END_GOALS,
   HEART_ZONES,
+  MEASUREMENT_MOMENTS,
   NUTRITION_GUIDE,
   PRACTICAL_TIPS,
   STRENGTH_GUIDE,
@@ -227,7 +228,7 @@ function App({ user }) {
 
   // Find today
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayString();
     const found = PLAN_DATA.find(d => d.date === today);
     if (found) setTodayId(found.id);
     else {
@@ -314,6 +315,18 @@ function App({ user }) {
   const completedCount = Object.values(completed).filter(Boolean).length;
   const totalCount = PLAN_DATA.length;
   const progressPct = (completedCount / totalCount) * 100;
+  const dueMeasurement = getDueMeasurementMoment(checkins);
+
+  useEffect(() => {
+    if (!dueMeasurement || typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    const storageKey = `measurement-notification-${dueMeasurement.key}-${dueMeasurement.date}`;
+    if (window.localStorage.getItem(storageKey)) return;
+    new Notification(`Meetmoment: ${dueMeasurement.title}`, {
+      body: `${formatDateShort(dueMeasurement.date)} - open de app om je meting vast te leggen.`,
+    });
+    window.localStorage.setItem(storageKey, 'sent');
+  }, [dueMeasurement]);
 
   return (
     <div style={{
@@ -384,7 +397,7 @@ function App({ user }) {
           { key: 'today', label: 'Vandaag' },
           { key: 'week', label: `Wk ${currentWeek}` },
           { key: 'plan', label: 'Plan' },
-          { key: 'checkin', label: 'Check-in' },
+          { key: 'checkin', label: 'Meet' },
           { key: 'log', label: 'Log' },
         ].map(t => (
           <button key={t.key} onClick={() => setView(t.key)} style={{
@@ -397,11 +410,17 @@ function App({ user }) {
         ))}
       </nav>
 
+      {dueMeasurement && (
+        <div style={{ padding: '16px 16px 0' }}>
+          <MeasurementBanner moment={dueMeasurement} onOpen={() => setView('checkin')} />
+        </div>
+      )}
+
       <main style={{ padding: '20px 16px' }}>
         {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} weekNum={currentWeek} />}
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} setSelectedDay={setSelectedDay} currentWeek={currentWeek} />}
-        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} />}
+        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} />}
         {view === 'log' && <LogView logs={logs} setShowLogForm={setShowLogForm} deleteLog={deleteLog} />}
       </main>
 
@@ -476,6 +495,40 @@ function TodayView({ day, completed, toggleComplete, overview }) {
         </ul>
       </div>
     </div>
+  );
+}
+
+function MeasurementBanner({ moment, onOpen }) {
+  const isOverdue = moment.date < getTodayString();
+  return (
+    <InfoCard style={{ borderLeft: '4px solid #FFC72C', marginBottom: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '11px', color: '#B86E00', fontWeight: 800, letterSpacing: '1px' }}>
+            {isOverdue ? 'MEETMOMENT STAAT OPEN' : 'MEETMOMENT VANDAAG'}
+          </div>
+          <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px' }}>
+            {moment.title}
+          </div>
+          <div style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
+            {formatDateShort(moment.date)} - {moment.focus}
+          </div>
+        </div>
+        <button onClick={onOpen} style={{
+          border: 'none',
+          background: '#003D7A',
+          color: 'white',
+          borderRadius: '10px',
+          padding: '10px 12px',
+          fontSize: '13px',
+          fontWeight: 700,
+          cursor: 'pointer',
+          flex: '0 0 auto',
+        }}>
+          Open
+        </button>
+      </div>
+    </InfoCard>
   );
 }
 
@@ -610,7 +663,8 @@ function StrengthTable({ title, rows }) {
       <SectionTitle title={title} />
       {rows.map(([exercise, sets, rest, notes, steps]) => (
         <InfoCard key={exercise}>
-          <div style={{ fontWeight: 700 }}>{exercise}</div>
+          <ExerciseVisual exercise={exercise} />
+          <div style={{ fontWeight: 700, marginTop: '12px' }}>{exercise}</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
             <Tag label={sets} bg="#F0F4FA" color="#003D7A" />
             <Tag label={rest} bg="#FFF4DD" color="#B86E00" />
@@ -626,6 +680,136 @@ function StrengthTable({ title, rows }) {
           )}
         </InfoCard>
       ))}
+    </div>
+  );
+}
+
+function ExerciseVisual({ exercise }) {
+  const stroke = '#003D7A';
+  const accent = '#FFC72C';
+  const muted = '#B7C6D9';
+  const line = { stroke, strokeWidth: 6, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' };
+  const thin = { stroke: muted, strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' };
+
+  const poses = {
+    'Bodyweight Squat': (
+      <>
+        <circle cx="103" cy="31" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M99 42 L83 67 L65 88" {...line} />
+        <path d="M83 67 L108 86 L132 86" {...line} />
+        <path d="M91 51 L128 60" {...thin} />
+      </>
+    ),
+    'Reverse Lunge': (
+      <>
+        <circle cx="102" cy="28" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M101 40 L92 69" {...line} />
+        <path d="M92 69 L118 91 L144 91" {...line} />
+        <path d="M92 69 L68 88 L43 88" {...line} />
+        <path d="M98 50 L126 56" {...thin} />
+      </>
+    ),
+    'Push-up': (
+      <>
+        <circle cx="157" cy="52" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M145 58 L76 76 L43 82" {...line} />
+        <path d="M133 61 L132 91" {...line} />
+        <path d="M93 71 L91 94" {...thin} />
+      </>
+    ),
+    'Glute Bridge': (
+      <>
+        <circle cx="151" cy="70" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M141 72 L105 55 L68 75" {...line} />
+        <path d="M68 75 L44 93 L28 93" {...line} />
+        <path d="M105 55 L132 93 L154 93" {...line} />
+      </>
+    ),
+    'Plank': (
+      <>
+        <circle cx="156" cy="55" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M145 61 L91 70 L41 82" {...line} />
+        <path d="M134 63 L128 93" {...line} />
+        <path d="M79 73 L74 94" {...thin} />
+      </>
+    ),
+    'Ab Roller knieend': (
+      <>
+        <circle cx="147" cy="79" r="13" fill="white" stroke={accent} strokeWidth="6" />
+        <circle cx="105" cy="36" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M103 47 L118 66 L145 79" {...line} />
+        <path d="M118 66 L86 93 L63 93" {...line} />
+        <path d="M118 66 L111 95" {...thin} />
+      </>
+    ),
+    'Bulgarian Split Squat': (
+      <>
+        <rect x="134" y="74" width="48" height="12" rx="4" fill={muted} />
+        <circle cx="92" cy="28" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M91 40 L84 68" {...line} />
+        <path d="M84 68 L66 92 L43 92" {...line} />
+        <path d="M84 68 L121 78 L149 78" {...line} />
+        <path d="M88 49 L118 57" {...thin} />
+      </>
+    ),
+    'Single-leg Hip Hinge': (
+      <>
+        <circle cx="112" cy="39" r="10" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M103 45 L73 61 L47 64" {...line} />
+        <path d="M73 61 L91 92 L96 96" {...line} />
+        <path d="M73 61 L128 52 L165 43" {...line} />
+        <path d="M88 53 L70 82" {...thin} />
+      </>
+    ),
+    'Pike Push-up': (
+      <>
+        <circle cx="137" cy="75" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M130 69 L100 39 L62 92" {...line} />
+        <path d="M100 39 L150 92" {...line} />
+        <path d="M132 82 L125 101" {...thin} />
+      </>
+    ),
+    'Superman / Y-T-W': (
+      <>
+        <circle cx="151" cy="72" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M140 76 L94 78 L47 82" {...line} />
+        <path d="M118 77 L91 53 L69 39" {...thin} />
+        <path d="M118 78 L90 100 L67 107" {...thin} />
+        <path d="M86 79 L52 65" {...line} />
+      </>
+    ),
+    'Side Plank': (
+      <>
+        <circle cx="138" cy="50" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M130 57 L93 72 L47 90" {...line} />
+        <path d="M113 65 L119 94" {...line} />
+        <path d="M94 72 L91 42" {...thin} />
+      </>
+    ),
+    'Dead Bug': (
+      <>
+        <circle cx="126" cy="77" r="9" fill={accent} stroke={stroke} strokeWidth="4" />
+        <path d="M116 81 L78 88 L43 88" {...line} />
+        <path d="M91 86 L70 52" {...thin} />
+        <path d="M93 86 L118 53" {...line} />
+        <path d="M78 88 L55 56" {...line} />
+        <path d="M78 88 L112 96" {...thin} />
+      </>
+    ),
+  };
+
+  return (
+    <div style={{
+      background: 'linear-gradient(180deg, #F7FAFE 0%, #EDF3FA 100%)',
+      border: '1px solid #E2EAF3',
+      borderRadius: '12px',
+      height: '112px',
+      overflow: 'hidden',
+    }}>
+      <svg viewBox="0 0 220 120" role="img" aria-label={`${exercise} uitvoering`} style={{ width: '100%', height: '100%', display: 'block' }}>
+        <line x1="24" y1="96" x2="194" y2="96" stroke="#D6E0EC" strokeWidth="4" strokeLinecap="round" />
+        {poses[exercise] || poses.Plank}
+      </svg>
     </div>
   );
 }
@@ -812,16 +996,25 @@ function SimpleList({ items }) {
   );
 }
 
-function CheckInView({ checkins, onSave, currentWeek }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const [date, setDate] = useState(today);
+function CheckInView({ checkins, onSave, currentWeek, dueMeasurement }) {
+  const suggestedMoment = dueMeasurement || getSuggestedMeasurementMoment(checkins);
+  const [date, setDate] = useState(suggestedMoment.date);
   const current = checkins.find(item => item.date === date);
-  const [form, setForm] = useState(() => checkinToForm(current, today));
+  const currentMoment = MEASUREMENT_MOMENTS.find(moment => moment.date === date) || suggestedMoment;
+  const savedMomentDates = new Set(checkins.map(item => item.date));
+  const [form, setForm] = useState(() => checkinToForm(current, date));
   const [message, setMessage] = useState('');
+  const [notificationStatus, setNotificationStatus] = useState('unsupported');
 
   useEffect(() => {
     setForm(checkinToForm(current, date));
   }, [current, date]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationStatus(Notification.permission);
+    }
+  }, []);
 
   const alarms = getAlarmSignals(form);
   const overview = getWeekOverview(currentWeek);
@@ -829,22 +1022,48 @@ function CheckInView({ checkins, onSave, currentWeek }) {
     ? currentWeek === 6
       ? '2+ signalen: herstel prioriteit, houd 2700 kcal aan en push niet.'
       : '2+ signalen: schakel terug naar ongeveer 2550 kcal en push niet.'
-    : 'Onder de drempel: houd het plan aan en blijf meten.';
+    : 'Onder de drempel: houd het plan aan tot het volgende meetmoment.';
 
   const update = (key, value) => setForm({ ...form, [key]: value });
+  const enableNotifications = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setMessage('Browsermeldingen worden hier niet ondersteund');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotificationStatus(permission);
+    setMessage(permission === 'granted'
+      ? 'Melding aan: zolang de app open is krijg je een signaal bij een meetmoment'
+      : 'Melding niet aangezet');
+  };
   const submit = async (e) => {
     e.preventDefault();
     const { error } = await onSave(form);
-    setMessage(error ? error.message : 'Check-in opgeslagen');
+    setMessage(error ? error.message : 'Meetmoment opgeslagen');
   };
 
   return (
     <div>
       <InfoCard style={{ borderLeft: `4px solid ${alarms.length >= 2 ? '#DC3545' : '#2C7A2C'}` }}>
-        <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px' }}>DAGELIJKSE CHECK-IN</div>
+        <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px' }}>GEPLANDE MEETMOMENTEN</div>
         <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '6px' }}>{alarms.length} alarmsignalen</div>
         <div style={{ fontSize: '13px', color: '#555', marginTop: '6px', lineHeight: 1.5 }}>{advice}</div>
         <div style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>Weekdoel: {overview.kcal} kcal, 130g eiwit</div>
+        {notificationStatus !== 'granted' && (
+          <button type="button" onClick={enableNotifications} style={{
+            marginTop: '12px',
+            border: '1px solid #CCD8E6',
+            background: '#F7FAFE',
+            color: '#003D7A',
+            borderRadius: '10px',
+            padding: '10px 12px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}>
+            Meetmoment-melding aanzetten
+          </button>
+        )}
       </InfoCard>
 
       {alarms.length > 0 && (
@@ -855,11 +1074,48 @@ function CheckInView({ checkins, onSave, currentWeek }) {
         </InfoCard>
       )}
 
+      <InfoCard>
+        <div style={{ display: 'grid', gap: '8px' }}>
+          {MEASUREMENT_MOMENTS.map(moment => {
+            const isSelected = moment.date === date;
+            const isSaved = savedMomentDates.has(moment.date);
+            const isDue = moment.date <= getTodayString() && !isSaved;
+            return (
+              <button key={moment.key} type="button" onClick={() => { setDate(moment.date); setMessage(''); }} style={{
+                textAlign: 'left',
+                border: `2px solid ${isSelected ? '#003D7A' : isDue ? '#FFC72C' : '#E5EAF1'}`,
+                background: isSelected ? '#EEF5FC' : 'white',
+                borderRadius: '12px',
+                padding: '12px',
+                cursor: 'pointer',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#1a1a1a' }}>{moment.title}</div>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '3px' }}>Week {moment.week} - {formatDateShort(moment.date)}</div>
+                  </div>
+                  <Tag
+                    label={isSaved ? 'Opgeslagen' : isDue ? 'Nu' : 'Later'}
+                    bg={isSaved ? '#E0F0E0' : isDue ? '#FFF4DD' : '#F0F4FA'}
+                    color={isSaved ? '#2C7A2C' : isDue ? '#B86E00' : '#003D7A'}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </InfoCard>
+
       <form onSubmit={submit}>
         <InfoCard>
-          <Field label="Datum">
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
-          </Field>
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 800, letterSpacing: '1px', marginBottom: '6px' }}>
+              {currentMoment.title.toUpperCase()}
+            </div>
+            <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5 }}>{currentMoment.focus}</div>
+          </div>
+          <SimpleList items={currentMoment.items} />
+          <div style={{ height: '12px' }} />
           <MetricInput label="Gewicht (kg)" value={form.weightKg} onChange={v => update('weightKg', v)} placeholder="bijv. 88.4" />
           <MetricInput label="Buikomtrek (cm)" value={form.waistCm} onChange={v => update('waistCm', v)} placeholder="bijv. 96" />
           <MetricInput label="Slaap (uren)" value={form.sleepHours} onChange={v => update('sleepHours', v)} placeholder="bijv. 7.5" />
@@ -879,18 +1135,19 @@ function CheckInView({ checkins, onSave, currentWeek }) {
           <button type="submit" style={{
             width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
             background: '#003D7A', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
-          }}>Check-in opslaan</button>
-          {message && <div style={{ fontSize: '13px', color: message.includes('opgeslagen') ? '#2C7A2C' : '#DC3545', marginTop: '10px', textAlign: 'center' }}>{message}</div>}
+          }}>Meetmoment opslaan</button>
+          {message && <div style={{ fontSize: '13px', color: message.includes('opgeslagen') || message.includes('Melding aan') ? '#2C7A2C' : '#DC3545', marginTop: '10px', textAlign: 'center' }}>{message}</div>}
         </InfoCard>
       </form>
 
       <SectionTitle title="Historie" />
-      {checkins.length === 0 ? (
-        <InfoCard><div style={{ fontSize: '13px', color: '#666' }}>Nog geen check-ins opgeslagen.</div></InfoCard>
-      ) : checkins.slice(0, 10).map(item => (
+      {checkins.filter(isMeasurementCheckin).length === 0 ? (
+        <InfoCard><div style={{ fontSize: '13px', color: '#666' }}>Nog geen meetmomenten opgeslagen.</div></InfoCard>
+      ) : checkins.filter(isMeasurementCheckin).map(item => (
         <InfoCard key={item.id || item.date}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-            <div style={{ fontWeight: 700 }}>{new Date(item.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}</div>
+            <div style={{ fontWeight: 700 }}>{getMeasurementTitle(item.date)}</div>
+            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>{formatDateShort(item.date)}</div>
             <div style={{ fontSize: '13px', color: '#666' }}>{[item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && `${item.sleep_hours}u slaap`].filter(Boolean).join(' · ')}</div>
           </div>
         </InfoCard>
@@ -922,6 +1179,40 @@ function checkinToForm(checkin, fallbackDate) {
     hrvLowSignal: !!checkin?.hrv_low_signal,
     notes: checkin?.notes || '',
   };
+}
+
+function getTodayString() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function formatDateShort(date) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+}
+
+function isMeasurementCheckin(checkin) {
+  return MEASUREMENT_MOMENTS.some(moment => moment.date === checkin.date);
+}
+
+function getMeasurementTitle(date) {
+  return MEASUREMENT_MOMENTS.find(moment => moment.date === date)?.title || formatDateShort(date);
+}
+
+function getSuggestedMeasurementMoment(checkins) {
+  const savedDates = new Set(checkins.map(item => item.date));
+  const today = getTodayString();
+  return (
+    MEASUREMENT_MOMENTS.find(moment => moment.date <= today && !savedDates.has(moment.date)) ||
+    MEASUREMENT_MOMENTS.find(moment => moment.date >= today) ||
+    MEASUREMENT_MOMENTS[MEASUREMENT_MOMENTS.length - 1]
+  );
+}
+
+function getDueMeasurementMoment(checkins) {
+  const savedDates = new Set(checkins.map(item => item.date));
+  const today = getTodayString();
+  return MEASUREMENT_MOMENTS.find(moment => moment.date <= today && !savedDates.has(moment.date)) || null;
 }
 
 function getAlarmSignals(form) {
