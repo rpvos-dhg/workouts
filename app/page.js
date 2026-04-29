@@ -608,7 +608,7 @@ function StrengthTable({ title, rows }) {
   return (
     <div>
       <SectionTitle title={title} />
-      {rows.map(([exercise, sets, rest, notes]) => (
+      {rows.map(([exercise, sets, rest, notes, steps]) => (
         <InfoCard key={exercise}>
           <div style={{ fontWeight: 700 }}>{exercise}</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
@@ -616,6 +616,14 @@ function StrengthTable({ title, rows }) {
             <Tag label={rest} bg="#FFF4DD" color="#B86E00" />
           </div>
           <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{notes}</div>
+          {steps && (
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Uitvoering
+              </div>
+              <SimpleList items={steps} />
+            </div>
+          )}
         </InfoCard>
       ))}
     </div>
