@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Activity,
   BarChart3,
   Bed,
   Bike,
   CheckCircle2,
+  Clipboard,
   Clock3,
   Dumbbell,
+  Edit3,
   Flame,
   Footprints,
   Gauge,
@@ -18,13 +20,17 @@ import {
   Mail,
   MoreHorizontal,
   Plus,
+  RefreshCw,
+  Settings,
   Star,
   Target,
   Trash2,
   Trophy,
+  Upload,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA, TYPE_META } from '../lib/plan-data';
+import { DEFAULT_USER_SETTINGS, calculateTrendStats, getAdaptiveAdvice, getHeartZone, withDefaultSettings } from '../lib/insights';
 import {
   END_GOALS,
   HEART_ZONES,
@@ -40,6 +46,7 @@ import {
   getWeekOverview,
   isMeasurementCheckin,
 } from '../lib/plan-content';
+import { normalizeWorkoutImport, parseWorkoutCsv } from '../lib/workout-import';
 
 const TYPE_ICONS = {
   cycle: Bike,
@@ -97,6 +104,7 @@ const I18N = {
     navPlan: 'Plan',
     navMeasure: 'Meet',
     navLog: 'Log',
+    navInsights: 'Inzicht',
     sync: 'Synchroniseren...',
     progressLabel: '{progress} procent voltooid',
     completedPct: '{progress}% voltooid',
@@ -217,6 +225,42 @@ const I18N = {
     verdictSlightlyLow: 'Iets onder verwachting, prima',
     cancel: 'Annuleren',
     save: 'Opslaan',
+    settings: 'Instellingen',
+    insights: 'Inzichten',
+    trends: 'Trends',
+    dailyChecklist: 'Dagchecklist',
+    adaptiveAdvice: 'Adaptief advies',
+    editLog: 'Log bewerken',
+    importCsv: 'CSV importeren',
+    csvImported: '{count} workouts geimporteerd',
+    importFailed: 'Import mislukt: {message}',
+    reminderSettings: 'Reminders',
+    enablePush: 'Web Push aanzetten',
+    pushEnabled: 'Web Push staat aan',
+    pushNeedsConfig: 'Web Push mist serverconfiguratie',
+    pushUnsupported: 'Web Push wordt hier niet ondersteund',
+    saveSettings: 'Instellingen opslaan',
+    baselineHr: 'Rusthartslag baseline',
+    kcalGoal: 'Kcal doel',
+    proteinGoal: 'Eiwitdoel (g)',
+    waterGoal: 'Waterdoel (L)',
+    reminderEnabled: 'Reminders aan',
+    reminderTime: 'Reminder tijd',
+    timezone: 'Tijdzone',
+    importToken: 'Health importtoken',
+    generateToken: 'Token maken',
+    revokeTokens: 'Tokens intrekken',
+    tokenCreated: 'Token aangemaakt. Bewaar deze in je Shortcut.',
+    tokenRevoked: 'Tokens ingetrokken',
+    shortcutEndpoint: 'Shortcut endpoint',
+    copy: 'Kopieren',
+    proteinDone: 'Eiwit gehaald',
+    waterDone: 'Water gehaald',
+    kcalDone: 'Kcal binnen doel',
+    postWorkoutDone: 'Post-workout eiwit',
+    noTrendData: 'Nog niet genoeg data.',
+    avg: 'Gem.',
+    latest: 'Laatste',
   },
   en: {
     loading: 'Loading...',
@@ -264,6 +308,7 @@ const I18N = {
     navPlan: 'Plan',
     navMeasure: 'Measure',
     navLog: 'Log',
+    navInsights: 'Insight',
     sync: 'Syncing...',
     progressLabel: '{progress} percent complete',
     completedPct: '{progress}% complete',
@@ -384,6 +429,42 @@ const I18N = {
     verdictSlightlyLow: 'Slightly below expectation, fine',
     cancel: 'Cancel',
     save: 'Save',
+    settings: 'Settings',
+    insights: 'Insights',
+    trends: 'Trends',
+    dailyChecklist: 'Daily checklist',
+    adaptiveAdvice: 'Adaptive advice',
+    editLog: 'Edit log',
+    importCsv: 'Import CSV',
+    csvImported: '{count} workouts imported',
+    importFailed: 'Import failed: {message}',
+    reminderSettings: 'Reminders',
+    enablePush: 'Enable Web Push',
+    pushEnabled: 'Web Push is enabled',
+    pushNeedsConfig: 'Web Push is missing server configuration',
+    pushUnsupported: 'Web Push is not supported here',
+    saveSettings: 'Save settings',
+    baselineHr: 'Resting HR baseline',
+    kcalGoal: 'Kcal target',
+    proteinGoal: 'Protein target (g)',
+    waterGoal: 'Water target (L)',
+    reminderEnabled: 'Reminders on',
+    reminderTime: 'Reminder time',
+    timezone: 'Timezone',
+    importToken: 'Health import token',
+    generateToken: 'Create token',
+    revokeTokens: 'Revoke tokens',
+    tokenCreated: 'Token created. Store it in your Shortcut.',
+    tokenRevoked: 'Tokens revoked',
+    shortcutEndpoint: 'Shortcut endpoint',
+    copy: 'Copy',
+    proteinDone: 'Protein done',
+    waterDone: 'Water done',
+    kcalDone: 'Kcal on target',
+    postWorkoutDone: 'Post-workout protein',
+    noTrendData: 'Not enough data yet.',
+    avg: 'Avg.',
+    latest: 'Latest',
   },
 };
 
@@ -697,13 +778,17 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const [completed, setCompleted] = useState({});
   const [logs, setLogs] = useState([]);
   const [checkins, setCheckins] = useState([]);
+  const [habits, setHabits] = useState([]);
+  const [settings, setSettings] = useState(DEFAULT_USER_SETTINGS);
   const [view, setView] = useState('today');
   const [todayId, setTodayId] = useState(1);
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedMeasurementDate, setSelectedMeasurementDate] = useState(null);
   const [showLogForm, setShowLogForm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [editingLog, setEditingLog] = useState(null);
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
@@ -713,10 +798,12 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   // Load data from Supabase
   useEffect(() => {
     const load = async () => {
-      const [{ data: completionsData }, { data: logsData }, { data: checkinData }] = await Promise.all([
+      const [{ data: completionsData }, { data: logsData }, { data: checkinData }, { data: settingsData }, { data: habitsData }] = await Promise.all([
         supabase.from('completions').select('*').eq('user_id', user.id),
         supabase.from('workout_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
         supabase.from('daily_checkins').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+        supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }),
       ]);
 
       const compMap = {};
@@ -724,6 +811,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       setCompleted(compMap);
       setLogs(logsData || []);
       setCheckins(checkinData || []);
+      setSettings(withDefaultSettings(settingsData || {}));
+      setHabits(habitsData || []);
     };
     load();
   }, [user.id]);
@@ -738,6 +827,10 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         () => reloadLogs())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_checkins', filter: `user_id=eq.${user.id}` },
         () => reloadCheckins())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_settings', filter: `user_id=eq.${user.id}` },
+        () => reloadSettings())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_habits', filter: `user_id=eq.${user.id}` },
+        () => reloadHabits())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -758,6 +851,16 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const reloadCheckins = async () => {
     const { data } = await supabase.from('daily_checkins').select('*').eq('user_id', user.id).order('date', { ascending: false });
     setCheckins(data || []);
+  };
+
+  const reloadSettings = async () => {
+    const { data } = await supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle();
+    setSettings(withDefaultSettings(data || {}));
+  };
+
+  const reloadHabits = async () => {
+    const { data } = await supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false });
+    setHabits(data || []);
   };
 
   // Find today
@@ -785,22 +888,54 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     setSyncing(false);
   };
 
-  const saveLog = async (log) => {
-    setSyncing(true);
-    const { data, error } = await supabase.from('workout_logs').insert({
+  const buildLogPayload = (log) => ({
       user_id: user.id,
       date: log.date,
       type: log.type,
-      duration: parseFloat(log.duration) || null,
-      distance: parseFloat(log.distance) || null,
-      avg_hr: parseInt(log.avgHR) || null,
-      max_hr: parseInt(log.maxHR) || null,
+      duration: parseFloat(log.duration ?? log.durationMin) || null,
+      distance: parseFloat(log.distance ?? log.distanceKm) || null,
+      avg_hr: parseInt(log.avgHR ?? log.avg_hr) || null,
+      max_hr: parseInt(log.maxHR ?? log.max_hr) || null,
       kcal: parseInt(log.kcal) || null,
       notes: log.notes || null,
-    }).select();
+      source: log.source || 'manual',
+      external_id: log.external_id || log.externalId || null,
+  });
+
+  const saveLog = async (log) => {
+    setSyncing(true);
+    const { data, error } = await supabase.from('workout_logs').insert(buildLogPayload(log)).select();
     if (!error && data) setLogs([data[0], ...logs]);
     setSyncing(false);
     setShowLogForm(false);
+  };
+
+  const updateLog = async (log) => {
+    if (!editingLog) return;
+    setSyncing(true);
+    const payload = buildLogPayload(log);
+    delete payload.user_id;
+    const { data, error } = await supabase
+      .from('workout_logs')
+      .update(payload)
+      .eq('user_id', user.id)
+      .eq('id', editingLog.id)
+      .select();
+    if (!error && data?.[0]) {
+      setLogs(logs.map(item => item.id === editingLog.id ? data[0] : item));
+    }
+    setSyncing(false);
+    setEditingLog(null);
+    setShowLogForm(false);
+  };
+
+  const importCsvLogs = async (rows) => {
+    setSyncing(true);
+    const payloads = rows.map(row => buildLogPayload(row));
+    const { data, error } = await supabase.from('workout_logs').insert(payloads).select();
+    if (!error && data) setLogs([...data, ...logs]);
+    setSyncing(false);
+    return { count: data?.length || 0, error };
   };
 
   const deleteLog = async (id) => {
@@ -852,6 +987,45 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     return { error };
   };
 
+  const saveSettings = async (nextSettings) => {
+    setSyncing(true);
+    const payload = {
+      ...withDefaultSettings(nextSettings),
+      user_id: user.id,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase
+      .from('user_settings')
+      .upsert(payload, { onConflict: 'user_id' })
+      .select()
+      .single();
+    if (!error && data) setSettings(withDefaultSettings(data));
+    setSyncing(false);
+    return { error };
+  };
+
+  const saveDailyHabit = async (date, patch) => {
+    const current = habits.find(item => item.date === date) || {};
+    const next = { ...current, ...patch, date };
+    setHabits([next, ...habits.filter(item => item.date !== date)]);
+    const payload = {
+      user_id: user.id,
+      date,
+      protein_done: !!next.protein_done,
+      water_done: !!next.water_done,
+      kcal_done: !!next.kcal_done,
+      post_workout_protein_done: !!next.post_workout_protein_done,
+      notes: next.notes || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data } = await supabase
+      .from('daily_habits')
+      .upsert(payload, { onConflict: 'user_id,date' })
+      .select()
+      .single();
+    if (data) setHabits([data, ...habits.filter(item => item.date !== date)]);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -865,6 +1039,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const progressPct = (completedCount / totalCount) * 100;
   const todayString = getTodayString();
   const dueMeasurement = getDueMeasurementMoment(checkins, todayString);
+  const todayHabit = habits.find(item => item.date === todayString) || { date: todayString };
+  const adaptiveAdvice = getAdaptiveAdvice({ today, completed, logs, checkins, settings, todayString });
 
   useEffect(() => {
     if (!dueMeasurement || typeof window === 'undefined' || !('Notification' in window)) return;
@@ -918,6 +1094,10 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
             borderRadius: '12px', padding: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
             minWidth: '180px',
           }}>
+            <button type="button" onClick={() => { setShowMenu(false); setShowSettings(true); }} style={{
+              width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
+              textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
+            }}><Settings size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('settings')}</button>
             <button type="button" onClick={() => { setShowMenu(false); setShowPasswordDialog(true); }} style={{
               width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
@@ -939,6 +1119,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           { key: 'week', label: t('navWeek', { week: currentWeek }) },
           { key: 'plan', label: t('navPlan') },
           { key: 'checkin', label: t('navMeasure') },
+          { key: 'insights', label: t('navInsights') },
           { key: 'log', label: t('navLog') },
         ].map(t => (
           <button key={t.key} type="button" aria-current={view === t.key ? 'page' : undefined} onClick={() => setView(t.key)} style={{
@@ -966,15 +1147,17 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       )}
 
       <main className="view-main" style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} t={t} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} t={t} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} t={t} />}
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} t={t} />}
         {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
-        {view === 'log' && <LogView logs={logs} setShowLogForm={setShowLogForm} deleteLog={deleteLog} t={t} />}
+        {view === 'insights' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
+        {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} onImportCsv={importCsvLogs} t={t} />}
       </main>
 
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} t={t} />}
-      {showLogForm && <LogForm onSave={saveLog} onClose={() => setShowLogForm(false)} todayPlan={today} t={t} />}
+      {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} t={t} />}
+      {showSettings && <SettingsDialog settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} t={t} />}
       {showPasswordDialog && (
         <PasswordDialog
           t={t}
@@ -1020,7 +1203,7 @@ function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   );
 }
 
-function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, t }) {
+function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
@@ -1087,6 +1270,9 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
           </div>
         </div>
 
+        <AdaptiveAdviceCard advice={adaptiveAdvice} t={t} />
+        <DailyHabitCard day={day} habit={habit} settings={settings} onToggle={(patch) => saveDailyHabit(habit.date, patch)} t={t} />
+
         <div className="info-card" style={{
           background: 'var(--surface)', borderRadius: '12px',
           padding: '18px',
@@ -1105,6 +1291,61 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
         </div>
       </div>
     </div>
+  );
+}
+
+function AdaptiveAdviceCard({ advice, t }) {
+  const color = advice.level === 'warning' ? 'var(--danger)' : advice.level === 'caution' ? '#B86E00' : 'var(--success)';
+  const bg = advice.level === 'warning' ? '#FFE5E5' : advice.level === 'caution' ? '#FFF4DD' : '#E0F0E0';
+  return (
+    <InfoCard style={{ borderLeft: `4px solid ${color}` }}>
+      <div className="signal-kicker" style={{ color }}>{t('adaptiveAdvice')}</div>
+      <div style={{ fontSize: '17px', fontWeight: 800, marginTop: '4px' }}>{advice.title}</div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+        {advice.alarms?.map(alarm => <Tag key={alarm} icon={Activity} label={alarm} bg={bg} color={color} />)}
+      </div>
+      <SimpleList items={advice.items} />
+    </InfoCard>
+  );
+}
+
+function DailyHabitCard({ day, habit, settings, onToggle, t }) {
+  const config = withDefaultSettings(settings);
+  const items = [
+    ['protein_done', t('proteinDone'), `${config.protein_target}g`],
+    ['water_done', t('waterDone'), `${config.water_target}L`],
+    ['kcal_done', t('kcalDone'), `${config.kcal_target} kcal`],
+  ];
+  if (['cycle', 'strength', 'walk'].includes(day.type)) {
+    items.push(['post_workout_protein_done', t('postWorkoutDone'), '25-30g']);
+  }
+
+  return (
+    <InfoCard>
+      <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('dailyChecklist')}</div>
+      <div style={{ display: 'grid', gap: '8px', marginTop: '10px' }}>
+        {items.map(([key, label, hint]) => {
+          const checked = !!habit[key];
+          return (
+            <label key={key} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              minHeight: '44px',
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1px solid var(--line)',
+              background: checked ? '#E0F0E0' : 'var(--surface-2)',
+              cursor: 'pointer',
+            }}>
+              <input type="checkbox" checked={checked} onChange={e => onToggle({ [key]: e.target.checked })} />
+              <span style={{ flex: 1, fontSize: '14px', fontWeight: 700 }}>{label}</span>
+              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>{hint}</span>
+            </label>
+          );
+        })}
+      </div>
+    </InfoCard>
   );
 }
 
@@ -1765,7 +2006,106 @@ function getAlarmSignals(form, t = makeT('nl')) {
   return alarms;
 }
 
-function LogView({ logs, setShowLogForm, deleteLog, t }) {
+function InsightsView({ logs, checkins, completed, settings, adaptiveAdvice, t }) {
+  const stats = calculateTrendStats({ logs, checkins, completed });
+  const cards = [
+    { title: t('weight'), unit: 'kg', points: stats.weight, color: 'var(--accent)' },
+    { title: t('waist'), unit: 'cm', points: stats.waist, color: 'var(--copper)' },
+    { title: t('sleep'), unit: 'u', points: stats.sleep, color: '#2C7A2C' },
+    { title: t('restingHr'), unit: 'bpm', points: stats.restingHr, color: '#DC3545' },
+    { title: t('avgSpeed'), unit: 'km/h', points: stats.speed, color: '#003D7A' },
+    { title: t('avgHr'), unit: 'bpm', points: stats.avgHr, color: '#B86E00' },
+  ];
+
+  return (
+    <div className="dashboard-grid">
+      <div>
+        <InfoCard className="hero-card">
+          <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('insights')}</div>
+          <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '6px' }}>{adaptiveAdvice.title}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px' }}>
+            {adaptiveAdvice.items[0]}
+          </div>
+          <div className="metric-grid" style={{ marginTop: '14px' }}>
+            <MetricTile icon={BarChart3} label={t('workoutsLogged')} value={stats.summary.workouts} />
+            <MetricTile icon={Gauge} label={t('avgSpeed')} value={stats.summary.avgSpeed ? `${stats.summary.avgSpeed.toFixed(1)} km/h` : '-'} />
+            <MetricTile icon={HeartPulse} label={t('avgHr')} value={stats.summary.avgHr ? `${Math.round(stats.summary.avgHr)} bpm` : '-'} />
+          </div>
+        </InfoCard>
+
+        <SectionTitle title={t('trends')} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+          {cards.map(card => <TrendCard key={card.title} {...card} t={t} />)}
+        </div>
+      </div>
+
+      <aside className="side-panel">
+        <TrendCard title="Week %" unit="%" points={stats.weekProgress} color="var(--accent)" t={t} />
+        <InfoCard>
+          <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('settings')}</div>
+          <SimpleList items={[
+            `${t('kcalGoal')}: ${withDefaultSettings(settings).kcal_target}`,
+            `${t('proteinGoal')}: ${withDefaultSettings(settings).protein_target}g`,
+            `${t('baselineHr')}: ${withDefaultSettings(settings).resting_hr_baseline} bpm`,
+          ]} />
+        </InfoCard>
+      </aside>
+    </div>
+  );
+}
+
+function TrendCard({ title, unit, points, color, t }) {
+  const latest = points.at(-1)?.value;
+  const first = points[0]?.value;
+  const delta = Number.isFinite(latest) && Number.isFinite(first) && points.length > 1 ? latest - first : null;
+  return (
+    <InfoCard>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', marginBottom: '10px' }}>
+        <div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 800 }}>{title}</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color }}>{Number.isFinite(latest) ? `${latest.toFixed(unit === '%' ? 0 : 1)} ${unit}` : '-'}</div>
+        </div>
+        {delta !== null && (
+          <Tag label={`${delta >= 0 ? '+' : ''}${delta.toFixed(unit === '%' ? 0 : 1)} ${unit}`} bg="#F0F4FA" color="#003D7A" />
+        )}
+      </div>
+      <MiniChart points={points} color={color} emptyLabel={t('noTrendData')} />
+    </InfoCard>
+  );
+}
+
+function MiniChart({ points, color, emptyLabel }) {
+  if (!points || points.length < 2) {
+    return <div style={{ minHeight: '120px', display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: '13px' }}>{emptyLabel}</div>;
+  }
+  const values = points.map(point => Number(point.value)).filter(Number.isFinite);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const width = 320;
+  const height = 120;
+  const pad = 16;
+  const coords = points.map((point, index) => {
+    const x = pad + (index / Math.max(points.length - 1, 1)) * (width - pad * 2);
+    const y = height - pad - ((Number(point.value) - min) / range) * (height - pad * 2);
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Trendgrafiek" style={{ width: '100%', height: '120px', display: 'block' }}>
+      <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="var(--line)" strokeWidth="2" />
+      <polyline fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" points={coords} />
+      {points.map((point, index) => {
+        const [x, y] = coords.split(' ')[index].split(',').map(Number);
+        return <circle key={`${point.date}-${index}`} cx={x} cy={y} r="4" fill="white" stroke={color} strokeWidth="3" />;
+      })}
+    </svg>
+  );
+}
+
+function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, onImportCsv, t }) {
+  const fileInputRef = useRef(null);
+  const [importMessage, setImportMessage] = useState('');
   const cycleLogs = logs.filter(l => l.type === 'cycle' && l.distance && l.duration);
   const avgSpeed = cycleLogs.length
     ? cycleLogs.reduce((s, l) => s + (l.distance / (l.duration / 60)), 0) / cycleLogs.length : 0;
@@ -1774,6 +2114,44 @@ function LogView({ logs, setShowLogForm, deleteLog, t }) {
 
   return (
     <div>
+      <InfoCard>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <div>
+            <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('workoutLog')}</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{t('logSubtitle')}</div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => setShowLogForm(true)} style={smallActionStyle}>
+              <Plus size={16} aria-hidden="true" /> {t('save')}
+            </button>
+            <button type="button" onClick={() => fileInputRef.current?.click()} style={smallActionStyle}>
+              <Upload size={16} aria-hidden="true" /> {t('importCsv')}
+            </button>
+          </div>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          style={{ display: 'none' }}
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            setImportMessage('');
+            try {
+              const rows = parseWorkoutCsv(await file.text(), { source: 'csv' });
+              const result = await onImportCsv(rows.map(row => normalizeWorkoutImport(row)));
+              setImportMessage(result.error ? t('importFailed', { message: result.error.message }) : t('csvImported', { count: result.count }));
+            } catch (error) {
+              setImportMessage(t('importFailed', { message: error.message }));
+            } finally {
+              event.target.value = '';
+            }
+          }}
+        />
+        {importMessage && <div role="status" aria-live="polite" style={{ marginTop: '10px', fontSize: '13px', color: importMessage.startsWith(t('importFailed').split(':')[0]) ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>{importMessage}</div>}
+      </InfoCard>
+
       {logs.length > 0 && (
         <div className="premium-card" style={{
           padding: '20px', borderRadius: '12px',
@@ -1814,23 +2192,18 @@ function LogView({ logs, setShowLogForm, deleteLog, t }) {
           </div>
         </div>
       ) : (
-        <div>{logs.map(log => <LogCard key={log.id} log={log} deleteLog={deleteLog} t={t} />)}</div>
+        <div>{logs.map(log => <LogCard key={log.id} log={log} settings={settings} deleteLog={deleteLog} onEditLog={onEditLog} t={t} />)}</div>
       )}
     </div>
   );
 }
 
-function LogCard({ log, deleteLog, t }) {
+function LogCard({ log, settings, deleteLog, onEditLog, t }) {
   const speed = log.distance && log.duration ? (log.distance / (log.duration / 60)).toFixed(1) : null;
   let zone = null;
   if (log.avg_hr) {
     const hr = Number(log.avg_hr);
-    if (hr < 121) zone = 'Onder Z1';
-    else if (hr < 134) zone = 'Z1';
-    else if (hr < 147) zone = 'Z2';
-    else if (hr < 160) zone = 'Z3';
-    else if (hr < 173) zone = 'Z4';
-    else zone = 'Z5';
+    zone = getHeartZone(hr, settings);
   }
 
   return (
@@ -1856,10 +2229,16 @@ function LogCard({ log, deleteLog, t }) {
             <div style={{ fontSize: '13px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>"{log.notes}"</div>
           )}
         </div>
-        <button type="button" aria-label={t('deleteLog')} onClick={() => deleteLog(log.id)} style={{
-          background: 'transparent', border: 'none', color: '#999',
-          fontSize: '16px', cursor: 'pointer', padding: '4px 8px',
-        }}><Trash2 size={16} aria-hidden="true" /></button>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button type="button" aria-label={t('editLog')} onClick={() => onEditLog(log)} style={{
+            background: 'transparent', border: 'none', color: '#666',
+            fontSize: '16px', cursor: 'pointer', padding: '4px 8px',
+          }}><Edit3 size={16} aria-hidden="true" /></button>
+          <button type="button" aria-label={t('deleteLog')} onClick={() => deleteLog(log.id)} style={{
+            background: 'transparent', border: 'none', color: '#999',
+            fontSize: '16px', cursor: 'pointer', padding: '4px 8px',
+          }}><Trash2 size={16} aria-hidden="true" /></button>
+        </div>
       </div>
     </div>
   );
@@ -1974,16 +2353,188 @@ function PasswordDialog({ t, isRecovery, onClose }) {
   );
 }
 
-function LogForm({ onSave, onClose, todayPlan, t }) {
+function SettingsDialog({ settings, onSave, onClose, t }) {
+  const [form, setForm] = useState(() => withDefaultSettings(settings));
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [token, setToken] = useState('');
+  const [endpoint, setEndpoint] = useState('');
+  const isSuccess = [t('saved'), t('pushEnabled'), t('tokenCreated'), t('tokenRevoked')].includes(message);
+
+  useEffect(() => {
+    setForm(withDefaultSettings(settings));
+  }, [settings]);
+
+  const authFetch = async (url, options = {}) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Geen actieve sessie');
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    const { error } = await onSave(form);
+    setMessage(error ? error.message : t('saved'));
+    setBusy(false);
+  };
+
+  const generateToken = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      const response = await authFetch('/api/import/token', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Token failed');
+      setToken(data.token);
+      setEndpoint(data.endpoint);
+      setMessage(t('tokenCreated'));
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const revokeTokens = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      const response = await authFetch('/api/import/token', { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Revoke failed');
+      setToken('');
+      setEndpoint('');
+      setMessage(t('tokenRevoked'));
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const enablePush = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      await subscribeToPush(authFetch);
+      setMessage(t('pushEnabled'));
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const updateZone = (index, key, value) => {
+    const zones = [...form.heart_zones];
+    zones[index] = { ...zones[index], [key]: value };
+    setForm({ ...form, heart_zones: zones });
+  };
+
+  return (
+    <div role="presentation" onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 220,
+      display: 'flex', alignItems: 'flex-end',
+    }}>
+      <form role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title" onSubmit={save} onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', width: '100%', maxHeight: '92vh', overflowY: 'auto',
+        borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px',
+      }}>
+        <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
+        <h2 id="settings-dialog-title" style={{ margin: '0 0 16px', fontSize: '22px', fontWeight: 800, color: 'var(--accent-strong)' }}>{t('settings')}</h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
+          <MetricInput label={t('kcalGoal')} value={form.kcal_target} onChange={v => setForm({ ...form, kcal_target: Number(v) || 0 })} placeholder="2400" />
+          <MetricInput label={t('proteinGoal')} value={form.protein_target} onChange={v => setForm({ ...form, protein_target: Number(v) || 0 })} placeholder="130" />
+          <MetricInput label={t('waterGoal')} value={form.water_target} onChange={v => setForm({ ...form, water_target: Number(v) || 0 })} placeholder="2" />
+          <MetricInput label={t('baselineHr')} value={form.resting_hr_baseline} onChange={v => setForm({ ...form, resting_hr_baseline: Number(v) || 0 })} placeholder="56" />
+        </div>
+
+        <Field label={t('timezone')} htmlFor="settings-timezone">
+          <input id="settings-timezone" value={form.timezone} onChange={e => setForm({ ...form, timezone: e.target.value })} style={inputStyle} />
+        </Field>
+        <Field label={t('reminderTime')} htmlFor="settings-reminder-time">
+          <input id="settings-reminder-time" type="time" value={form.reminder_time} onChange={e => setForm({ ...form, reminder_time: e.target.value })} style={inputStyle} />
+        </Field>
+        <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: 'var(--muted)', margin: '0 0 14px' }}>
+          <input type="checkbox" checked={!!form.reminder_enabled} onChange={e => setForm({ ...form, reminder_enabled: e.target.checked })} />
+          {t('reminderEnabled')}
+        </label>
+
+        <SectionTitle title={t('heartZones')} />
+        <div style={{ display: 'grid', gap: '8px', marginBottom: '14px' }}>
+          {form.heart_zones.map((zone, index) => (
+            <div key={zone.zone} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr', gap: '8px', alignItems: 'center' }}>
+              <div style={{ fontWeight: 800, color: 'var(--accent-strong)' }}>{zone.zone}</div>
+              <input type="number" value={zone.min} onChange={e => updateZone(index, 'min', Number(e.target.value) || 0)} style={inputStyle} aria-label={`${zone.zone} min`} />
+              <input type="number" value={zone.max} onChange={e => updateZone(index, 'max', Number(e.target.value) || 0)} style={inputStyle} aria-label={`${zone.zone} max`} />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <button type="button" onClick={enablePush} disabled={busy} style={secondaryButtonStyle}><BellIcon />{t('enablePush')}</button>
+          <button type="submit" disabled={busy} style={primaryButtonStyle}>{busy ? t('busy') : t('saveSettings')}</button>
+        </div>
+
+        <SectionTitle title={t('importToken')} />
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+          <button type="button" onClick={generateToken} disabled={busy} style={smallActionStyle}><RefreshCw size={16} aria-hidden="true" />{t('generateToken')}</button>
+          <button type="button" onClick={revokeTokens} disabled={busy} style={smallActionStyle}><Trash2 size={16} aria-hidden="true" />{t('revokeTokens')}</button>
+        </div>
+        {endpoint && (
+          <Field label={t('shortcutEndpoint')} htmlFor="shortcut-endpoint">
+            <input id="shortcut-endpoint" readOnly value={endpoint} style={inputStyle} />
+          </Field>
+        )}
+        {token && (
+          <Field label={t('importToken')} htmlFor="shortcut-token">
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <textarea id="shortcut-token" readOnly value={token} rows={2} style={{ ...inputStyle, fontFamily: 'monospace', resize: 'vertical' }} />
+              <button type="button" aria-label={t('copy')} onClick={() => navigator.clipboard?.writeText(token)} style={iconButtonStyle}><Clipboard size={18} aria-hidden="true" /></button>
+            </div>
+          </Field>
+        )}
+        <InfoCard style={{ background: 'var(--surface-2)' }}>
+          <SimpleList items={[
+            'Shortcut: Find Health Samples of handmatige invoer -> Dictionary -> Get Contents of URL.',
+            'Method: POST, Headers: Authorization = Bearer token, Content-Type = application/json.',
+            'Fallback: exporteer via HealthFit als CSV en importeer in de Log-tab.',
+          ]} />
+        </InfoCard>
+
+        {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: isSuccess ? 'var(--success)' : 'var(--danger)', margin: '10px 0', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
+
+        <button type="button" onClick={onClose} style={{
+          width: '100%', padding: '14px', borderRadius: '8px', border: '2px solid var(--line)',
+          background: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+        }}>{t('cancel')}</button>
+      </form>
+    </div>
+  );
+}
+
+function BellIcon() {
+  return <Clock3 size={16} aria-hidden="true" />;
+}
+
+function LogForm({ onSave, onClose, todayPlan, initialLog, t }) {
   const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
-    type: todayPlan?.type === 'strength' ? 'strength' : 'cycle',
-    duration: '',
-    distance: '',
-    avgHR: '',
-    maxHR: '',
-    kcal: '',
-    notes: '',
+    date: initialLog?.date || new Date().toISOString().slice(0, 10),
+    type: initialLog?.type || (todayPlan?.type === 'strength' ? 'strength' : 'cycle'),
+    duration: initialLog?.duration ?? '',
+    distance: initialLog?.distance ?? '',
+    avgHR: initialLog?.avg_hr ?? '',
+    maxHR: initialLog?.max_hr ?? '',
+    kcal: initialLog?.kcal ?? '',
+    notes: initialLog?.notes || '',
   });
 
   const handleSubmit = () => {
@@ -2020,7 +2571,7 @@ function LogForm({ onSave, onClose, todayPlan, t }) {
         borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px',
       }}>
         <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
-        <h2 id="log-form-title" style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700 }}>{t('workoutLog')}</h2>
+        <h2 id="log-form-title" style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700 }}>{initialLog ? t('editLog') : t('workoutLog')}</h2>
         <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--muted)' }}>
           {t('logSubtitle')}
         </p>
@@ -2121,3 +2672,82 @@ const inputStyle = {
   border: '2px solid var(--line)', fontSize: '15px',
   outline: 'none', background: 'white', boxSizing: 'border-box',
 };
+
+const primaryButtonStyle = {
+  flex: 1,
+  padding: '12px',
+  borderRadius: '8px',
+  border: 'none',
+  background: 'var(--accent)',
+  color: 'white',
+  fontSize: '14px',
+  fontWeight: 800,
+  cursor: 'pointer',
+};
+
+const secondaryButtonStyle = {
+  ...primaryButtonStyle,
+  background: 'var(--surface-3)',
+  color: 'var(--accent-strong)',
+  border: '1px solid var(--line)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '6px',
+};
+
+const smallActionStyle = {
+  border: '1px solid var(--line)',
+  background: 'var(--surface-2)',
+  color: 'var(--accent-strong)',
+  borderRadius: '8px',
+  padding: '9px 10px',
+  fontSize: '13px',
+  fontWeight: 800,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+};
+
+const iconButtonStyle = {
+  width: '44px',
+  minWidth: '44px',
+  borderRadius: '8px',
+  border: '1px solid var(--line)',
+  background: 'var(--surface-2)',
+  color: 'var(--accent-strong)',
+  cursor: 'pointer',
+};
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = `${base64String}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+async function subscribeToPush(authFetch) {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    throw new Error('Web Push wordt hier niet ondersteund');
+  }
+  const keyResponse = await fetch('/api/push/public-key');
+  const keyData = await keyResponse.json();
+  if (!keyData.publicKey) throw new Error('Web Push mist serverconfiguratie');
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Melding niet aangezet');
+  const registration = await navigator.serviceWorker.register('/sw.js');
+  const existing = await registration.pushManager.getSubscription();
+  const subscription = existing || await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
+  });
+  const response = await authFetch('/api/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscription }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Push subscribe failed');
+  return subscription;
+}

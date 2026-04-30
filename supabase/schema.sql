@@ -20,6 +20,8 @@ create table if not exists public.workout_logs (
   max_hr int,
   kcal int,
   notes text,
+  source text default 'manual',
+  external_id text,
   created_at timestamptz default now()
 );
 
@@ -43,9 +45,79 @@ create table if not exists public.daily_checkins (
   unique(user_id, date)
 );
 
+create table if not exists public.user_settings (
+  user_id uuid primary key references auth.users(id) not null,
+  kcal_target int default 2400,
+  protein_target int default 130,
+  water_target numeric default 2,
+  resting_hr_baseline int default 56,
+  reminder_enabled boolean default true,
+  reminder_time text default '20:00',
+  timezone text default 'Europe/Amsterdam',
+  heart_zones jsonb default '[{"zone":"Z1","min":121,"max":134},{"zone":"Z2","min":134,"max":147},{"zone":"Z3","min":147,"max":160},{"zone":"Z4","min":160,"max":173},{"zone":"Z5","min":173,"max":186}]'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.daily_habits (
+  id bigserial primary key,
+  user_id uuid references auth.users(id) not null,
+  date date not null,
+  protein_done boolean default false,
+  water_done boolean default false,
+  kcal_done boolean default false,
+  post_workout_protein_done boolean default false,
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id, date)
+);
+
+create table if not exists public.push_subscriptions (
+  id bigserial primary key,
+  user_id uuid references auth.users(id) not null,
+  endpoint text not null,
+  subscription jsonb not null,
+  user_agent text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id, endpoint)
+);
+
+create table if not exists public.health_import_tokens (
+  id bigserial primary key,
+  user_id uuid references auth.users(id) not null,
+  token_hash text not null unique,
+  label text default 'iOS Shortcut',
+  active boolean default true,
+  created_at timestamptz default now(),
+  last_used_at timestamptz
+);
+
+create table if not exists public.workout_import_events (
+  id bigserial primary key,
+  user_id uuid references auth.users(id) not null,
+  source text not null,
+  external_id text,
+  dedupe_key text not null,
+  payload_hash text not null,
+  workout_log_id bigint references public.workout_logs(id) on delete set null,
+  payload jsonb,
+  created_at timestamptz default now(),
+  unique(user_id, source, dedupe_key)
+);
+
+alter table public.workout_logs add column if not exists source text default 'manual';
+alter table public.workout_logs add column if not exists external_id text;
+
 alter table public.completions enable row level security;
 alter table public.workout_logs enable row level security;
 alter table public.daily_checkins enable row level security;
+alter table public.user_settings enable row level security;
+alter table public.daily_habits enable row level security;
+alter table public.push_subscriptions enable row level security;
+alter table public.health_import_tokens enable row level security;
+alter table public.workout_import_events enable row level security;
 
 drop policy if exists "Users manage own completions" on public.completions;
 create policy "Users manage own completions"
@@ -66,6 +138,46 @@ with check ((select auth.uid()) = user_id);
 drop policy if exists "Users manage own checkins" on public.daily_checkins;
 create policy "Users manage own checkins"
 on public.daily_checkins
+for all
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users manage own settings" on public.user_settings;
+create policy "Users manage own settings"
+on public.user_settings
+for all
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users manage own habits" on public.daily_habits;
+create policy "Users manage own habits"
+on public.daily_habits
+for all
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users manage own push subscriptions" on public.push_subscriptions;
+create policy "Users manage own push subscriptions"
+on public.push_subscriptions
+for all
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users manage own import tokens" on public.health_import_tokens;
+create policy "Users manage own import tokens"
+on public.health_import_tokens
+for all
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users manage own import events" on public.workout_import_events;
+create policy "Users manage own import events"
+on public.workout_import_events
 for all
 to authenticated
 using ((select auth.uid()) = user_id)
@@ -101,5 +213,25 @@ begin
       and tablename = 'daily_checkins'
   ) then
     alter publication supabase_realtime add table public.daily_checkins;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'user_settings'
+  ) then
+    alter publication supabase_realtime add table public.user_settings;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'daily_habits'
+  ) then
+    alter publication supabase_realtime add table public.daily_habits;
   end if;
 end $$;

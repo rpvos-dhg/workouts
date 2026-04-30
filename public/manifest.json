@@ -1,6 +1,7 @@
 {
   "name": "6-Weken Plan",
   "short_name": "6-Weken",
+  "id": "/",
   "description": "Jouw trainingsplan",
   "start_url": "/",
   "display": "standalone",
