@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bed,
   Bike,
+  BookOpen,
   CheckCircle2,
   Clipboard,
   Clock3,
@@ -83,6 +84,7 @@ const I18N = {
     magicLinkSent: 'Check je mail voor de magic link.',
     usePasswordLogin: 'Inloggen met wachtwoord',
     changePassword: 'Wachtwoord wijzigen',
+    documentation: 'Documentatie',
     newPassword: 'Nieuw wachtwoord',
     confirmPassword: 'Bevestig wachtwoord',
     passwordMismatch: 'Wachtwoorden komen niet overeen.',
@@ -287,6 +289,7 @@ const I18N = {
     magicLinkSent: 'Check your email for the magic link.',
     usePasswordLogin: 'Log in with password',
     changePassword: 'Change password',
+    documentation: 'Documentation',
     newPassword: 'New password',
     confirmPassword: 'Confirm password',
     passwordMismatch: 'Passwords do not match.',
@@ -1098,6 +1101,11 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
               width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
             }}><Settings size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('settings')}</button>
+            <a href="/docs" onClick={() => setShowMenu(false)} style={{
+              display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
+              textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
+              color: 'inherit', textDecoration: 'none', boxSizing: 'border-box',
+            }}><BookOpen size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('documentation')}</a>
             <button type="button" onClick={() => { setShowMenu(false); setShowPasswordDialog(true); }} style={{
               width: '100%', padding: '12px 16px', border: 'none', background: 'transparent',
               textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px',
