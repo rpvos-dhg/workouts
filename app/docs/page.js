@@ -55,6 +55,64 @@ const shortcutPayload = `{
   "notes": "Imported from Apple Health"
 }`;
 
+const walkthroughs = [
+  {
+    title: 'Workout import stap voor stap',
+    intro: 'Gebruik dit als je Apple Health of HealthFit workoutdata in de Log-tab wilt krijgen.',
+    steps: [
+      'Open de app en log in.',
+      'Open het menu rechtsboven en kies Instellingen.',
+      'Ga naar Health importtoken en klik Token maken.',
+      'Kopieer de Shortcut endpoint en de persoonlijke token. De token wordt maar een keer getoond.',
+      'Maak in iOS Shortcuts een shortcut met Get Contents of URL. Gebruik Method POST.',
+      'Zet de header Authorization op Bearer gevolgd door je persoonlijke token.',
+      'Zet de header Content-Type op application/json.',
+      'Stuur minimaal type, datum of startedAt, durationMin, en eventueel distanceKm, kcal, avgHr, maxHr en notes.',
+      'Run de Shortcut handmatig na een workout. Controleer daarna de Log-tab.',
+      'Wil je automatiseren, maak daarna pas een iOS Automation die de Shortcut dagelijks of na een workout draait.',
+    ],
+  },
+  {
+    title: 'CSV import stap voor stap',
+    intro: 'Gebruik dit als de iOS Shortcut niet betrouwbaar genoeg workoutdata kan uitlezen.',
+    steps: [
+      'Exporteer workouts via HealthFit of een Apple Health exporttool naar CSV.',
+      'Zorg dat de CSV kolommen bevat zoals date, type, durationMin, distanceKm, kcal, avgHr, maxHr en notes.',
+      'Open de app en ga naar Log.',
+      'Klik CSV importeren.',
+      'Kies het CSV-bestand.',
+      'Controleer de melding hoeveel workouts zijn geimporteerd.',
+      'Open een geimporteerde workout met het potloodicoon als je waarden wilt corrigeren.',
+    ],
+  },
+  {
+    title: 'Personalisatie stap voor stap',
+    intro: 'Gebruik dit om de app beter op jouw doelen en hartslagwaarden te laten reageren.',
+    steps: [
+      'Open het menu rechtsboven en kies Instellingen.',
+      'Vul je kcal-doel, eiwitdoel, waterdoel en rusthartslag-baseline in.',
+      'Pas je hartslagzones aan als je Apple Watch of trainingstest andere zones aangeeft.',
+      'Zet Reminders aan of uit en kies de reminder-tijd. Standaard is 20:00.',
+      'Laat timezone op Europe/Amsterdam staan, tenzij je in een andere tijdzone traint.',
+      'Klik Instellingen opslaan.',
+      'De dagchecklist, loganalyse en adaptief advies gebruiken daarna deze persoonlijke waarden.',
+    ],
+  },
+  {
+    title: 'Web Push stap voor stap',
+    intro: 'Gebruik dit om herinneringen te krijgen voor open trainingen en meetmomenten.',
+    steps: [
+      'Controleer in Vercel Production dat WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_SUBJECT en CRON_SECRET zijn ingesteld.',
+      'Redeploy Production na het instellen van deze environment variables.',
+      'Open de live app opnieuw en log in.',
+      'Open Instellingen en klik Web Push aanzetten.',
+      'Sta meldingen toe in de browser.',
+      'Op iPhone werkt dit alleen betrouwbaar als de app aan het beginscherm is toegevoegd als Home Screen web app.',
+      'De Vercel cron draait dagelijks en stuurt rond 20:00 een reminder als er nog een training of meetmoment openstaat.',
+    ],
+  },
+];
+
 export const metadata = {
   title: 'Documentatie | 6-Weken Plan',
   description: 'Functionele documentatie voor de 6-Weken Plan workouts-app.',
@@ -119,6 +177,21 @@ export default function DocsPage() {
             </div>
           </section>
         ))}
+
+        <section style={{ marginTop: '28px' }}>
+          <SectionHeading title="Stap voor stap" />
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {walkthroughs.map(flow => (
+              <article key={flow.title} className="info-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '16px' }}>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--accent-strong)' }}>{flow.title}</h2>
+                <p style={{ margin: '8px 0 12px', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.55 }}>{flow.intro}</p>
+                <ol style={{ margin: 0, paddingLeft: '22px', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.7 }}>
+                  {flow.steps.map(step => <li key={step}>{step}</li>)}
+                </ol>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <section style={{ marginTop: '28px' }}>
           <SectionHeading title="Shortcut import payload" />
