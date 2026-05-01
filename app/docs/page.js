@@ -8,7 +8,7 @@ const sections = [
       ['Week', 'Laat alle dagen van de huidige week zien met voltooi-status en snelle toegang tot dagdetails.'],
       ['Plan', 'Bundelt alle planonderdelen: dagen, hartslagzones, voeding, krachttraining en praktische tips.'],
       ['Meet', 'Legt geplande meetmomenten vast zoals gewicht, buikomtrek, slaap, rusthartslag, HRV, energie, stemming, spierpijn en honger.'],
-      ['Log', 'Registreert, bewerkt, verwijdert en importeert workouts met duur, afstand, hartslag, kcal en notities.'],
+      ['Log', 'Registreert, bewerkt en verwijdert handmatig ingevoerde workouts met duur, afstand, hartslag, kcal en notities.'],
       ['Inzicht', 'Visualiseert trends voor gewicht, buikomtrek, slaap, rusthartslag, fietssnelheid, hartslag en weekvoortgang.'],
     ],
   },
@@ -22,11 +22,8 @@ const sections = [
     ],
   },
   {
-    title: 'Import en integraties',
+    title: 'Integraties',
     items: [
-      ['iOS Shortcut import', 'De app kan workouts ontvangen via een persoonlijke importtoken en een beveiligde POST endpoint.'],
-      ['Duplicate detectie', 'Imports gebruiken een external id of payload hash zodat automatische imports geen dubbele logs maken.'],
-      ['CSV fallback', 'HealthFit- of Apple Health-exportbestanden kunnen via de Log-tab worden geimporteerd.'],
       ['Web Push', 'Trainingen en meetmomenten kunnen om 20:00 Europe/Amsterdam een push reminder sturen als ze nog openstaan.'],
     ],
   },
@@ -34,57 +31,14 @@ const sections = [
     title: 'Beheer en veiligheid',
     items: [
       ['Authenticatie', 'Gebruikers loggen in via Supabase Auth met wachtwoord, magic link of wachtwoordherstel.'],
-      ['RLS', 'Supabase Row Level Security zorgt dat gebruikers alleen hun eigen logs, checkins, settings, habits, push subscriptions en importdata beheren.'],
+      ['RLS', 'Supabase Row Level Security zorgt dat gebruikers alleen hun eigen logs, checkins, settings, habits en push subscriptions beheren.'],
       ['Server secrets', 'Service role, Web Push private key en CRON_SECRET staan alleen server-side in Vercel environment variables.'],
       ['Cron', 'Vercel Cron roept dagelijks de reminder-endpoint aan. De endpoint accepteert alleen requests met de juiste CRON_SECRET.'],
     ],
   },
 ];
 
-const shortcutPayload = `{
-  "source": "ios_shortcut",
-  "externalId": "optional-id",
-  "startedAt": "2026-05-02T20:00:00+02:00",
-  "endedAt": "2026-05-02T21:00:00+02:00",
-  "type": "cycling",
-  "durationMin": 60,
-  "distanceKm": 18.2,
-  "kcal": 530,
-  "avgHr": 142,
-  "maxHr": 168,
-  "notes": "Imported from Apple Health"
-}`;
-
 const walkthroughs = [
-  {
-    title: 'Workout import stap voor stap',
-    intro: 'Gebruik dit als je Apple Health of HealthFit workoutdata in de Log-tab wilt krijgen.',
-    steps: [
-      'Open de app en log in.',
-      'Open het menu rechtsboven en kies Instellingen.',
-      'Ga naar Health importtoken en klik Token maken.',
-      'Kopieer de Shortcut endpoint en de persoonlijke token. De token wordt maar een keer getoond.',
-      'Maak in iOS Shortcuts een shortcut met Get Contents of URL. Gebruik Method POST.',
-      'Zet de header Authorization op Bearer gevolgd door je persoonlijke token.',
-      'Zet de header Content-Type op application/json.',
-      'Stuur minimaal type, datum of startedAt, durationMin, en eventueel distanceKm, kcal, avgHr, maxHr en notes.',
-      'Run de Shortcut handmatig na een workout. Controleer daarna de Log-tab.',
-      'Wil je automatiseren, maak daarna pas een iOS Automation die de Shortcut dagelijks of na een workout draait.',
-    ],
-  },
-  {
-    title: 'CSV import stap voor stap',
-    intro: 'Gebruik dit als de iOS Shortcut niet betrouwbaar genoeg workoutdata kan uitlezen.',
-    steps: [
-      'Exporteer workouts via HealthFit of een Apple Health exporttool naar CSV.',
-      'Zorg dat de CSV kolommen bevat zoals date, type, durationMin, distanceKm, kcal, avgHr, maxHr en notes.',
-      'Open de app en ga naar Log.',
-      'Klik CSV importeren.',
-      'Kies het CSV-bestand.',
-      'Controleer de melding hoeveel workouts zijn geimporteerd.',
-      'Open een geimporteerde workout met het potloodicoon als je waarden wilt corrigeren.',
-    ],
-  },
   {
     title: 'Personalisatie stap voor stap',
     intro: 'Gebruik dit om de app beter op jouw doelen en hartslagwaarden te laten reageren.',
@@ -159,8 +113,8 @@ export default function DocsPage() {
           </div>
           <div className="signal-card">
             <div className="signal-kicker">Integraties</div>
-            <div className="signal-value">Web Push + Health import</div>
-            <div className="signal-note">Push reminders, iOS Shortcut endpoint en CSV importfallback.</div>
+            <div className="signal-value">Web Push</div>
+            <div className="signal-note">Push reminders voor open trainingen en meetmomenten.</div>
           </div>
         </section>
 
@@ -190,25 +144,6 @@ export default function DocsPage() {
                 </ol>
               </article>
             ))}
-          </div>
-        </section>
-
-        <section style={{ marginTop: '28px' }}>
-          <SectionHeading title="Shortcut import payload" />
-          <div className="info-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '16px' }}>
-            <p style={{ margin: '0 0 12px', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.55 }}>
-              De iOS Shortcut stuurt JSON naar <code>/api/import/shortcut/workout</code> met <code>Authorization: Bearer &lt;persoonlijke-token&gt;</code>.
-            </p>
-            <pre style={{
-              margin: 0,
-              overflowX: 'auto',
-              borderRadius: '8px',
-              background: '#082631',
-              color: 'white',
-              padding: '14px',
-              fontSize: '13px',
-              lineHeight: 1.5,
-            }}>{shortcutPayload}</pre>
           </div>
         </section>
 

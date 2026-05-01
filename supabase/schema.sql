@@ -1,6 +1,11 @@
 -- 6-Weken Plan App Supabase schema
 -- Run this in Supabase SQL Editor for a fresh project.
 
+drop table if exists public.workout_import_events;
+drop table if exists public.health_import_tokens;
+alter table if exists public.workout_logs drop column if exists source;
+alter table if exists public.workout_logs drop column if exists external_id;
+
 create table if not exists public.completions (
   id bigserial primary key,
   user_id uuid references auth.users(id) not null,
@@ -20,8 +25,6 @@ create table if not exists public.workout_logs (
   max_hr int,
   kcal int,
   notes text,
-  source text default 'manual',
-  external_id text,
   created_at timestamptz default now()
 );
 
@@ -84,40 +87,12 @@ create table if not exists public.push_subscriptions (
   unique(user_id, endpoint)
 );
 
-create table if not exists public.health_import_tokens (
-  id bigserial primary key,
-  user_id uuid references auth.users(id) not null,
-  token_hash text not null unique,
-  label text default 'iOS Shortcut',
-  active boolean default true,
-  created_at timestamptz default now(),
-  last_used_at timestamptz
-);
-
-create table if not exists public.workout_import_events (
-  id bigserial primary key,
-  user_id uuid references auth.users(id) not null,
-  source text not null,
-  external_id text,
-  dedupe_key text not null,
-  payload_hash text not null,
-  workout_log_id bigint references public.workout_logs(id) on delete set null,
-  payload jsonb,
-  created_at timestamptz default now(),
-  unique(user_id, source, dedupe_key)
-);
-
-alter table public.workout_logs add column if not exists source text default 'manual';
-alter table public.workout_logs add column if not exists external_id text;
-
 alter table public.completions enable row level security;
 alter table public.workout_logs enable row level security;
 alter table public.daily_checkins enable row level security;
 alter table public.user_settings enable row level security;
 alter table public.daily_habits enable row level security;
 alter table public.push_subscriptions enable row level security;
-alter table public.health_import_tokens enable row level security;
-alter table public.workout_import_events enable row level security;
 
 drop policy if exists "Users manage own completions" on public.completions;
 create policy "Users manage own completions"
@@ -162,22 +137,6 @@ with check ((select auth.uid()) = user_id);
 drop policy if exists "Users manage own push subscriptions" on public.push_subscriptions;
 create policy "Users manage own push subscriptions"
 on public.push_subscriptions
-for all
-to authenticated
-using ((select auth.uid()) = user_id)
-with check ((select auth.uid()) = user_id);
-
-drop policy if exists "Users manage own import tokens" on public.health_import_tokens;
-create policy "Users manage own import tokens"
-on public.health_import_tokens
-for all
-to authenticated
-using ((select auth.uid()) = user_id)
-with check ((select auth.uid()) = user_id);
-
-drop policy if exists "Users manage own import events" on public.workout_import_events;
-create policy "Users manage own import events"
-on public.workout_import_events
 for all
 to authenticated
 using ((select auth.uid()) = user_id)

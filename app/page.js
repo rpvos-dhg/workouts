@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Activity,
   BarChart3,
@@ -8,7 +8,6 @@ import {
   Bike,
   BookOpen,
   CheckCircle2,
-  Clipboard,
   Clock3,
   Dumbbell,
   Edit3,
@@ -21,13 +20,11 @@ import {
   Mail,
   MoreHorizontal,
   Plus,
-  RefreshCw,
   Settings,
   Star,
   Target,
   Trash2,
   Trophy,
-  Upload,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA, TYPE_META } from '../lib/plan-data';
@@ -47,7 +44,6 @@ import {
   getWeekOverview,
   isMeasurementCheckin,
 } from '../lib/plan-content';
-import { normalizeWorkoutImport, parseWorkoutCsv } from '../lib/workout-import';
 
 const TYPE_ICONS = {
   cycle: Bike,
@@ -233,9 +229,6 @@ const I18N = {
     dailyChecklist: 'Dagchecklist',
     adaptiveAdvice: 'Adaptief advies',
     editLog: 'Log bewerken',
-    importCsv: 'CSV importeren',
-    csvImported: '{count} workouts geimporteerd',
-    importFailed: 'Import mislukt: {message}',
     reminderSettings: 'Reminders',
     enablePush: 'Web Push aanzetten',
     pushEnabled: 'Web Push staat aan',
@@ -249,13 +242,6 @@ const I18N = {
     reminderEnabled: 'Reminders aan',
     reminderTime: 'Reminder tijd',
     timezone: 'Tijdzone',
-    importToken: 'Health importtoken',
-    generateToken: 'Token maken',
-    revokeTokens: 'Tokens intrekken',
-    tokenCreated: 'Token aangemaakt. Bewaar deze in je Shortcut.',
-    tokenRevoked: 'Tokens ingetrokken',
-    shortcutEndpoint: 'Shortcut endpoint',
-    copy: 'Kopieren',
     proteinDone: 'Eiwit gehaald',
     waterDone: 'Water gehaald',
     kcalDone: 'Kcal binnen doel',
@@ -438,9 +424,6 @@ const I18N = {
     dailyChecklist: 'Daily checklist',
     adaptiveAdvice: 'Adaptive advice',
     editLog: 'Edit log',
-    importCsv: 'Import CSV',
-    csvImported: '{count} workouts imported',
-    importFailed: 'Import failed: {message}',
     reminderSettings: 'Reminders',
     enablePush: 'Enable Web Push',
     pushEnabled: 'Web Push is enabled',
@@ -454,13 +437,6 @@ const I18N = {
     reminderEnabled: 'Reminders on',
     reminderTime: 'Reminder time',
     timezone: 'Timezone',
-    importToken: 'Health import token',
-    generateToken: 'Create token',
-    revokeTokens: 'Revoke tokens',
-    tokenCreated: 'Token created. Store it in your Shortcut.',
-    tokenRevoked: 'Tokens revoked',
-    shortcutEndpoint: 'Shortcut endpoint',
-    copy: 'Copy',
     proteinDone: 'Protein done',
     waterDone: 'Water done',
     kcalDone: 'Kcal on target',
@@ -901,8 +877,6 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       max_hr: parseInt(log.maxHR ?? log.max_hr) || null,
       kcal: parseInt(log.kcal) || null,
       notes: log.notes || null,
-      source: log.source || 'manual',
-      external_id: log.external_id || log.externalId || null,
   });
 
   const saveLog = async (log) => {
@@ -930,15 +904,6 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     setSyncing(false);
     setEditingLog(null);
     setShowLogForm(false);
-  };
-
-  const importCsvLogs = async (rows) => {
-    setSyncing(true);
-    const payloads = rows.map(row => buildLogPayload(row));
-    const { data, error } = await supabase.from('workout_logs').insert(payloads).select();
-    if (!error && data) setLogs([...data, ...logs]);
-    setSyncing(false);
-    return { count: data?.length || 0, error };
   };
 
   const deleteLog = async (id) => {
@@ -1160,7 +1125,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} t={t} />}
         {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
         {view === 'insights' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
-        {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} onImportCsv={importCsvLogs} t={t} />}
+        {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
       </main>
 
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} t={t} />}
@@ -2111,9 +2076,7 @@ function MiniChart({ points, color, emptyLabel }) {
   );
 }
 
-function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, onImportCsv, t }) {
-  const fileInputRef = useRef(null);
-  const [importMessage, setImportMessage] = useState('');
+function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, t }) {
   const cycleLogs = logs.filter(l => l.type === 'cycle' && l.distance && l.duration);
   const avgSpeed = cycleLogs.length
     ? cycleLogs.reduce((s, l) => s + (l.distance / (l.duration / 60)), 0) / cycleLogs.length : 0;
@@ -2132,32 +2095,8 @@ function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, onImpor
             <button type="button" onClick={() => setShowLogForm(true)} style={smallActionStyle}>
               <Plus size={16} aria-hidden="true" /> {t('save')}
             </button>
-            <button type="button" onClick={() => fileInputRef.current?.click()} style={smallActionStyle}>
-              <Upload size={16} aria-hidden="true" /> {t('importCsv')}
-            </button>
           </div>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          style={{ display: 'none' }}
-          onChange={async (event) => {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            setImportMessage('');
-            try {
-              const rows = parseWorkoutCsv(await file.text(), { source: 'csv' });
-              const result = await onImportCsv(rows.map(row => normalizeWorkoutImport(row)));
-              setImportMessage(result.error ? t('importFailed', { message: result.error.message }) : t('csvImported', { count: result.count }));
-            } catch (error) {
-              setImportMessage(t('importFailed', { message: error.message }));
-            } finally {
-              event.target.value = '';
-            }
-          }}
-        />
-        {importMessage && <div role="status" aria-live="polite" style={{ marginTop: '10px', fontSize: '13px', color: importMessage.startsWith(t('importFailed').split(':')[0]) ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>{importMessage}</div>}
       </InfoCard>
 
       {logs.length > 0 && (
@@ -2365,9 +2304,7 @@ function SettingsDialog({ settings, onSave, onClose, t }) {
   const [form, setForm] = useState(() => withDefaultSettings(settings));
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [token, setToken] = useState('');
-  const [endpoint, setEndpoint] = useState('');
-  const isSuccess = [t('saved'), t('pushEnabled'), t('tokenCreated'), t('tokenRevoked')].includes(message);
+  const isSuccess = [t('saved'), t('pushEnabled')].includes(message);
 
   useEffect(() => {
     setForm(withDefaultSettings(settings));
@@ -2391,40 +2328,6 @@ function SettingsDialog({ settings, onSave, onClose, t }) {
     const { error } = await onSave(form);
     setMessage(error ? error.message : t('saved'));
     setBusy(false);
-  };
-
-  const generateToken = async () => {
-    setBusy(true);
-    setMessage('');
-    try {
-      const response = await authFetch('/api/import/token', { method: 'POST' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Token failed');
-      setToken(data.token);
-      setEndpoint(data.endpoint);
-      setMessage(t('tokenCreated'));
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const revokeTokens = async () => {
-    setBusy(true);
-    setMessage('');
-    try {
-      const response = await authFetch('/api/import/token', { method: 'DELETE' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Revoke failed');
-      setToken('');
-      setEndpoint('');
-      setMessage(t('tokenRevoked'));
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setBusy(false);
-    }
   };
 
   const enablePush = async () => {
@@ -2491,32 +2394,6 @@ function SettingsDialog({ settings, onSave, onClose, t }) {
           <button type="button" onClick={enablePush} disabled={busy} style={secondaryButtonStyle}><BellIcon />{t('enablePush')}</button>
           <button type="submit" disabled={busy} style={primaryButtonStyle}>{busy ? t('busy') : t('saveSettings')}</button>
         </div>
-
-        <SectionTitle title={t('importToken')} />
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-          <button type="button" onClick={generateToken} disabled={busy} style={smallActionStyle}><RefreshCw size={16} aria-hidden="true" />{t('generateToken')}</button>
-          <button type="button" onClick={revokeTokens} disabled={busy} style={smallActionStyle}><Trash2 size={16} aria-hidden="true" />{t('revokeTokens')}</button>
-        </div>
-        {endpoint && (
-          <Field label={t('shortcutEndpoint')} htmlFor="shortcut-endpoint">
-            <input id="shortcut-endpoint" readOnly value={endpoint} style={inputStyle} />
-          </Field>
-        )}
-        {token && (
-          <Field label={t('importToken')} htmlFor="shortcut-token">
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <textarea id="shortcut-token" readOnly value={token} rows={2} style={{ ...inputStyle, fontFamily: 'monospace', resize: 'vertical' }} />
-              <button type="button" aria-label={t('copy')} onClick={() => navigator.clipboard?.writeText(token)} style={iconButtonStyle}><Clipboard size={18} aria-hidden="true" /></button>
-            </div>
-          </Field>
-        )}
-        <InfoCard style={{ background: 'var(--surface-2)' }}>
-          <SimpleList items={[
-            'Shortcut: Find Health Samples of handmatige invoer -> Dictionary -> Get Contents of URL.',
-            'Method: POST, Headers: Authorization = Bearer token, Content-Type = application/json.',
-            'Fallback: exporteer via HealthFit als CSV en importeer in de Log-tab.',
-          ]} />
-        </InfoCard>
 
         {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: isSuccess ? 'var(--success)' : 'var(--danger)', margin: '10px 0', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
 
@@ -2716,16 +2593,6 @@ const smallActionStyle = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '6px',
-};
-
-const iconButtonStyle = {
-  width: '44px',
-  minWidth: '44px',
-  borderRadius: '8px',
-  border: '1px solid var(--line)',
-  background: 'var(--surface-2)',
-  color: 'var(--accent-strong)',
-  cursor: 'pointer',
 };
 
 function urlBase64ToUint8Array(base64String) {
