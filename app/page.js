@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Activity,
   BarChart3,
@@ -8,6 +8,15 @@ import {
   Bike,
   BookOpen,
   CheckCircle2,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudMoon,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
+  Cloudy,
   Clock3,
   Dumbbell,
   Edit3,
@@ -19,12 +28,16 @@ import {
   LogOut,
   Mail,
   MoreHorizontal,
+  Moon,
   Plus,
   Settings,
   Star,
+  Sun,
   Target,
+  Thermometer,
   Trash2,
   Trophy,
+  Wind,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA, TYPE_META } from '../lib/plan-data';
@@ -124,6 +137,32 @@ const I18N = {
     kcalTarget: '{kcal} kcal target',
     postTrainingProtein: '25-30g eiwit binnen 1u na training',
     longRideSnack: 'Snack + water mee voor lange rit',
+    cyclingWeather: 'Fietsweer',
+    weatherBestTime: 'Beste fietsmoment',
+    weatherLoading: 'Weer ophalen...',
+    weatherUnavailable: 'Weer nog niet beschikbaar',
+    weatherNoForecast: 'Beschikbaar binnen 16 dagen voor de training.',
+    weatherError: 'Weer niet beschikbaar',
+    weatherGood: 'Goed fietsweer',
+    weatherOk: 'Kan, met aandacht',
+    weatherPoor: 'Liever schuiven',
+    weatherBest: 'Beste',
+    weatherOtherWindows: 'Alternatieven',
+    weatherScore: 'Score {score}/100',
+    weatherRankedHours: 'Alle uren op score',
+    weatherTemp: '{temp} C',
+    weatherWind: '{wind} km/u',
+    weatherRainChance: '{rain}% regen',
+    weatherDayScores: 'Uurscores',
+    weatherTopRank: 'Top {rank}',
+    weatherMetrics: '{temp} C - wind {wind} km/u - vlagen {gust} km/u - regen {rain}%',
+    weatherLocation: 'Open-Meteo - {location}',
+    weatherRiskCalm: 'Droog en beheersbaar',
+    weatherRiskRain: 'Regenkans weegt zwaar',
+    weatherRiskWind: 'Wind of vlagen zijn bepalend',
+    weatherRiskCold: 'Koud voor rustige rit',
+    weatherRiskHeat: 'Warm, drink extra',
+    weatherRiskDark: 'Buiten daglicht',
     week6Recovery: 'Extra zout + water, herstel prioriteit',
     measurementOpen: 'MEETMOMENT STAAT OPEN',
     measurementToday: 'MEETMOMENT VANDAAG',
@@ -319,6 +358,32 @@ const I18N = {
     kcalTarget: '{kcal} kcal target',
     postTrainingProtein: '25-30g protein within 1h after training',
     longRideSnack: 'Bring snack + water for long rides',
+    cyclingWeather: 'Cycling weather',
+    weatherBestTime: 'Best ride window',
+    weatherLoading: 'Loading weather...',
+    weatherUnavailable: 'Weather not available yet',
+    weatherNoForecast: 'Available within 16 days of the workout.',
+    weatherError: 'Weather unavailable',
+    weatherGood: 'Good cycling weather',
+    weatherOk: 'Possible, pay attention',
+    weatherPoor: 'Better to shift',
+    weatherBest: 'Best',
+    weatherOtherWindows: 'Alternatives',
+    weatherScore: 'Score {score}/100',
+    weatherRankedHours: 'All hours by score',
+    weatherTemp: '{temp} C',
+    weatherWind: '{wind} km/h',
+    weatherRainChance: '{rain}% rain',
+    weatherDayScores: 'Hourly scores',
+    weatherTopRank: 'Top {rank}',
+    weatherMetrics: '{temp} C - wind {wind} km/h - gusts {gust} km/h - rain {rain}%',
+    weatherLocation: 'Open-Meteo - {location}',
+    weatherRiskCalm: 'Dry and manageable',
+    weatherRiskRain: 'Rain risk is the limiter',
+    weatherRiskWind: 'Wind or gusts are the limiter',
+    weatherRiskCold: 'Cold for an easy ride',
+    weatherRiskHeat: 'Warm, drink extra',
+    weatherRiskDark: 'Outside daylight',
     week6Recovery: 'Extra salt + water, recovery first',
     measurementOpen: 'MEASUREMENT OPEN',
     measurementToday: 'MEASUREMENT TODAY',
@@ -769,6 +834,12 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [cyclingWeather, setCyclingWeather] = useState({
+    status: 'idle',
+    byDate: {},
+    location: null,
+    error: '',
+  });
 
   useEffect(() => {
     if (forcePasswordUpdate) setShowPasswordDialog(true);
@@ -1009,6 +1080,49 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const dueMeasurement = getDueMeasurementMoment(checkins, todayString);
   const todayHabit = habits.find(item => item.date === todayString) || { date: todayString };
   const adaptiveAdvice = getAdaptiveAdvice({ today, completed, logs, checkins, settings, todayString });
+  const weatherTimezone = withDefaultSettings(settings).timezone;
+  const weatherForecastEnd = addDaysString(todayString, 15);
+  const weatherCycleDays = PLAN_DATA
+    .filter(day => day.type === 'cycle' && day.date >= todayString && day.date <= weatherForecastEnd)
+    .map(day => ({ date: day.date, durationMin: day.dur || 60 }));
+  const weatherRequestKey = weatherCycleDays.map(day => `${day.date}:${day.durationMin}`).join('|');
+
+  useEffect(() => {
+    if (!weatherRequestKey) {
+      setCyclingWeather({ status: 'idle', byDate: {}, location: null, error: '' });
+      return;
+    }
+
+    const controller = new AbortController();
+    setCyclingWeather(current => ({ ...current, status: 'loading', error: '' }));
+
+    fetch('/api/weather/cycling', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: weatherCycleDays, timezone: weatherTimezone }),
+      signal: controller.signal,
+    })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Weather failed');
+        setCyclingWeather({
+          status: 'ready',
+          byDate: data.recommendations || {},
+          location: data.location || null,
+          error: '',
+        });
+      })
+      .catch(error => {
+        if (error.name === 'AbortError') return;
+        setCyclingWeather(current => ({
+          ...current,
+          status: 'error',
+          error: error.message,
+        }));
+      });
+
+    return () => controller.abort();
+  }, [weatherRequestKey, weatherTimezone]);
 
   useEffect(() => {
     if (!dueMeasurement || typeof window === 'undefined' || !('Notification' in window)) return;
@@ -1114,21 +1228,21 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       />
 
       {dueMeasurement && (
-        <div style={{ padding: '16px 16px 0' }}>
+        <div className="banner-wrap">
           <MeasurementBanner moment={dueMeasurement} onOpen={() => openMeasurement(dueMeasurement.date)} t={t} />
         </div>
       )}
 
       <main className="view-main" style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} t={t} />}
-        {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} t={t} />}
-        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} t={t} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} t={t} />}
+        {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
+        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
         {view === 'insights' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
         {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
       </main>
 
-      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} t={t} />}
+      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} t={t} />}
       {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} t={t} />}
       {showSettings && <SettingsDialog settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} t={t} />}
       {showPasswordDialog && (
@@ -1176,7 +1290,7 @@ function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   );
 }
 
-function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, t }) {
+function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, cyclingWeather, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
@@ -1244,6 +1358,14 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
         </div>
 
         <AdaptiveAdviceCard advice={adaptiveAdvice} t={t} />
+        {day.type === 'cycle' && (
+          <CyclingWeatherCard
+            recommendation={cyclingWeather.byDate?.[day.date]}
+            status={cyclingWeather.status}
+            location={cyclingWeather.location}
+            t={t}
+          />
+        )}
         <DailyHabitCard day={day} habit={habit} settings={settings} onToggle={(patch) => saveDailyHabit(habit.date, patch)} t={t} />
 
         <div className="info-card" style={{
@@ -1279,6 +1401,289 @@ function AdaptiveAdviceCard({ advice, t }) {
       </div>
       <SimpleList items={advice.items} />
     </InfoCard>
+  );
+}
+
+function getWeatherQualityLabel(quality, t) {
+  if (quality === 'good') return t('weatherGood');
+  if (quality === 'ok') return t('weatherOk');
+  return t('weatherPoor');
+}
+
+function getWeatherQualityColor(quality) {
+  if (quality === 'good') return 'var(--success)';
+  if (quality === 'ok') return '#B86E00';
+  return 'var(--danger)';
+}
+
+function getWeatherIconComponent(weatherCode, isDay = true) {
+  const code = Number(weatherCode);
+  if (!Number.isFinite(code)) return Cloud;
+  if (code >= 95) return CloudLightning;
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return CloudSnow;
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return CloudRain;
+  if (code >= 51 && code <= 57) return CloudDrizzle;
+  if (code === 45 || code === 48) return CloudFog;
+  if (code === 3) return Cloudy;
+  if (code === 1 || code === 2) return isDay ? CloudSun : CloudMoon;
+  if (code === 0) return isDay ? Sun : Moon;
+  return Cloud;
+}
+
+function WeatherConditionIcon({ weatherCode, isDay, color = 'currentColor', size = 16 }) {
+  const Icon = getWeatherIconComponent(weatherCode, isDay);
+  return <Icon size={size} aria-hidden="true" style={{ color, flexShrink: 0 }} />;
+}
+
+function roundedWeatherValue(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.round(number) : '-';
+}
+
+function getWeatherRiskLabels(risks = [], t) {
+  const labels = {
+    calm: t('weatherRiskCalm'),
+    rain: t('weatherRiskRain'),
+    wind: t('weatherRiskWind'),
+    cold: t('weatherRiskCold'),
+    heat: t('weatherRiskHeat'),
+    dark: t('weatherRiskDark'),
+  };
+  return risks.map(risk => labels[risk]).filter(Boolean);
+}
+
+function formatWeatherMetrics(recommendation, t) {
+  return t('weatherMetrics', {
+    temp: roundedWeatherValue(recommendation.temperature),
+    wind: roundedWeatherValue(recommendation.windSpeed),
+    gust: roundedWeatherValue(recommendation.windGusts),
+    rain: roundedWeatherValue(recommendation.precipitationProbability),
+  });
+}
+
+function CyclingWeatherCard({ recommendation, status, location, t }) {
+  if (status === 'loading' && !recommendation) {
+    return (
+      <InfoCard>
+        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('cyclingWeather')}</div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', color: 'var(--muted)', fontSize: '14px' }}>
+          <CloudSun size={16} aria-hidden="true" />
+          {t('weatherLoading')}
+        </div>
+      </InfoCard>
+    );
+  }
+
+  if (!recommendation) {
+    return (
+      <InfoCard>
+        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('cyclingWeather')}</div>
+        <div style={{ color: status === 'error' ? 'var(--danger)' : 'var(--muted)', marginTop: '8px', fontSize: '14px', fontWeight: 700 }}>
+          {status === 'error' ? t('weatherError') : t('weatherUnavailable')}
+        </div>
+        <div style={{ color: 'var(--muted)', marginTop: '4px', fontSize: '13px' }}>{t('weatherNoForecast')}</div>
+      </InfoCard>
+    );
+  }
+
+  const qualityColor = getWeatherQualityColor(recommendation.quality);
+  const rankedHours = [...(recommendation.hourlyScores || [])]
+    .sort((a, b) => b.score - a.score || a.startTime.localeCompare(b.startTime))
+    .map((window, index) => ({
+      ...window,
+      label: index < 3 ? t('weatherTopRank', { rank: index + 1 }) : `#${index + 1}`,
+    }));
+  return (
+    <InfoCard style={{ borderLeft: `4px solid ${qualityColor}` }}>
+      <div className="signal-kicker" style={{ color: qualityColor }}>{t('weatherBestTime')}</div>
+      <div style={{ color: 'var(--muted)', fontSize: '11px', fontWeight: 800, marginTop: '8px', textTransform: 'uppercase' }}>
+        {t('weatherRankedHours')}
+      </div>
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginTop: '10px',
+        overflowX: 'auto',
+        maxWidth: '100%',
+        minWidth: 0,
+        padding: '2px 2px 10px',
+        scrollSnapType: 'x mandatory',
+        scrollbarWidth: 'thin',
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehaviorX: 'contain',
+      }}>
+        {rankedHours.map((window, index) => {
+          const windowColor = getWeatherQualityColor(window.quality);
+          const isTopWindow = index < 3;
+          return (
+            <div key={`${window.startTime}-${index}`} style={{
+              flex: '0 0 156px',
+              minWidth: '156px',
+              border: `${isTopWindow ? 2 : 1}px solid ${isTopWindow ? windowColor : 'var(--line)'}`,
+              background: isTopWindow ? 'var(--surface-2)' : 'white',
+              borderRadius: '8px',
+              padding: '9px',
+              display: 'grid',
+              gap: '7px',
+              alignContent: 'start',
+              scrollSnapAlign: 'start',
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: '7px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <WeatherConditionIcon weatherCode={window.weatherCode} isDay={window.isDay} color={windowColor} />
+                  <span style={{ fontSize: '14px', fontWeight: 800 }}>{window.startTime}-{window.endTime}</span>
+                </div>
+                <div style={{ fontSize: '11px', color: windowColor, fontWeight: 800, marginTop: '2px' }}>
+                  {window.label} · {getWeatherQualityLabel(window.quality, t)}
+                </div>
+              </div>
+              <div style={{
+                borderRadius: '999px',
+                padding: '5px 7px',
+                background: windowColor,
+                color: 'white',
+                fontSize: '11px',
+                fontWeight: 800,
+                whiteSpace: 'nowrap',
+                justifySelf: 'start',
+              }}>
+                {t('weatherScore', { score: window.score })}
+              </div>
+              <div style={{ display: 'grid', gap: '5px', color: 'var(--muted)', fontSize: '12px', fontWeight: 700 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                  <Thermometer size={13} aria-hidden="true" style={{ color: 'var(--accent-strong)', flexShrink: 0 }} />
+                  {t('weatherTemp', { temp: roundedWeatherValue(window.temperature) })}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                  <Wind size={13} aria-hidden="true" style={{ color: 'var(--accent-strong)', flexShrink: 0 }} />
+                  {t('weatherWind', { wind: roundedWeatherValue(window.windSpeed) })}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                  <CloudRain size={13} aria-hidden="true" style={{ color: 'var(--accent-strong)', flexShrink: 0 }} />
+                  {t('weatherRainChance', { rain: roundedWeatherValue(window.precipitationProbability) })}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <CyclingWeatherBarGraph hourlyScores={recommendation.hourlyScores || []} t={t} />
+      <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '10px', lineHeight: 1.5 }}>
+        {formatWeatherMetrics(recommendation, t)}
+      </div>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+        {getWeatherRiskLabels(recommendation.risks, t).map(label => (
+          <Tag key={label} icon={Wind} label={label} bg="var(--surface-2)" color="var(--accent-strong)" />
+        ))}
+      </div>
+      {location?.label && (
+        <div style={{ color: 'var(--muted-2)', fontSize: '12px', marginTop: '10px' }}>
+          {t('weatherLocation', { location: location.label })}
+        </div>
+      )}
+    </InfoCard>
+  );
+}
+
+function CyclingWeatherBarGraph({ hourlyScores, t }) {
+  const scrollRef = useRef(null);
+  const bestIndex = hourlyScores.findIndex(item => item.rank === 1);
+  const bestStart = bestIndex >= 0 ? hourlyScores[bestIndex].startTime : '';
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container || bestIndex < 0) return;
+    const item = container.querySelector(`[data-weather-index="${bestIndex}"]`);
+    if (!item) return;
+    const left = item.offsetLeft - ((container.clientWidth - item.clientWidth) / 2);
+    container.scrollTo({ left: Math.max(0, left), behavior: 'auto' });
+  }, [bestIndex, bestStart]);
+
+  if (!hourlyScores.length) return null;
+  const getBarColor = (item) => {
+    if (item.rank === 1) return 'var(--action)';
+    if (item.rank === 2) return 'var(--accent)';
+    if (item.rank === 3) return 'var(--success)';
+    if (item.quality === 'good') return '#8abda6';
+    if (item.quality === 'ok') return '#d8b86c';
+    return '#d98989';
+  };
+
+  return (
+    <div style={{ marginTop: '12px' }}>
+      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px' }}>
+        {t('weatherDayScores')}
+      </div>
+      <div
+        ref={scrollRef}
+        role="img"
+        aria-label={t('weatherDayScores')}
+        style={{
+          display: 'flex',
+          gap: '6px',
+          overflowX: 'auto',
+          maxWidth: '100%',
+          minWidth: 0,
+          padding: '4px 2px 10px',
+          scrollSnapType: 'x mandatory',
+          scrollPadding: '2px',
+          scrollbarWidth: 'thin',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehaviorX: 'contain',
+        }}
+      >
+        {hourlyScores.map((item, index) => {
+          const barHeight = Math.max(12, Math.round(item.score * 0.78));
+          const highlighted = !!item.rank;
+          const barColor = getBarColor(item);
+          return (
+            <div
+              key={item.startTime}
+              data-weather-index={index}
+              title={`${item.startTime}-${item.endTime}: ${item.score}/100`}
+              style={{
+              flex: '0 0 42px',
+              minWidth: '42px',
+              display: 'grid',
+              gap: '4px',
+              justifyItems: 'center',
+              scrollSnapAlign: 'center',
+              border: highlighted ? `2px solid ${barColor}` : '1px solid var(--line)',
+              background: highlighted ? 'rgba(244, 182, 63, 0.10)' : 'var(--surface-2)',
+              borderRadius: '8px',
+              padding: '7px 4px',
+            }}>
+              <div style={{
+                height: '74px',
+                width: '100%',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                borderRadius: '6px',
+                background: 'white',
+                border: '1px solid rgba(213, 222, 219, 0.8)',
+                padding: '4px',
+              }}>
+                <div style={{
+                  width: '12px',
+                  height: `${Math.min(66, barHeight)}px`,
+                  borderRadius: '999px 999px 4px 4px',
+                  background: barColor,
+                  boxShadow: highlighted ? '0 4px 10px rgba(11,24,34,0.18)' : 'none',
+                }} />
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--ink)', fontWeight: 900 }}>{item.startTime.slice(0, 2)}u</div>
+              {highlighted && (
+                <div style={{ fontSize: '10px', color: 'var(--accent-strong)', fontWeight: 900, whiteSpace: 'nowrap' }}>
+                  #{item.rank}
+                </div>
+              )}
+              {!highlighted && <div style={{ fontSize: '11px', color: 'var(--muted-2)', fontWeight: 900 }}>{item.score}</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -1356,7 +1761,7 @@ function MeasurementBanner({ moment, onOpen, t }) {
   );
 }
 
-function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum, t }) {
+function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum, cyclingWeather, t }) {
   return (
     <div className="section-shell">
       <div className="signal-card" style={{ marginBottom: '4px' }}>
@@ -1364,12 +1769,12 @@ function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum, t }) 
         <div className="signal-value">Week {weekNum}</div>
         <div className="signal-note">{t('daysCompleted', { done: days.filter(d => completed[d.id]).length, total: days.length })}</div>
       </div>
-      {days.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} t={t} />)}
+      {days.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />)}
     </div>
   );
 }
 
-function AllView({ completed, toggleComplete, onSelectDay, t }) {
+function AllView({ completed, toggleComplete, onSelectDay, cyclingWeather, t }) {
   return (
     <div className="section-shell">
       {[1, 2, 3, 4, 5, 6].map(w => {
@@ -1378,7 +1783,7 @@ function AllView({ completed, toggleComplete, onSelectDay, t }) {
         return (
           <div key={w} style={{ marginBottom: '24px' }}>
             <div className="signal-kicker" style={{ color: 'var(--accent-strong)', margin: '0 4px 10px' }}>Week {w} · {compl}/{wd.length}</div>
-            {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} compact t={t} />)}
+            {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} compact t={t} />)}
           </div>
         );
       })}
@@ -1386,7 +1791,7 @@ function AllView({ completed, toggleComplete, onSelectDay, t }) {
   );
 }
 
-function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, t }) {
+function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, cyclingWeather, t }) {
   const [section, setSection] = useState('days');
   const overview = getWeekOverview(currentWeek);
   const sections = [
@@ -1411,7 +1816,7 @@ function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, t }) {
 
       <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} />
 
-      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} t={t} />}
+      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />}
       {section === 'zones' && <ZonesSection t={t} />}
       {section === 'food' && <NutritionSection currentWeek={currentWeek} t={t} />}
       {section === 'strength' && <StrengthSection t={t} />}
@@ -1551,11 +1956,12 @@ function TipsSection({ t }) {
   );
 }
 
-function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact, t }) {
+function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, cyclingWeather, compact, t }) {
   const day = rawDay.type === 'check' ? { ...rawDay, title: getMeasurementTitle(rawDay.date) } : rawDay;
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const dateStr = new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
   const open = () => onSelectDay(day);
 
   return (
@@ -1593,6 +1999,12 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact,
         {!compact && day.target && (
           <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '2px' }}>{day.target}</div>
         )}
+        {!compact && weather && (
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--accent-strong)', fontSize: '12px', fontWeight: 800, marginTop: '6px' }}>
+            <WeatherConditionIcon weatherCode={weather.weatherCode} isDay={weather.isDay} size={14} />
+            {weather.startTime}-{weather.endTime} · {getWeatherQualityLabel(weather.quality, t)}
+          </div>
+        )}
       </div>
       <button type="button" aria-label={isComplete ? `${day.title} ${t('markIncomplete')}` : `${day.title} ${t('markComplete')}`} onClick={(e) => { e.stopPropagation(); toggleComplete(day.id); }} style={{
         width: '44px', height: '44px', minWidth: '44px', borderRadius: '999px',
@@ -1605,9 +2017,10 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, compact,
   );
 }
 
-function DayDetail({ day, onClose, completed, toggleComplete, t }) {
+function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
+  const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
 
   return (
     <div role="presentation" onClick={onClose} style={{
@@ -1639,6 +2052,14 @@ function DayDetail({ day, onClose, completed, toggleComplete, t }) {
             background: 'var(--surface-2)', padding: '16px', borderRadius: '8px' }}>
             {day.desc}
           </div>
+        )}
+        {day.type === 'cycle' && (
+          <CyclingWeatherCard
+            recommendation={weather}
+            status={cyclingWeather?.status || 'idle'}
+            location={cyclingWeather?.location}
+            t={t}
+          />
         )}
         <button type="button" onClick={() => { toggleComplete(day.id); onClose(); }} style={{
           width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
@@ -1962,6 +2383,12 @@ function getTodayString() {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
+}
+
+function addDaysString(dateString, days) {
+  const date = new Date(`${dateString}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function formatDateShort(date) {

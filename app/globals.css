@@ -32,6 +32,7 @@ html {
   background: var(--bg);
   color: var(--ink);
   text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -43,6 +44,7 @@ body {
     radial-gradient(circle at 90% 2%, rgba(0, 119, 122, 0.10), transparent 32rem),
     var(--bg);
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 body::before {
@@ -110,6 +112,7 @@ textarea {
   min-height: 100vh;
   color: var(--ink);
   padding-bottom: calc(94px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
 }
 
 .auth-shell {
@@ -201,6 +204,13 @@ textarea {
   padding: 4px;
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(14px);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.app-nav > button {
+  min-width: 68px;
+  white-space: nowrap;
 }
 
 .view-main {
@@ -214,6 +224,11 @@ textarea {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+}
+
+.banner-wrap {
+  width: min(calc(100% - 24px), 1120px);
+  margin: 16px auto 0;
 }
 
 .signal-card {
@@ -287,6 +302,18 @@ textarea {
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
+  min-width: 0;
+}
+
+.dashboard-grid > *,
+.side-panel,
+.section-shell,
+.info-card,
+.premium-card,
+.signal-card,
+.day-card,
+.log-card {
+  min-width: 0;
 }
 
 .side-panel {
@@ -297,7 +324,7 @@ textarea {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 10px;
 }
 
@@ -330,11 +357,12 @@ textarea {
 
 .fab {
   position: fixed;
-  right: 20px;
-  bottom: calc(22px + env(safe-area-inset-bottom));
+  top: calc(24px + env(safe-area-inset-top));
+  right: 128px;
+  bottom: auto;
   z-index: 100;
-  width: 60px;
-  height: 60px;
+  width: 52px;
+  height: 52px;
   border-radius: 999px;
   border: 1px solid rgba(28, 43, 52, 0.12);
   background: linear-gradient(135deg, #ffd166 0%, var(--action) 100%);
@@ -388,7 +416,11 @@ textarea {
   }
 
   .fab {
-    right: max(28px, calc((100vw - 1120px) / 2 + 28px));
+    top: calc(24px + env(safe-area-inset-top));
+    right: 142px;
+    bottom: auto;
+    width: 52px;
+    height: 52px;
   }
 
   .dashboard-strip {
@@ -398,8 +430,47 @@ textarea {
   }
 
   .dashboard-grid {
-    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1040px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
     align-items: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-nav > button {
+    min-width: 0;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    font-size: 12px !important;
+  }
+
+  .view-main {
+    width: 100%;
+  }
+
+  .dashboard-strip {
+    width: min(calc(100% - 20px), 1120px);
+  }
+
+  .banner-wrap {
+    width: min(calc(100% - 20px), 1120px);
+    margin-top: 16px;
+  }
+
+  .fab {
+    right: 128px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+    gap: 8px;
   }
 }
 

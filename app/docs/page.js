@@ -25,6 +25,7 @@ const sections = [
     title: 'Integraties',
     items: [
       ['Web Push', 'Trainingen en meetmomenten kunnen om 20:00 Europe/Amsterdam een push reminder sturen als ze nog openstaan.'],
+      ['Open-Meteo fietsweer', 'Fietsdagen krijgen binnen het 16-daagse forecastbereik een beste tijdstip op basis van regen, wind, windvlagen, temperatuur en daglicht.'],
     ],
   },
   {
@@ -32,7 +33,7 @@ const sections = [
     items: [
       ['Authenticatie', 'Gebruikers loggen in via Supabase Auth met wachtwoord, magic link of wachtwoordherstel.'],
       ['RLS', 'Supabase Row Level Security zorgt dat gebruikers alleen hun eigen logs, checkins, settings, habits en push subscriptions beheren.'],
-      ['Server secrets', 'Service role, Web Push private key en CRON_SECRET staan alleen server-side in Vercel environment variables.'],
+      ['Server secrets', 'Service role, Web Push private key, CRON_SECRET en optionele weerlocatie staan alleen server-side in Vercel environment variables.'],
       ['Cron', 'Vercel Cron roept dagelijks de reminder-endpoint aan. De endpoint accepteert alleen requests met de juiste CRON_SECRET.'],
     ],
   },
@@ -113,8 +114,8 @@ export default function DocsPage() {
           </div>
           <div className="signal-card">
             <div className="signal-kicker">Integraties</div>
-            <div className="signal-value">Web Push</div>
-            <div className="signal-note">Push reminders voor open trainingen en meetmomenten.</div>
+            <div className="signal-value">Web Push + fietsweer</div>
+            <div className="signal-note">Push reminders en Open-Meteo beste fietsmomenten rond 2596EC.</div>
           </div>
         </section>
 
@@ -153,6 +154,7 @@ export default function DocsPage() {
             <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.7 }}>
               <li>Supabase schema is uitgevoerd via SQL Editor.</li>
               <li>Vercel Production bevat alle environment variables.</li>
+              <li>WEATHER_LATITUDE, WEATHER_LONGITUDE en WEATHER_LOCATION_LABEL zijn optioneel; zonder env gebruikt de app 2596EC.</li>
               <li>Na elke env wijziging is een Production redeploy nodig.</li>
               <li>Web Push werkt pas nadat de gebruiker meldingen toestaat en de app op iOS als Home Screen web app gebruikt.</li>
             </ul>
