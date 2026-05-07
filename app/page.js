@@ -1784,6 +1784,19 @@ function CyclingRouteCard({ day, cycleLogs, t }) {
           </div>
           <div style={{ fontSize: '13px', fontWeight: 700, marginTop: '4px' }}>{routeData.routeType}</div>
           <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5, marginTop: '6px' }}>{routeData.omschrijving}</div>
+
+          {routeData.waypoints?.length > 0 && (
+            <div style={{ marginTop: '12px', borderLeft: '2px solid #003D7A', paddingLeft: '10px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', textTransform: 'uppercase', marginBottom: '6px' }}>Rondrit via</div>
+              {routeData.waypoints.map((w, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--muted)', marginBottom: '3px' }}>
+                  <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#003D7A', color: 'white', fontSize: '9px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                  {w.naam}
+                </div>
+              ))}
+            </div>
+          )}
+
           {routeData.kenmerken?.length > 0 && (
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
               {routeData.kenmerken.map(k => (

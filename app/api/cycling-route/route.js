@@ -29,7 +29,9 @@ export async function POST(request) {
       ).join('\n')
     : 'Geen eerdere ritten beschikbaar';
 
-  const prompt = `Je bent een fietstraining coach. Analyseer de volgende fietsrit en geef een routeadvies.
+  const prompt = `Je bent een fietstraining coach én lokale routeplanner. Analyseer de training en genereer een concrete rondrit met GPS-waypoints.
+
+STARTLOCATIE: ${lat.toFixed(5)}, ${lng.toFixed(5)}
 
 HUIDIGE TRAINING:
 - Titel: ${workout.title}
@@ -41,26 +43,33 @@ HUIDIGE TRAINING:
 
 RECENTE RITTEN (laatste 8):
 ${logsSummary}
-${avgSpeed ? `\nGEMIDDELDE SNELHEID UIT RITTEN: ${avgSpeed.toFixed(1)} km/h` : ''}
+${avgSpeed ? `\nGEMIDDELDE SNELHEID: ${avgSpeed.toFixed(1)} km/h` : ''}
 
-CRITERIA VOOR EEN GOEDE ROUTE:
+EISEN VOOR DE ROUTE:
+- Rondrit die start én eindigt bij de startlocatie
 - Weinig kruisingen en stoplichten
-- Makkelijk doorfietsen zonder technische uitdagingen
-- Veilige fietspaden of rustige landwegen
-- Geschikt voor het trainingstype (zone/intensiteit)
+- Fietspaden of rustige wegen, geen drukke stadsroutes
+- Passend bij het trainingstype en de intensiteitszone
+- Genereer 4 tot 6 tussenstops die de gewenste afstand vormen
+
+Gebruik je geografische kennis van het gebied rond de startlocatie om realistische waypoints te kiezen (bestaande wegen, fietspaden, water, parken). De waypoints hoeven niet exact te kloppen maar moeten in de buurt liggen.
 
 Geef je antwoord ALLEEN als JSON (geen extra tekst):
 {
-  "estimatedKm": <getal: geschatte afstand in km op basis van duur en gemiddelde snelheid, aangepast voor trainingsintensiteit>,
-  "routeType": "<kort routetype, bijv. 'Rustige Z2 uitduurrit' of 'Intervaltraining'>",
-  "omschrijving": "<2-3 zinnen: welk soort route is ideaal voor deze training>",
-  "kenmerken": ["<kenmerk 1>", "<kenmerk 2>", "<kenmerk 3>"]
+  "estimatedKm": <getal>,
+  "routeType": "<kort routetype>",
+  "omschrijving": "<2-3 zinnen over de route>",
+  "kenmerken": ["<kenmerk 1>", "<kenmerk 2>", "<kenmerk 3>"],
+  "waypoints": [
+    { "lat": <getal>, "lng": <getal>, "naam": "<naam van dit punt>" },
+    ...
+  ]
 }`;
 
   try {
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -72,10 +81,20 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
     const km = Math.max(1, Number(result.estimatedKm) || 15);
     const zoom = km < 8 ? 14 : km < 18 ? 13 : km < 35 ? 12 : 11;
 
+    const waypoints = Array.isArray(result.waypoints) ? result.waypoints : [];
+    const waypointStr = waypoints
+      .map(w => `${Number(w.lat).toFixed(6)},${Number(w.lng).toFixed(6)}`)
+      .join('|');
+
+    const mapsUrl = waypointStr
+      ? `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${lat},${lng}&waypoints=${encodeURIComponent(waypointStr)}&travelmode=bicycling`
+      : `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&travelmode=bicycling`;
+
     return Response.json({
       ...result,
       estimatedKm: km,
-      mapsUrl: `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&travelmode=bicycling`,
+      waypoints,
+      mapsUrl,
       komootUrl: `https://www.komoot.com/plan#map=${zoom}/${lat.toFixed(4)}/${lng.toFixed(4)}`,
     });
   } catch {
