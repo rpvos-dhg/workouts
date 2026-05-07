@@ -843,6 +843,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     location: null,
     error: '',
   });
+  const [weatherRetry, setWeatherRetry] = useState(0);
 
   useEffect(() => {
     if (forcePasswordUpdate) setShowPasswordDialog(true);
@@ -1099,6 +1100,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     const controller = new AbortController();
     setCyclingWeather(current => ({ ...current, status: 'loading', error: '' }));
 
+    let retryTimer;
     fetch('/api/weather/cycling', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1122,10 +1124,11 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           status: 'error',
           error: error.message,
         }));
+        retryTimer = setTimeout(() => setWeatherRetry(n => n + 1), 5000);
       });
 
-    return () => controller.abort();
-  }, [weatherRequestKey, weatherTimezone]);
+    return () => { controller.abort(); clearTimeout(retryTimer); };
+  }, [weatherRequestKey, weatherTimezone, weatherRetry]);
 
   useEffect(() => {
     if (!dueMeasurement || typeof window === 'undefined' || !('Notification' in window)) return;
@@ -1237,7 +1240,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       )}
 
       <main className="view-main" style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} logs={logs} t={t} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} t={t} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
@@ -1245,7 +1248,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
       </main>
 
-      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} logs={logs} t={t} />}
+      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} t={t} />}
       {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} t={t} />}
       {showSettings && <SettingsDialog settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} t={t} />}
       {showPasswordDialog && (
@@ -1293,7 +1296,7 @@ function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   );
 }
 
-function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, cyclingWeather, logs, t }) {
+function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, cyclingWeather, onRetryWeather, logs, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
@@ -1366,6 +1369,7 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
             recommendation={cyclingWeather.byDate?.[day.date]}
             status={cyclingWeather.status}
             location={cyclingWeather.location}
+            onRetry={onRetryWeather}
             t={t}
           />
         )}
@@ -1467,7 +1471,7 @@ function formatWeatherMetrics(recommendation, t) {
   });
 }
 
-function CyclingWeatherCard({ recommendation, status, location, t }) {
+function CyclingWeatherCard({ recommendation, status, location, onRetry, t }) {
   if (status === 'loading' && !recommendation) {
     return (
       <InfoCard>
@@ -1487,7 +1491,18 @@ function CyclingWeatherCard({ recommendation, status, location, t }) {
         <div style={{ color: status === 'error' ? 'var(--danger)' : 'var(--muted)', marginTop: '8px', fontSize: '14px', fontWeight: 700 }}>
           {status === 'error' ? t('weatherError') : t('weatherUnavailable')}
         </div>
-        <div style={{ color: 'var(--muted)', marginTop: '4px', fontSize: '13px' }}>{t('weatherNoForecast')}</div>
+        <div style={{ color: 'var(--muted)', marginTop: '4px', fontSize: '13px' }}>
+          {status === 'error' ? 'Weerdata kon niet geladen worden.' : t('weatherNoForecast')}
+        </div>
+        {status === 'error' && onRetry && (
+          <button type="button" onClick={onRetry} style={{
+            marginTop: '10px', border: '1px solid var(--line)', background: 'var(--surface-2)',
+            color: 'var(--accent-strong)', borderRadius: '8px', padding: '7px 10px',
+            fontSize: '13px', fontWeight: 800, cursor: 'pointer',
+          }}>
+            Opnieuw proberen
+          </button>
+        )}
       </InfoCard>
     );
   }
@@ -2157,7 +2172,7 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, cyclingW
   );
 }
 
-function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, logs, t }) {
+function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, onRetryWeather, logs, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
@@ -2198,6 +2213,7 @@ function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, lo
             recommendation={weather}
             status={cyclingWeather?.status || 'idle'}
             location={cyclingWeather?.location}
+            onRetry={onRetryWeather}
             t={t}
           />
         )}
