@@ -30,6 +30,8 @@ import {
   MoreHorizontal,
   Moon,
   Download,
+  MapPin,
+  Navigation,
   Plus,
   Settings,
   Star,
@@ -1235,7 +1237,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       )}
 
       <main className="view-main" style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} t={t} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} logs={logs} t={t} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
@@ -1291,7 +1293,7 @@ function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   );
 }
 
-function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, cyclingWeather, t }) {
+function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, cyclingWeather, logs, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
@@ -1366,6 +1368,9 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
             location={cyclingWeather.location}
             t={t}
           />
+        )}
+        {day.type === 'cycle' && (
+          <CyclingRouteCard day={day} cycleLogs={logs} t={t} />
         )}
         <DailyHabitCard day={day} habit={habit} settings={settings} onToggle={(patch) => saveDailyHabit(habit.date, patch)} t={t} />
 
@@ -1685,6 +1690,127 @@ function CyclingWeatherBarGraph({ hourlyScores, t }) {
         })}
       </div>
     </div>
+  );
+}
+
+function CyclingRouteCard({ day, cycleLogs, t }) {
+  const [status, setStatus] = useState('idle');
+  const [routeData, setRouteData] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  async function generateRoute() {
+    setStatus('loading');
+    setErrorMsg('');
+
+    function handleGeoError() {
+      setErrorMsg('Locatietoegang geweigerd. Sta locatie toe en probeer opnieuw.');
+      setStatus('error');
+    }
+
+    if (!navigator.geolocation) {
+      setErrorMsg('Geolocatie niet beschikbaar in deze browser.');
+      setStatus('error');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      const { latitude: lat, longitude: lng } = coords;
+      try {
+        const res = await fetch('/api/cycling-route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workout: {
+              title: day.title,
+              dur: day.dur,
+              hr: day.hr,
+              speed: day.speed,
+              target: day.target,
+              desc: day.desc,
+            },
+            cycleLogs,
+            lat,
+            lng,
+          }),
+        });
+        if (!res.ok) throw new Error('api');
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        setRouteData(data);
+        setStatus('done');
+      } catch {
+        setErrorMsg('Route genereren mislukt. Probeer opnieuw.');
+        setStatus('error');
+      }
+    }, handleGeoError);
+  }
+
+  return (
+    <InfoCard style={{ borderLeft: '4px solid #003D7A' }}>
+      <div className="signal-kicker" style={{ color: '#003D7A' }}>Routeadvies</div>
+
+      {status === 'idle' && (
+        <>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px', marginBottom: '12px', lineHeight: 1.5 }}>
+            AI-routeadvies op basis van je training en eerdere ritten
+          </div>
+          <button type="button" onClick={generateRoute} style={smallActionStyle}>
+            <Navigation size={16} aria-hidden="true" /> Genereer route
+          </button>
+        </>
+      )}
+
+      {status === 'loading' && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px', color: 'var(--muted)', fontSize: '14px' }}>
+          <Bike size={16} aria-hidden="true" />
+          Route wordt berekend…
+        </div>
+      )}
+
+      {status === 'error' && (
+        <>
+          <div style={{ color: 'var(--danger)', fontSize: '13px', marginTop: '8px', lineHeight: 1.5 }}>{errorMsg}</div>
+          <button type="button" onClick={generateRoute} style={{ ...smallActionStyle, marginTop: '10px' }}>
+            <Navigation size={16} aria-hidden="true" /> Opnieuw proberen
+          </button>
+        </>
+      )}
+
+      {status === 'done' && routeData && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '10px' }}>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: '#003D7A' }}>{routeData.estimatedKm}</span>
+            <span style={{ fontSize: '14px', color: 'var(--muted)' }}>km geschat</span>
+          </div>
+          <div style={{ fontSize: '13px', fontWeight: 700, marginTop: '4px' }}>{routeData.routeType}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5, marginTop: '6px' }}>{routeData.omschrijving}</div>
+          {routeData.kenmerken?.length > 0 && (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+              {routeData.kenmerken.map(k => (
+                <span key={k} style={{
+                  background: '#E5F0FF', color: '#003D7A', borderRadius: '6px',
+                  padding: '3px 8px', fontSize: '11px', fontWeight: 700,
+                }}>{k}</span>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
+            <a href={routeData.mapsUrl} target="_blank" rel="noopener noreferrer" style={{ ...smallActionStyle, textDecoration: 'none' }}>
+              <MapPin size={15} aria-hidden="true" /> Google Maps
+            </a>
+            <a href={routeData.komootUrl} target="_blank" rel="noopener noreferrer" style={{ ...smallActionStyle, background: 'var(--surface)', color: 'var(--accent)', textDecoration: 'none' }}>
+              <Navigation size={15} aria-hidden="true" /> Komoot
+            </a>
+          </div>
+          <button type="button" onClick={() => { setStatus('idle'); setRouteData(null); }} style={{
+            marginTop: '10px', background: 'none', border: 'none', color: 'var(--muted)',
+            fontSize: '12px', cursor: 'pointer', padding: '0', textDecoration: 'underline',
+          }}>
+            Nieuwe route genereren
+          </button>
+        </>
+      )}
+    </InfoCard>
   );
 }
 
