@@ -29,6 +29,7 @@ import {
   Mail,
   MoreHorizontal,
   Moon,
+  Download,
   Plus,
   Settings,
   Star,
@@ -2503,6 +2504,29 @@ function MiniChart({ points, color, emptyLabel }) {
   );
 }
 
+function exportLogsCSV(logs) {
+  const headers = ['Datum', 'Type', 'Duur (min)', 'Afstand (km)', 'Gem. HR (bpm)', 'Max HR (bpm)', 'Kcal', 'Notities'];
+  const typeLabel = { cycle: 'Fietsen', strength: 'Krachttraining', walk: 'Wandelen' };
+  const rows = logs.map(l => [
+    l.date,
+    typeLabel[l.type] || l.type,
+    l.duration ?? '',
+    l.distance ?? '',
+    l.avg_hr ?? '',
+    l.max_hr ?? '',
+    l.kcal ?? '',
+    l.notes ? `"${l.notes.replace(/"/g, '""')}"` : '',
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(';')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `workouts_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, t }) {
   const cycleLogs = logs.filter(l => l.type === 'cycle' && l.distance && l.duration);
   const avgSpeed = cycleLogs.length
@@ -2519,6 +2543,11 @@ function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, t }) {
             <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{t('logSubtitle')}</div>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {logs.length > 0 && (
+              <button type="button" onClick={() => exportLogsCSV(logs)} style={{ ...smallActionStyle, background: 'var(--surface)', color: 'var(--accent)', border: '1px solid var(--line)' }}>
+                <Download size={16} aria-hidden="true" /> CSV
+              </button>
+            )}
             <button type="button" onClick={() => setShowLogForm(true)} style={smallActionStyle}>
               <Plus size={16} aria-hidden="true" /> {t('save')}
             </button>
