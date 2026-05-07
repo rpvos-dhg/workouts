@@ -75,7 +75,7 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
     return Response.json({
       ...result,
       estimatedKm: km,
-      mapsUrl: `https://www.google.com/maps/@${lat},${lng},${zoom}z/data=!5m1!1e3`,
+      mapsUrl: `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&travelmode=bicycling`,
       komootUrl: `https://www.komoot.com/plan#map=${zoom}/${lat.toFixed(4)}/${lng.toFixed(4)}`,
     });
   } catch {
