@@ -1245,7 +1245,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
       </main>
 
-      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} t={t} />}
+      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} logs={logs} t={t} />}
       {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} t={t} />}
       {showSettings && <SettingsDialog settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} t={t} />}
       {showPasswordDialog && (
@@ -2144,7 +2144,7 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, cyclingW
   );
 }
 
-function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, t }) {
+function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, logs, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
@@ -2187,6 +2187,9 @@ function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, t 
             location={cyclingWeather?.location}
             t={t}
           />
+        )}
+        {day.type === 'cycle' && (
+          <CyclingRouteCard day={day} cycleLogs={logs} t={t} />
         )}
         <button type="button" onClick={() => { toggleComplete(day.id); onClose(); }} style={{
           width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
