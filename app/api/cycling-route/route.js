@@ -29,39 +29,72 @@ export async function POST(request) {
       ).join('\n')
     : 'Geen eerdere ritten beschikbaar';
 
-  const prompt = `Je bent een fietstraining coach én lokale routeplanner. Analyseer de training en genereer een concrete rondrit met GPS-waypoints.
+  const prompt = `Je bent een expert fietsrouteplanner in Nederland. Je kent de Nederlandse fietsinfraa door en door: LF-routes, knooppuntennetwerk, kanaalpaden, polderroutes en recreatieve fietspaden.
 
 STARTLOCATIE: ${lat.toFixed(5)}, ${lng.toFixed(5)}
 
-HUIDIGE TRAINING:
+TRAINING:
 - Titel: ${workout.title}
 - Duur: ${workout.dur} minuten
 - HR zone: ${workout.hr || 'niet opgegeven'}
 - Snelheid: ${workout.speed || 'niet opgegeven'}
 - Doel: ${workout.target || 'geen specifiek doel'}
 - Omschrijving: ${workout.desc || ''}
+${avgSpeed ? `\nGEMIDDELDE SNELHEID UIT RITTEN: ${avgSpeed.toFixed(1)} km/h` : ''}
 
-RECENTE RITTEN (laatste 8):
+RECENTE RITTEN:
 ${logsSummary}
-${avgSpeed ? `\nGEMIDDELDE SNELHEID: ${avgSpeed.toFixed(1)} km/h` : ''}
 
-EISEN VOOR DE ROUTE:
-- Rondrit die start én eindigt bij de startlocatie
-- Weinig kruisingen en stoplichten
-- Fietspaden of rustige wegen, geen drukke stadsroutes
-- Passend bij het trainingstype en de intensiteitszone
-- Genereer 4 tot 6 tussenstops die de gewenste afstand vormen
+━━━ ROUTE-EISEN ━━━
 
-Gebruik je geografische kennis van het gebied rond de startlocatie om realistische waypoints te kiezen (bestaande wegen, fietspaden, water, parken). De waypoints hoeven niet exact te kloppen maar moeten in de buurt liggen.
+INFRASTRUCTUUR (in volgorde van voorkeur — kies uitsluitend hieruit):
+1. Fietspad langs kanalen en rivieren (kanaaltowpaths, boezemwegen)
+2. LF-routes en knooppuntenfietsroutes (bewegwijzerde fietsroutes)
+3. Polderroutes en landwegen zonder doorgaand autoverkeer
+4. Fietspaden door parken, bossen en duingebieden
+5. Woonstraten als fietsstraat aangewezen (alleen als overgang)
+
+VERMIJD ABSOLUUT:
+- N-wegen en provinciale wegen (N14, N44, N211, N213, etc.)
+- Rotondes en stoplichten in stadscentra
+- Drukke doorgaande wegen en bedrijventerreinen
+- Autowegen en parallelwegen daarvan
+
+LOKALE INFRASTRUCTUUR VOOR ARCHIPELBUURT / DEN HAAG (2585CE):
+Startpunt is Archipelbuurt Den Haag (ca. 52.088°N, 4.295°E). Gebruik routes die hier direct bereikbaar zijn:
+
+DICHTBIJ (0-3 km, ideaal voor korte ritten):
+- Scheveningse Bosjes: direct ten noorden, autovrij bosfietspad, lus mogelijk
+- Westbroekpark en omgeving: rustige paden richting Scheveningen
+- Nieuwe Parklaan langs het water richting Scheveningen haven
+
+MIDDEL (3-8 km, voor ritten 10-25 km):
+- Westduinpark / Kijkduin: via Loosduinseweg → duinpaden, weinig verkeer
+- Haagse Bos: via Koningskade/Laan van Meerdervoort → groot autovrij bos
+- Strandboulevard Scheveningen: fietspad langs de kust noordwaarts
+- Meijendel duingebied ⭐: via Scheveningse Bosjes → Meijendel in, uitstekend doorfietsparcours, nauwelijks kruisingen, autovrij, ideaal voor Z2/Z3
+- LF1 Noordzeeroute langs de kust (Scheveningen → Katwijk richting)
+
+VER (8+ km, voor lange ritten 18+ km):
+- Midden-Delfland polders: via Leyweg/Lozerlaan, uitgestrekte polderpaden
+- De Vliet fietspad: via Leidschendam, kanaalpad naar Delft of Leiden
+- Westland polderroutes: richting Naaldwijk, glastuinbouw-landwegen
+- Knooppuntennetwerk Zuid-Holland (nummers 54→45→67 etc.)
+
+TECHNISCHE VEREISTEN:
+- Rondrit: start EN eindigt op de startlocatie
+- 6 tot 8 waypoints, goed verspreid over de route
+- Elk waypoint moet op of naast genoemde fietsinfrastructuur liggen
+- Waypoints zijn bedoeld als GPS-ankerpunten voor Google Maps cycling mode — zo nauwkeuriger, hoe beter de snapping naar fietspaden
 
 Geef je antwoord ALLEEN als JSON (geen extra tekst):
 {
-  "estimatedKm": <getal>,
+  "estimatedKm": <getal: schatting op basis van duur × gemiddelde snelheid, gecorrigeerd voor intensiteit>,
   "routeType": "<kort routetype>",
-  "omschrijving": "<2-3 zinnen over de route>",
+  "omschrijving": "<2-3 zinnen: beschrijf de specifieke route en welke infrastructuur je volgt>",
   "kenmerken": ["<kenmerk 1>", "<kenmerk 2>", "<kenmerk 3>"],
   "waypoints": [
-    { "lat": <getal>, "lng": <getal>, "naam": "<naam van dit punt>" },
+    { "lat": <getal>, "lng": <getal>, "naam": "<herkenbare naam, bijv. 'Vlietpad bij Leidschendam'>" },
     ...
   ]
 }`;
