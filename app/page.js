@@ -1085,7 +1085,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const todayHabit = habits.find(item => item.date === todayString) || { date: todayString };
   const adaptiveAdvice = getAdaptiveAdvice({ today, completed, logs, checkins, settings, todayString });
   const weatherTimezone = withDefaultSettings(settings).timezone;
-  const weatherForecastEnd = addDaysString(todayString, 15);
+  const weatherForecastEnd = addDaysString(todayString, 13);
   const weatherCycleDays = PLAN_DATA
     .filter(day => day.type === 'cycle' && day.date >= todayString && day.date <= weatherForecastEnd)
     .map(day => ({ date: day.date, durationMin: day.dur || 60 }));
