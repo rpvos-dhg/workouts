@@ -1240,7 +1240,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       )}
 
       <main className="view-main" style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} t={t} />}
+        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
@@ -1248,7 +1248,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
       </main>
 
-      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} t={t} />}
+      {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
       {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} t={t} />}
       {showSettings && <SettingsDialog settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} t={t} />}
       {showPasswordDialog && (
@@ -1296,7 +1296,7 @@ function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   );
 }
 
-function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, cyclingWeather, onRetryWeather, logs, t }) {
+function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement, habit, saveDailyHabit, adaptiveAdvice, settings, cyclingWeather, onRetryWeather, logs, userEmail, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
@@ -1374,7 +1374,7 @@ function TodayView({ day, completed, toggleComplete, overview, onOpenMeasurement
           />
         )}
         {day.type === 'cycle' && (
-          <CyclingRouteCard day={day} cycleLogs={logs} t={t} />
+          <CyclingRouteCard day={day} cycleLogs={logs} userEmail={userEmail} t={t} />
         )}
         <DailyHabitCard day={day} habit={habit} settings={settings} onToggle={(patch) => saveDailyHabit(habit.date, patch)} t={t} />
 
@@ -1708,10 +1708,14 @@ function CyclingWeatherBarGraph({ hourlyScores, t }) {
   );
 }
 
-function CyclingRouteCard({ day, cycleLogs, t }) {
+const ROUTE_OWNER = 'remcopvos@gmail.com';
+
+function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
   const [status, setStatus] = useState('idle');
   const [routeData, setRouteData] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+
+  if (userEmail !== ROUTE_OWNER) return null;
 
   async function generateRoute() {
     setStatus('loading');
@@ -1731,9 +1735,11 @@ function CyclingRouteCard({ day, cycleLogs, t }) {
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
       const { latitude: lat, longitude: lng } = coords;
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || '';
         const res = await fetch('/api/cycling-route', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
             workout: {
               title: day.title,
@@ -2172,7 +2178,7 @@ function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, cyclingW
   );
 }
 
-function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, onRetryWeather, logs, t }) {
+function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, onRetryWeather, logs, userEmail, t }) {
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
   const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
@@ -2218,7 +2224,7 @@ function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeather, on
           />
         )}
         {day.type === 'cycle' && (
-          <CyclingRouteCard day={day} cycleLogs={logs} t={t} />
+          <CyclingRouteCard day={day} cycleLogs={logs} userEmail={userEmail} t={t} />
         )}
         <button type="button" onClick={() => { toggleComplete(day.id); onClose(); }} style={{
           width: '100%', padding: '14px', borderRadius: '8px', border: 'none',

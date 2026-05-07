@@ -1,8 +1,26 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
+
+const ALLOWED_EMAIL = 'remcopvos@gmail.com';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
+
 export async function POST(request) {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  if (!token) {
+    return Response.json({ error: 'Niet ingelogd' }, { status: 401 });
+  }
+
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+  if (authError || !user || user.email !== ALLOWED_EMAIL) {
+    return Response.json({ error: 'AI-routeadvies is alleen beschikbaar voor de eigenaar van deze app.' }, { status: 403 });
+  }
+
   let body;
   try {
     body = await request.json();
