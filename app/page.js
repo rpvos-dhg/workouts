@@ -1743,12 +1743,18 @@ function CyclingWeatherBarGraph({ hourlyScores, t }) {
 
 const ROUTE_OWNER = 'remcopvos@gmail.com';
 
+function normalizeEmail(email = '') {
+  const [local, domain] = email.toLowerCase().split('@');
+  if (!domain) return email.toLowerCase();
+  return `${domain === 'gmail.com' ? local.replace(/\./g, '') : local}@${domain}`;
+}
+
 function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
   const [status, setStatus] = useState('idle');
   const [routeData, setRouteData] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
-  if (userEmail !== ROUTE_OWNER) return null;
+  if (normalizeEmail(userEmail) !== normalizeEmail(ROUTE_OWNER)) return null;
 
   async function generateRoute() {
     setStatus('loading');
@@ -1787,13 +1793,12 @@ function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
             lng,
           }),
         });
-        if (!res.ok) throw new Error('api');
         const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
         setRouteData(data);
         setStatus('done');
-      } catch {
-        setErrorMsg('Route genereren mislukt. Probeer opnieuw.');
+      } catch (err) {
+        setErrorMsg(err.message || 'Route genereren mislukt. Probeer opnieuw.');
         setStatus('error');
       }
     }, handleGeoError);

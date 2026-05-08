@@ -3,6 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 
 const ALLOWED_EMAIL = 'remcopvos@gmail.com';
 
+function normalizeEmail(email = '') {
+  const [local, domain] = email.toLowerCase().split('@');
+  if (!domain) return email.toLowerCase();
+  // Gmail ignores dots in local part
+  const normalLocal = domain === 'gmail.com' ? local.replace(/\./g, '') : local;
+  return `${normalLocal}@${domain}`;
+}
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const supabaseAdmin = createClient(
@@ -17,7 +25,7 @@ export async function POST(request) {
   }
 
   const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !user || user.email !== ALLOWED_EMAIL) {
+  if (authError || !user || normalizeEmail(user.email) !== normalizeEmail(ALLOWED_EMAIL)) {
     return Response.json({ error: 'AI-routeadvies is alleen beschikbaar voor de eigenaar van deze app.' }, { status: 403 });
   }
 
