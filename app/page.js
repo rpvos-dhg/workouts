@@ -878,6 +878,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   });
   const [weatherRetry, setWeatherRetry] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateCountdown, setUpdateCountdown] = useState(10);
 
   useEffect(() => {
     const currentVersion = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
@@ -888,12 +889,20 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         const { version } = await res.json();
         if (version && version !== 'dev' && currentVersion !== 'dev' && version !== currentVersion) {
           setUpdateAvailable(true);
+          setUpdateCountdown(10);
         }
       } catch { /* ignore */ }
     };
     const id = setInterval(check, 60 * 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!updateAvailable) return;
+    if (updateCountdown <= 0) { window.location.reload(); return; }
+    const id = setTimeout(() => setUpdateCountdown(n => n - 1), 1000);
+    return () => clearTimeout(id);
+  }, [updateAvailable, updateCountdown]);
 
   useEffect(() => {
     if (forcePasswordUpdate) setShowPasswordDialog(true);
@@ -1234,7 +1243,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           padding: '10px 16px', fontSize: '14px', fontWeight: 600,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
         }}>
-          <span>🆕 Nieuwe versie beschikbaar! (test 2)</span>
+          <span>🆕 Nieuwe versie beschikbaar — automatisch vernieuwen over {updateCountdown}s</span>
           <button
             type="button"
             onClick={() => window.location.reload()}
@@ -1243,16 +1252,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
               color: 'white', padding: '4px 12px', borderRadius: '999px',
               cursor: 'pointer', fontSize: '13px', fontWeight: 700,
             }}
-          >Vernieuwen</button>
-          <button
-            type="button"
-            onClick={() => setUpdateAvailable(false)}
-            style={{
-              background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)',
-              cursor: 'pointer', fontSize: '18px', lineHeight: 1, padding: '0 4px',
-            }}
-            aria-label="Sluiten"
-          >×</button>
+          >Nu vernieuwen</button>
         </div>
       )}
 
