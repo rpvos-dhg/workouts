@@ -156,7 +156,7 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
       mapsUrl,
       komootUrl: `https://www.komoot.com/plan#map=${zoom}/${lat.toFixed(4)}/${lng.toFixed(4)}`,
     });
-  } catch {
-    return Response.json({ error: 'Route generation failed' }, { status: 500 });
+  } catch (err) {
+    return Response.json({ error: `Route generation failed: ${err.message}` }, { status: 500 });
   }
 }
