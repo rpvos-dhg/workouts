@@ -1,38 +1,59 @@
+/* =====================================================
+   ENDURANCE — Design System
+   Sport-forward. Warm. Precise. Not teal.
+
+   Palette story:
+     Parchment white + warm near-black + deep amber-orange.
+     A single accent color used sparingly.
+     No sage greens. No glass. No radial flourishes.
+   ===================================================== */
+
 /* =========================================
-   DESIGN TOKENS
+   TOKENS
    ========================================= */
 :root {
-  /* Palette */
-  --bg:            #f4f6f1;
-  --bg-strong:     #e7ece9;
-  --ink:           #0b1822;
-  --muted:         #43525f;
-  --muted-2:       #5a6d78;   /* darkened from #687684 for WCAG AA */
-  --line:          #d5dedb;
-  --surface:       #ffffff;
-  --surface-2:     #f8faf6;
-  --surface-3:     #eef4ef;
-  --accent:        #00777a;
-  --accent-strong: #004f55;
-  --accent-deep:   #082631;
-  --action:        #f4b63f;
-  --action-ink:    #111a20;
-  --danger:        #ba2d2d;
-  --success:       #25754c;
-  --copper:        #b85f2f;
-  --focus:         #0b6bff;
+  /* Base surfaces — warm, not cool-gray */
+  --bg:          #f8f5f0;
+  --bg-strong:   #ede9e3;
+  --surface:     #ffffff;
+  --surface-2:   #faf8f5;
+  --surface-3:   #f2ede5;
 
-  /* Shadows — lighter, more modern */
-  --shadow-soft: 0 1px 3px rgba(11,24,34,0.06), 0 2px 8px rgba(11,24,34,0.04);
-  --shadow:      0 4px 14px rgba(11,24,34,0.09), 0 1px 4px rgba(11,24,34,0.05);
-  --shadow-lift: 0 12px 40px rgba(11,24,34,0.13), 0 4px 12px rgba(11,24,34,0.06);
+  /* Text — warm near-black, not navy */
+  --ink:         #14100c;
+  --muted:       #5c4e44;    /* 7.1:1 on white — AAA */
+  --muted-2:     #7a6a5c;    /* 4.6:1 on white — AA */
+
+  /* Borders */
+  --line:        #e0d9d0;
+
+  /* Accent: deep amber-orange — the only brand color */
+  --accent:        #e55a00;   /* fills, borders, icons */
+  --accent-strong: #b24400;   /* text on light — 5.3:1 */
+  --accent-deep:   #3d1800;
+  --accent-tint:   #fff4ec;
+
+  /* Action: golden — FAB & secondary CTAs */
+  --action:        #f5c800;
+  --action-ink:    #14100c;
+
+  /* Semantic */
+  --success:       #1a7040;
+  --danger:        #c82020;
+  --copper:        #b85f2f;   /* kept for component compat */
+  --focus:         #0050e6;
+
+  /* Shadows — warm-toned, minimal */
+  --shadow-soft: 0 1px 2px rgba(20,16,12,0.06), 0 2px 6px rgba(20,16,12,0.04);
+  --shadow:      0 3px 12px rgba(20,16,12,0.09), 0 1px 3px rgba(20,16,12,0.05);
+  --shadow-lift: 0 10px 30px rgba(20,16,12,0.14), 0 3px 8px rgba(20,16,12,0.06);
 
   /* Geometry */
-  --radius:    10px;
-  --radius-lg: 14px;
+  --radius:    8px;
+  --radius-lg: 12px;
 
   /* Layout */
-  --nav-h: 62px;  /* mobile fixed bottom nav height */
+  --nav-h: 62px;
 }
 
 /* =========================================
@@ -56,11 +77,7 @@ body {
   margin: 0;
   min-height: 100vh;
   min-height: 100svh;
-  /* Subtle tonal background — no heavy gradients */
-  background:
-    radial-gradient(ellipse 70% 40% at 95% 0%, rgba(0,119,122,0.07), transparent),
-    radial-gradient(ellipse 50% 30% at 5% 80%, rgba(244,182,63,0.08), transparent),
-    var(--bg);
+  background: var(--bg);
   color: var(--ink);
   overflow-x: hidden;
 }
@@ -76,14 +93,12 @@ button, a, input, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Visible focus ring — 2px to reduce visual weight while remaining accessible */
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
-/* Minimum touch target on buttons */
 button {
   min-height: 44px;
 }
@@ -97,7 +112,7 @@ input, textarea {
   opacity: 1;
 }
 
-/* Skip-to-content link for keyboard users */
+/* Skip-to-content link */
 .skip-link {
   position: absolute;
   top: -100%;
@@ -110,7 +125,6 @@ input, textarea {
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
-  transition: top 120ms;
 }
 
 .skip-link:focus {
@@ -124,31 +138,44 @@ input, textarea {
   min-height: 100vh;
   min-height: 100svh;
   color: var(--ink);
-  /* Reserve space for fixed bottom nav on mobile */
   padding-bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));
   overflow-x: hidden;
 }
 
 /* =========================================
-   APP HEADER — clean, no external images
+   APP HEADER
+   Flat warm near-black. Single accent flash.
+   No gradients, no glow, no images.
    ========================================= */
 .app-header {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(150deg, #0a2e3a 0%, #082631 55%, #0b3a44 100%);
-  color: white;
+  background: #14100c;
+  color: #f2ece4;
   padding: 20px 20px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-/* Subtle tonal accents — no texture images, no grid overlays */
+/* 3px amber accent line at very top */
 .app-header::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 55% 90% at 92% -15%, rgba(0,119,122,0.30), transparent),
-    radial-gradient(ellipse 40% 60% at -5% 115%, rgba(244,182,63,0.16), transparent);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+/* Subtle dot-grid texture — pure CSS, no images */
+.app-header::after {
+  content: "";
+  position: absolute;
+  inset: 3px 0 0 0;
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.06) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
   pointer-events: none;
 }
 
@@ -159,23 +186,23 @@ input, textarea {
 
 /* =========================================
    NAVIGATION
-   Mobile: fixed bottom tab bar (thumb-friendly)
-   Desktop: sticky top bar
+   Mobile: fixed bottom tab bar
+   Desktop: sticky horizontal top bar
    ========================================= */
-
-/* --- Mobile: bottom nav --- */
 .app-nav {
   position: fixed;
   inset: auto 0 0 0;
   z-index: 30;
   display: flex;
   align-items: stretch;
-  background: rgba(255,255,255,0.97);
+  background: rgba(252, 250, 247, 0.97);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 -1px 0 rgba(11,24,34,0.05), 0 -4px 20px rgba(11,24,34,0.07);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 -1px 0 rgba(20,16,12,0.05),
+    0 -4px 20px rgba(20,16,12,0.06);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -184,7 +211,6 @@ input, textarea {
   display: none;
 }
 
-/* Nav button — mobile: vertical (icon above label) */
 .app-nav-btn {
   flex: 1 0 0;
   min-width: 52px;
@@ -206,13 +232,13 @@ input, textarea {
 }
 
 .app-nav-btn .nav-icon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  transition: background 120ms ease, transform 120ms ease;
+  border-radius: 7px;
+  transition: background 120ms ease, transform 100ms ease;
 }
 
 .app-nav-btn .nav-label {
@@ -222,41 +248,41 @@ input, textarea {
   letter-spacing: 0.01em;
 }
 
-/* Active state — filled icon background pill */
+/* Active state */
 .app-nav-btn--active {
   color: var(--accent);
 }
 
 .app-nav-btn--active .nav-icon {
-  background: var(--surface-3);
+  background: var(--accent-tint);
   transform: translateY(-1px);
 }
 
-/* Active indicator dot */
+/* Accent pip above the icon */
 .app-nav-btn--active::after {
   content: "";
   position: absolute;
-  top: 7px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 20px;
+  width: 18px;
   height: 3px;
   border-radius: 999px;
   background: var(--accent);
 }
 
-/* --- Desktop: sticky horizontal top bar --- */
+/* Desktop: sticky top bar */
 @media (min-width: 800px) {
   .app-nav {
     position: sticky;
     inset: 0 0 auto 0;
     top: 0;
     border-top: none;
-    border-bottom: 1px solid rgba(213,222,219,0.6);
-    background: rgba(255,255,255,0.95);
+    border-bottom: 1px solid var(--line);
+    background: rgba(252, 250, 247, 0.96);
     padding: 6px 12px;
     gap: 2px;
-    box-shadow: 0 1px 0 rgba(11,24,34,0.04), 0 2px 8px rgba(11,24,34,0.04);
+    box-shadow: 0 1px 0 rgba(20,16,12,0.04), 0 2px 10px rgba(20,16,12,0.05);
     overflow-x: visible;
   }
 
@@ -267,7 +293,6 @@ input, textarea {
     padding: 7px 14px;
     min-height: 40px;
     border-radius: var(--radius);
-    border-bottom: none;
   }
 
   .app-nav-btn .nav-icon {
@@ -295,8 +320,6 @@ input, textarea {
 
 /* =========================================
    FAB — Floating Action Button
-   Mobile: above bottom nav, bottom-right
-   Desktop: fixed bottom-right corner
    ========================================= */
 .fab {
   position: fixed;
@@ -307,9 +330,11 @@ input, textarea {
   height: 50px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, #ffd166 0%, var(--action) 100%);
+  background: linear-gradient(135deg, #ffd14a 0%, var(--action) 100%);
   color: var(--action-ink);
-  box-shadow: 0 4px 16px rgba(244,182,63,0.38), 0 2px 6px rgba(11,24,34,0.12);
+  box-shadow:
+    0 4px 16px rgba(245,200,0,0.38),
+    0 2px 6px rgba(20,16,12,0.14);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -319,7 +344,9 @@ input, textarea {
 
 .fab:hover {
   transform: scale(1.07);
-  box-shadow: 0 8px 24px rgba(244,182,63,0.45), 0 4px 10px rgba(11,24,34,0.14);
+  box-shadow:
+    0 8px 24px rgba(245,200,0,0.45),
+    0 4px 10px rgba(20,16,12,0.16);
 }
 
 .fab:active {
@@ -336,7 +363,7 @@ input, textarea {
 }
 
 /* =========================================
-   LAYOUT: CONTENT AREAS
+   LAYOUT
    ========================================= */
 .view-main {
   width: min(100%, 1120px);
@@ -380,7 +407,6 @@ input, textarea {
   gap: 10px;
 }
 
-/* Prevent overflow in flex/grid children */
 .dashboard-grid > *,
 .side-panel,
 .section-shell,
@@ -393,25 +419,25 @@ input, textarea {
 }
 
 /* =========================================
-   CARDS — unified, clean aesthetic
+   SIGNAL CARDS — Dashboard strip
+   Bold left border = orientation at a glance
    ========================================= */
-
-/* Signal cards in dashboard strip */
 .signal-card {
   background: var(--surface);
   border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
   border-radius: var(--radius-lg);
   padding: 14px 16px;
   box-shadow: var(--shadow-soft);
 }
 
 .signal-kicker {
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   color: var(--muted-2);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .signal-value {
@@ -428,39 +454,53 @@ input, textarea {
   line-height: 1.4;
 }
 
-/* Content cards */
+/* =========================================
+   CONTENT CARDS — flat, clean
+   No glass, no gradients, no blur
+   ========================================= */
 .info-card,
 .day-card,
 .log-card {
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
-  transition: box-shadow 160ms ease, border-color 160ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .info-card:hover,
 .day-card:hover,
 .log-card:hover {
+  border-color: rgba(229, 90, 0, 0.25);
   box-shadow: var(--shadow);
-  border-color: rgba(0,119,122,0.20);
 }
 
-/* Hero card — no extra decoration, let content speak */
+/* Hero card gets a slightly stronger left border accent */
 .hero-card {
-  /* inherits .info-card styles */
+  border-left: 3px solid var(--accent);
 }
 
-/* Dark stats card */
+/* Dark stats card — warm near-black with amber top accent */
 .premium-card {
-  background: linear-gradient(135deg, #082631 0%, #00454a 100%);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.10);
+  background: var(--ink);
+  color: #f2ece4;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 3px solid var(--accent);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
 
+/* Day and log card padding */
+.day-card {
+  padding: 12px 14px;
+}
+
+.log-card {
+  padding: 14px;
+}
+
 /* =========================================
-   AUTH SHELL — no external background images
+   AUTH — high contrast, premium feel
    ========================================= */
 .auth-shell {
   min-height: 100vh;
@@ -468,9 +508,12 @@ input, textarea {
   display: grid;
   place-items: center;
   padding: 20px;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,119,122,0.09), transparent),
-    linear-gradient(180deg, #ecf0ec 0%, var(--bg) 100%);
+  background: #14100c;
+  /* Subtle warm texture pattern */
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(229,90,0,0.12), transparent);
+  background-size: 24px 24px, 100% 100%;
 }
 
 .auth-card {
@@ -478,22 +521,22 @@ input, textarea {
   overflow: hidden;
   width: min(100%, 420px);
   padding: 36px 28px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-lift);
 }
 
-/* Accent bar at top of auth card */
+/* Amber accent bar at top of card */
 .auth-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--accent), var(--action), var(--copper));
+  background: linear-gradient(90deg, var(--accent), var(--action));
 }
 
-/* Brand mark icon */
+/* Brand mark */
 .brand-mark {
   width: 56px;
   height: 56px;
@@ -501,9 +544,9 @@ input, textarea {
   display: grid;
   place-items: center;
   color: var(--accent);
-  border: 1px solid rgba(0,119,122,0.18);
+  border: 1px solid rgba(229, 90, 0, 0.20);
   border-radius: 14px;
-  background: linear-gradient(135deg, #ffffff, var(--surface-3));
+  background: var(--accent-tint);
   box-shadow: var(--shadow-soft);
 }
 
@@ -517,17 +560,16 @@ input, textarea {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0,0,0,0);
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
 }
 
 /* =========================================
-   RESPONSIVE — desktop overrides
+   RESPONSIVE
    ========================================= */
 @media (min-width: 800px) {
   .app-shell {
-    /* No bottom nav on desktop */
     padding-bottom: 44px;
   }
 
@@ -575,72 +617,77 @@ input, textarea {
 
 /* =========================================
    DARK MODE
+   Warm dark, not cold dark.
+   Orange accent stays vivid.
    ========================================= */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:            #0d1921;
-    --bg-strong:     #14232d;
-    --ink:           #e0ece8;
-    --muted:         #8da8b4;
-    --muted-2:       #6a8898;
-    --line:          #243540;
-    --surface:       #14232d;
-    --surface-2:     #192d38;
-    --surface-3:     #1c3540;
-    --accent:        #1fa8ac;
-    --accent-strong: #3dc8cc;
-    --accent-deep:   #051018;
-    --action:        #f4b63f;
-    --danger:        #e06060;
-    --success:       #3db875;
+    --bg:          #0f0d0a;
+    --bg-strong:   #171410;
+    --surface:     #1a1613;
+    --surface-2:   #201c18;
+    --surface-3:   #271f1a;
+    --ink:         #f0e8e0;
+    --muted:       #a08878;    /* 5.0:1 on surface — AA */
+    --muted-2:     #7a6a5c;    /* 3.5:1 on surface — passes large text */
+    --line:        #2e2820;
+    --accent:        #ff6520;  /* brighter in dark for legibility */
+    --accent-strong: #ff8040;
+    --accent-tint:   #2a1000;
+    --success:       #2aaa60;
+    --danger:        #e05050;
     --focus:         #5a9fff;
-    --shadow-soft: 0 1px 4px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.18);
-    --shadow:      0 4px 16px rgba(0,0,0,0.32), 0 1px 4px rgba(0,0,0,0.18);
-    --shadow-lift: 0 12px 40px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.24);
+    --shadow-soft: 0 1px 3px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.20);
+    --shadow:      0 3px 12px rgba(0,0,0,0.36), 0 1px 4px rgba(0,0,0,0.22);
+    --shadow-lift: 0 10px 32px rgba(0,0,0,0.50), 0 4px 10px rgba(0,0,0,0.28);
   }
 
   body {
-    background:
-      radial-gradient(ellipse 70% 40% at 95% 0%, rgba(0,119,122,0.06), transparent),
-      radial-gradient(ellipse 50% 30% at 5% 80%, rgba(244,182,63,0.04), transparent),
-      var(--bg);
+    background: var(--bg);
   }
 
   .app-header {
-    background: linear-gradient(150deg, #050f15 0%, #061418 55%, #071c26 100%);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: #0a0806;
+  }
+
+  .app-header::after {
+    background-image: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px
+    );
   }
 
   .app-nav {
-    background: rgba(20, 35, 45, 0.97);
+    background: rgba(26, 22, 19, 0.97);
     border-top-color: var(--line);
   }
 
   .auth-shell {
-    background:
-      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,119,122,0.07), transparent),
-      var(--bg);
+    background: #0a0806;
   }
 
   .auth-card {
     background: var(--surface);
-    border-color: var(--line);
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   .premium-card {
-    background: linear-gradient(135deg, #050f15 0%, #0a2830 100%);
+    background: #0a0806;
+    border-color: rgba(255, 255, 255, 0.05);
+    border-top-color: var(--accent);
   }
 }
 
-/* Desktop dark mode nav */
+/* Dark mode — desktop nav */
 @media (prefers-color-scheme: dark) and (min-width: 800px) {
   .app-nav {
-    background: rgba(20, 35, 45, 0.95);
+    background: rgba(26, 22, 19, 0.96);
     border-bottom-color: var(--line);
   }
 
   .app-nav-btn--active {
-    background: rgba(31, 168, 172, 0.18);
+    background: rgba(255, 101, 32, 0.18);
     color: var(--accent);
   }
 }
