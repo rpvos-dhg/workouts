@@ -1775,10 +1775,10 @@ function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
       const { latitude: lat, longitude: lng } = coords;
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token || '';
+        if (!session?.access_token) throw new Error('Geen actieve sessie — log opnieuw in.');
         const res = await fetch('/api/cycling-route', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
           body: JSON.stringify({
             workout: {
               title: day.title,
@@ -1793,12 +1793,13 @@ function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
             lng,
           }),
         });
-        const data = await res.json();
+        let data;
+        try { data = await res.json(); } catch { throw new Error(`Server fout (${res.status})`); }
         if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
         setRouteData(data);
         setStatus('done');
       } catch (err) {
-        setErrorMsg(err.message || 'Route genereren mislukt. Probeer opnieuw.');
+        setErrorMsg(err.message || 'Onbekende fout');
         setStatus('error');
       }
     }, handleGeoError);
