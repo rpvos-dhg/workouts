@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BookOpen, KeyRound, LogOut, MoreHorizontal, Plus, Settings } from 'lucide-react';
+import { Activity, BarChart3, BookOpen, Calendar, Dumbbell, Home as HomeIcon, KeyRound, LogOut, Map, MoreHorizontal, Plus, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA } from '../lib/plan-data';
 import { DEFAULT_USER_SETTINGS, getAdaptiveAdvice, withDefaultSettings } from '../lib/insights';
@@ -412,6 +412,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
 
   return (
     <div className="app-shell">
+      <a href="#main-content" className="skip-link">Ga naar inhoud</a>
       <header className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
@@ -480,15 +481,22 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
 
       <nav className="app-nav" aria-label="Hoofdnavigatie">
         {[
-          { key: 'today', label: t('navToday') },
-          { key: 'week', label: t('navWeek', { week: currentWeek }) },
-          { key: 'plan', label: t('navPlan') },
-          { key: 'checkin', label: t('navMeasure') },
-          { key: 'insights', label: t('navInsights') },
-          { key: 'log', label: t('navLog') },
-        ].map(item => (
-          <button key={item.key} type="button" aria-current={view === item.key ? 'page' : undefined} onClick={() => setView(item.key)} style={{ flex: 1, padding: '10px', border: 'none', background: view === item.key ? 'var(--accent)' : 'transparent', color: view === item.key ? 'white' : 'var(--muted)', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
-            {item.label}
+          { key: 'today',    label: t('navToday'),                     Icon: HomeIcon },
+          { key: 'week',     label: t('navWeek', { week: currentWeek }), Icon: Calendar },
+          { key: 'plan',     label: t('navPlan'),                      Icon: Map },
+          { key: 'checkin',  label: t('navMeasure'),                   Icon: Activity },
+          { key: 'insights', label: t('navInsights'),                  Icon: BarChart3 },
+          { key: 'log',      label: t('navLog'),                       Icon: Dumbbell },
+        ].map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            type="button"
+            aria-current={view === key ? 'page' : undefined}
+            onClick={() => setView(key)}
+            className={`app-nav-btn${view === key ? ' app-nav-btn--active' : ''}`}
+          >
+            <span className="nav-icon" aria-hidden="true"><Icon size={20} /></span>
+            <span className="nav-label">{label}</span>
           </button>
         ))}
       </nav>
@@ -501,7 +509,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         </div>
       )}
 
-      <main className="view-main" style={{ padding: '20px 16px' }}>
+      <main id="main-content" className="view-main" style={{ padding: '20px 16px' }}>
         {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
         {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
         {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
