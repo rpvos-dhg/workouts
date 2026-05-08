@@ -877,6 +877,23 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     error: '',
   });
   const [weatherRetry, setWeatherRetry] = useState(0);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  useEffect(() => {
+    const currentVersion = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
+    const check = async () => {
+      try {
+        const res = await fetch('/api/version');
+        if (!res.ok) return;
+        const { version } = await res.json();
+        if (version && version !== 'dev' && currentVersion !== 'dev' && version !== currentVersion) {
+          setUpdateAvailable(true);
+        }
+      } catch { /* ignore */ }
+    };
+    const id = setInterval(check, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (forcePasswordUpdate) setShowPasswordDialog(true);
@@ -1180,7 +1197,12 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
             <div style={{ fontSize: '12px', opacity: 0.86, fontWeight: 700, textTransform: 'uppercase' }}>{t('weekOf', { week: currentWeek })}</div>
-            <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '4px' }}>{t('appTitle')}</div>
+            <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              {t('appTitle')}
+              <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.55, letterSpacing: '0.5px' }}>
+                #{process.env.NEXT_PUBLIC_BUILD_ID || 'dev'}
+              </span>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <div style={{
@@ -1205,6 +1227,34 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           {!syncing && <span style={{ opacity: 0.6 }}>{user.email}</span>}
         </div>
       </header>
+
+      {updateAvailable && (
+        <div style={{
+          background: '#1a7f4e', color: 'white', textAlign: 'center',
+          padding: '10px 16px', fontSize: '14px', fontWeight: 600,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+        }}>
+          <span>Nieuwe versie beschikbaar!</span>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)',
+              color: 'white', padding: '4px 12px', borderRadius: '999px',
+              cursor: 'pointer', fontSize: '13px', fontWeight: 700,
+            }}
+          >Vernieuwen</button>
+          <button
+            type="button"
+            onClick={() => setUpdateAvailable(false)}
+            style={{
+              background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)',
+              cursor: 'pointer', fontSize: '18px', lineHeight: 1, padding: '0 4px',
+            }}
+            aria-label="Sluiten"
+          >×</button>
+        </div>
+      )}
 
       {showMenu && (
         <div onClick={() => setShowMenu(false)} style={{
