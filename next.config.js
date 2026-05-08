@@ -2,9 +2,11 @@ import { execSync } from 'child_process';
 
 let buildId;
 try {
-  buildId = execSync('git rev-parse --short HEAD').toString().trim();
+  const count = execSync('git rev-list --count HEAD').toString().trim();
+  const sha = execSync('git rev-parse --short HEAD').toString().trim();
+  buildId = `v${count}-${sha}`;
 } catch {
-  buildId = Date.now().toString(36);
+  buildId = 'dev';
 }
 
 /** @type {import('next').NextConfig} */
