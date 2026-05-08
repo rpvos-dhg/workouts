@@ -19,8 +19,8 @@ export const metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png', sizes: '192x192' },
     ],
     apple: [{ url: '/icon.png', sizes: '192x192', type: 'image/png' }],
   },
@@ -34,7 +34,7 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#006b6f',
+  themeColor: '#14100c',
 };
 
 export default function RootLayout({ children }) {
