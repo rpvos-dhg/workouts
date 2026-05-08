@@ -1243,7 +1243,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           padding: '10px 16px', fontSize: '14px', fontWeight: 600,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
         }}>
-          <span>🆕 Nieuwe versie beschikbaar — automatisch vernieuwen over {updateCountdown}s</span>
+          <span>🆕 Nieuwe versie beschikbaar — automatisch vernieuwen over {updateCountdown}s (test 3)</span>
           <button
             type="button"
             onClick={() => window.location.reload()}
