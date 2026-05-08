@@ -1,10 +1,11 @@
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
 
 let buildId;
 try {
+  const major = readFileSync('./VERSION', 'utf8').trim();
   const count = execSync('git rev-list --count HEAD').toString().trim();
-  const sha = execSync('git rev-parse --short HEAD').toString().trim();
-  buildId = `v${count}-${sha}`;
+  buildId = `v${major}.${count}`;
 } catch {
   buildId = 'dev';
 }
