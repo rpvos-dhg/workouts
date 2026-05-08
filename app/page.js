@@ -891,7 +891,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         }
       } catch { /* ignore */ }
     };
-    const id = setInterval(check, 5 * 60 * 1000);
+    const id = setInterval(check, 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
