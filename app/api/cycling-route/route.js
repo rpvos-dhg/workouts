@@ -149,12 +149,15 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
       ? `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${lat},${lng}&waypoints=${encodeURIComponent(waypointStr)}&travelmode=bicycling`
       : `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&travelmode=bicycling`;
 
+    const fietsersbondUrl = `https://routeplanner.fietsersbond.nl/?locations=${lat.toFixed(6)},${lng.toFixed(6)};&route_type=70&preferences=63,71&mode=roundtrip&distance=${Math.round(km)}&poi_visible=knooppunt,pontveren,station`;
+
     return Response.json({
       ...result,
       estimatedKm: km,
       waypoints,
       mapsUrl,
       komootUrl: `https://www.komoot.com/discover/tours?sport=touring-bicycle&center=${lat.toFixed(4)},${lng.toFixed(4)}&zoom=${zoom}`,
+      fietsersbondUrl,
     });
   } catch (err) {
     return Response.json({ error: `Route generation failed: ${err.message}` }, { status: 500 });

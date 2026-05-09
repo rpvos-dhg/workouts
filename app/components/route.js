@@ -117,6 +117,9 @@ export function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
           )}
 
           <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
+            <a href={routeData.fietsersbondUrl} target="_blank" rel="noopener noreferrer" style={{ ...smallActionStyle, textDecoration: 'none' }}>
+              <Navigation size={15} aria-hidden="true" /> Fietsersbond
+            </a>
             <a href={routeData.mapsUrl} target="_blank" rel="noopener noreferrer" style={{ ...smallActionStyle, textDecoration: 'none' }}>
               <MapPin size={15} aria-hidden="true" /> Google Maps
             </a>
