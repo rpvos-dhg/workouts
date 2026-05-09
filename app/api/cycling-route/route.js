@@ -154,7 +154,7 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
       estimatedKm: km,
       waypoints,
       mapsUrl,
-      komootUrl: `https://www.komoot.com/plan#map=${zoom}/${lat.toFixed(4)}/${lng.toFixed(4)}`,
+      komootUrl: `https://www.komoot.com/plan?sport=touring-bicycle#map=${zoom}/${lat.toFixed(4)}/${lng.toFixed(4)}`,
     });
   } catch (err) {
     return Response.json({ error: `Route generation failed: ${err.message}` }, { status: 500 });
