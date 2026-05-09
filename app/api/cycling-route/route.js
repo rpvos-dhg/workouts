@@ -138,7 +138,7 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
 
     const result = JSON.parse(jsonMatch[0]);
     const km = Math.max(1, Number(result.estimatedKm) || 15);
-    const zoom = km < 8 ? 14 : km < 18 ? 13 : km < 35 ? 12 : 11;
+    const zoom = km < 6 ? 14 : km < 15 ? 13 : km < 30 ? 12 : km < 60 ? 11 : 10;
 
     const waypoints = Array.isArray(result.waypoints) ? result.waypoints : [];
     const waypointStr = waypoints
@@ -154,7 +154,7 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
       estimatedKm: km,
       waypoints,
       mapsUrl,
-      komootUrl: `https://www.komoot.com/plan?sport=touring-bicycle#map=${zoom}/${lat.toFixed(4)}/${lng.toFixed(4)}`,
+      komootUrl: `https://www.komoot.com/discover/tours?sport=touring-bicycle&center=${lat.toFixed(4)},${lng.toFixed(4)}&zoom=${zoom}`,
     });
   } catch (err) {
     return Response.json({ error: `Route generation failed: ${err.message}` }, { status: 500 });
