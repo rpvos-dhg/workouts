@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bike, MapPin, Navigation } from 'lucide-react';
+import { Bike, Navigation } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { normalizeEmail } from '../../lib/utils';
 import { InfoCard } from './ui';
@@ -63,10 +63,10 @@ export function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
       {status === 'idle' && (
         <>
           <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px', marginBottom: '12px', lineHeight: 1.5 }}>
-            AI-routeadvies op basis van je training en eerdere ritten
+            AI-afstandsschatting op basis van je training en eerdere ritten
           </div>
           <button type="button" onClick={generateRoute} style={smallActionStyle}>
-            <Navigation size={16} aria-hidden="true" /> Genereer route
+            <Navigation size={16} aria-hidden="true" /> Bereken afstand
           </button>
         </>
       )}
@@ -74,7 +74,7 @@ export function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
       {status === 'loading' && (
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px', color: 'var(--muted)', fontSize: '14px' }}>
           <Bike size={16} aria-hidden="true" />
-          Route wordt berekend…
+          Afstand wordt berekend…
         </div>
       )}
 
@@ -94,44 +94,18 @@ export function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
             <span style={{ fontSize: '14px', color: 'var(--muted)' }}>km geschat</span>
           </div>
           <div style={{ fontSize: '13px', fontWeight: 700, marginTop: '4px' }}>{routeData.routeType}</div>
-          <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5, marginTop: '6px' }}>{routeData.omschrijving}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5, marginTop: '6px' }}>{routeData.rationale}</div>
 
-          {routeData.waypoints?.length > 0 && (
-            <div style={{ marginTop: '12px', borderLeft: '2px solid #003D7A', paddingLeft: '10px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', textTransform: 'uppercase', marginBottom: '6px' }}>Rondrit via</div>
-              {routeData.waypoints.map((w, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--muted)', marginBottom: '3px' }}>
-                  <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#003D7A', color: 'white', fontSize: '9px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
-                  {w.naam}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {routeData.kenmerken?.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
-              {routeData.kenmerken.map(k => (
-                <span key={k} style={{ background: '#E5F0FF', color: '#003D7A', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 700 }}>{k}</span>
-              ))}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
+          <div style={{ marginTop: '14px' }}>
             <a href={routeData.fietsersbondUrl} target="_blank" rel="noopener noreferrer" style={{ ...smallActionStyle, textDecoration: 'none' }}>
-              <Navigation size={15} aria-hidden="true" /> Fietsersbond
-            </a>
-            <a href={routeData.mapsUrl} target="_blank" rel="noopener noreferrer" style={{ ...smallActionStyle, textDecoration: 'none' }}>
-              <MapPin size={15} aria-hidden="true" /> Google Maps
-            </a>
-            <a href={routeData.komootUrl} target="_blank" rel="noopener noreferrer" style={{ ...smallActionStyle, textDecoration: 'none' }}>
-              <Navigation size={15} aria-hidden="true" /> Komoot
+              <Navigation size={15} aria-hidden="true" /> Plan route in Fietsersbond
             </a>
           </div>
           <button type="button" onClick={() => { setStatus('idle'); setRouteData(null); }} style={{
             marginTop: '10px', background: 'none', border: 'none', color: 'var(--muted)',
             fontSize: '12px', cursor: 'pointer', padding: '0', textDecoration: 'underline',
           }}>
-            Nieuwe route genereren
+            Opnieuw berekenen
           </button>
         </>
       )}

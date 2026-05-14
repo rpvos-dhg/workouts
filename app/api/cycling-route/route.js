@@ -6,7 +6,6 @@ const ALLOWED_EMAIL = 'remcopvos@gmail.com';
 function normalizeEmail(email = '') {
   const [local, domain] = email.toLowerCase().split('@');
   if (!domain) return email.toLowerCase();
-  // Gmail ignores dots in local part
   const normalLocal = domain === 'gmail.com' ? local.replace(/\./g, '') : local;
   return `${normalLocal}@${domain}`;
 }
@@ -43,92 +42,44 @@ export async function POST(request) {
 
   const recentLogs = (cycleLogs || [])
     .filter(l => l.type === 'cycle' && l.distance && l.duration)
-    .slice(0, 8);
-
-  const avgSpeed = recentLogs.length
-    ? recentLogs.reduce((s, l) => s + (l.distance / (l.duration / 60)), 0) / recentLogs.length
-    : null;
+    .slice(0, 10);
 
   const logsSummary = recentLogs.length > 0
     ? recentLogs.map(l =>
-        `- ${l.date}: ${l.duration}min, ${l.distance}km${l.avg_hr ? `, ${l.avg_hr}bpm` : ''}`
+        `- ${l.date}: ${l.duration}min, ${l.distance}km${l.avg_hr ? `, ${l.avg_hr}bpm` : ''}${l.notes ? `, "${l.notes}"` : ''}`
       ).join('\n')
     : 'Geen eerdere ritten beschikbaar';
 
-  const prompt = `Je bent een expert fietsrouteplanner in Nederland. Je kent de Nederlandse fietsinfraa door en door: LF-routes, knooppuntennetwerk, kanaalpaden, polderroutes en recreatieve fietspaden.
+  const prompt = `Je bent een fietscoach die op basis van trainingsdata de juiste afstand voor een rit berekent.
 
-STARTLOCATIE: ${lat.toFixed(5)}, ${lng.toFixed(5)}
-
-TRAINING:
+HUIDIGE TRAINING:
 - Titel: ${workout.title}
-- Duur: ${workout.dur} minuten
+- Geplande duur: ${workout.dur} minuten
 - HR zone: ${workout.hr || 'niet opgegeven'}
-- Snelheid: ${workout.speed || 'niet opgegeven'}
+- Doelsnelheid: ${workout.speed || 'niet opgegeven'}
 - Doel: ${workout.target || 'geen specifiek doel'}
-- Omschrijving: ${workout.desc || ''}
-${avgSpeed ? `\nGEMIDDELDE SNELHEID UIT RITTEN: ${avgSpeed.toFixed(1)} km/h` : ''}
+- Omschrijving: ${workout.desc || 'geen omschrijving'}
 
-RECENTE RITTEN:
+RECENTE RITTEN (meest recent eerst):
 ${logsSummary}
 
-━━━ ROUTE-EISEN ━━━
-
-INFRASTRUCTUUR (in volgorde van voorkeur — kies uitsluitend hieruit):
-1. Fietspad langs kanalen en rivieren (kanaaltowpaths, boezemwegen)
-2. LF-routes en knooppuntenfietsroutes (bewegwijzerde fietsroutes)
-3. Polderroutes en landwegen zonder doorgaand autoverkeer
-4. Fietspaden door parken, bossen en duingebieden
-5. Woonstraten als fietsstraat aangewezen (alleen als overgang)
-
-VERMIJD ABSOLUUT:
-- N-wegen en provinciale wegen (N14, N44, N211, N213, etc.)
-- Rotondes en stoplichten in stadscentra
-- Drukke doorgaande wegen en bedrijventerreinen
-- Autowegen en parallelwegen daarvan
-
-LOKALE INFRASTRUCTUUR VOOR ARCHIPELBUURT / DEN HAAG (2585CE):
-Startpunt is Archipelbuurt Den Haag (ca. 52.088°N, 4.295°E). Gebruik routes die hier direct bereikbaar zijn:
-
-DICHTBIJ (0-3 km, ideaal voor korte ritten):
-- Scheveningse Bosjes: direct ten noorden, autovrij bosfietspad, lus mogelijk
-- Westbroekpark en omgeving: rustige paden richting Scheveningen
-- Nieuwe Parklaan langs het water richting Scheveningen haven
-
-MIDDEL (3-8 km, voor ritten 10-25 km):
-- Westduinpark / Kijkduin: via Loosduinseweg → duinpaden, weinig verkeer
-- Haagse Bos: via Koningskade/Laan van Meerdervoort → groot autovrij bos
-- Strandboulevard Scheveningen: fietspad langs de kust noordwaarts
-- Meijendel duingebied ⭐: via Scheveningse Bosjes → Meijendel in, uitstekend doorfietsparcours, nauwelijks kruisingen, autovrij, ideaal voor Z2/Z3
-- LF1 Noordzeeroute langs de kust (Scheveningen → Katwijk richting)
-
-VER (8+ km, voor lange ritten 18+ km):
-- Midden-Delfland polders: via Leyweg/Lozerlaan, uitgestrekte polderpaden
-- De Vliet fietspad: via Leidschendam, kanaalpad naar Delft of Leiden
-- Westland polderroutes: richting Naaldwijk, glastuinbouw-landwegen
-- Knooppuntennetwerk Zuid-Holland (nummers 54→45→67 etc.)
-
-TECHNISCHE VEREISTEN:
-- Rondrit: start EN eindigt op de startlocatie
-- 6 tot 8 waypoints, goed verspreid over de route
-- Elk waypoint moet op of naast genoemde fietsinfrastructuur liggen
-- Waypoints zijn bedoeld als GPS-ankerpunten voor Google Maps cycling mode — zo nauwkeuriger, hoe beter de snapping naar fietspaden
+ANALYSE-OPDRACHT:
+1. Bereken de gemiddelde snelheid per recent rit (km ÷ duur in uren).
+2. Stel een verwachte snelheid in voor de huidige training op basis van de HR zone en omschrijving. Kijk ook naar de trend en het soort training (herstelrit, Z2-duurrit, Z3-tempo, intervaltraining).
+3. Schat de afstand: duur × verwachte snelheid. Pas aan voor trainingsintensiteit (hogere zone = lagere snelheid maar niet altijd kortere afstand bij vaste duur).
+4. Geef een beknopte onderbouwing die aangeeft welke ritten het meest meewogen en waarom.
 
 Geef je antwoord ALLEEN als JSON (geen extra tekst):
 {
-  "estimatedKm": <getal: schatting op basis van duur × gemiddelde snelheid, gecorrigeerd voor intensiteit>,
-  "routeType": "<kort routetype>",
-  "omschrijving": "<2-3 zinnen: beschrijf de specifieke route en welke infrastructuur je volgt>",
-  "kenmerken": ["<kenmerk 1>", "<kenmerk 2>", "<kenmerk 3>"],
-  "waypoints": [
-    { "lat": <getal>, "lng": <getal>, "naam": "<herkenbare naam, bijv. 'Vlietpad bij Leidschendam'>" },
-    ...
-  ]
+  "estimatedKm": <geheel getal>,
+  "routeType": "<kort type, bijv. 'Z2 duurrit' of 'Z3 tempotraining'>",
+  "rationale": "<2-3 zinnen: welke recente ritten wogen mee, welke snelheid je verwacht en hoe je op dit getal uitkomt>"
 }`;
 
   try {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      max_tokens: 512,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -138,25 +89,13 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
 
     const result = JSON.parse(jsonMatch[0]);
     const km = Math.max(1, Number(result.estimatedKm) || 15);
-    const zoom = km < 6 ? 14 : km < 15 ? 13 : km < 30 ? 12 : km < 60 ? 11 : 10;
-
-    const waypoints = Array.isArray(result.waypoints) ? result.waypoints : [];
-    const waypointStr = waypoints
-      .map(w => `${Number(w.lat).toFixed(6)},${Number(w.lng).toFixed(6)}`)
-      .join('|');
-
-    const mapsUrl = waypointStr
-      ? `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${lat},${lng}&waypoints=${encodeURIComponent(waypointStr)}&travelmode=bicycling`
-      : `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&travelmode=bicycling`;
 
     const fietsersbondUrl = `https://routeplanner.fietsersbond.nl/?locations=${lat.toFixed(6)},${lng.toFixed(6)};&route_type=70&preferences=63,71&mode=roundtrip&distance=${Math.round(km)}&poi_visible=knooppunt,pontveren,station`;
 
     return Response.json({
-      ...result,
       estimatedKm: km,
-      waypoints,
-      mapsUrl,
-      komootUrl: `https://www.komoot.com/discover/tours?sport=touring-bicycle&center=${lat.toFixed(4)},${lng.toFixed(4)}&zoom=${zoom}`,
+      routeType: result.routeType || '',
+      rationale: result.rationale || '',
       fietsersbondUrl,
     });
   } catch (err) {
