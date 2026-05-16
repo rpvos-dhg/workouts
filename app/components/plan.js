@@ -309,7 +309,7 @@ export function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, 
   ];
   return (
     <div>
-      <InfoCard style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(238,244,239,0.94))' }}>
+      <InfoCard style={{ background: 'var(--surface-2)', borderLeft: '4px solid var(--accent)' }}>
         <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('weekFocusLabel', { week: currentWeek })}</div>
         <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '22px', fontWeight: 800, marginTop: '6px' }}>{overview.focus}</div>
         <div className="metric-grid" style={{ marginTop: '14px' }}>
