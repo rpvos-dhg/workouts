@@ -92,6 +92,11 @@ export function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '10px' }}>
             <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent)' }}>{routeData.estimatedKm}</span>
             <span style={{ fontSize: '14px', color: 'var(--muted)' }}>{t('routeKmEstimated')}</span>
+            {routeData.expectedAvgSpeed && (
+              <span style={{ fontSize: '13px', color: 'var(--muted)', marginLeft: '6px' }}>
+                · ~{routeData.expectedAvgSpeed} km/u
+              </span>
+            )}
           </div>
           <div style={{ fontSize: '13px', fontWeight: 700, marginTop: '4px', color: 'var(--ink)' }}>{routeData.routeType}</div>
           <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5, marginTop: '6px' }}>{routeData.rationale}</div>

@@ -42,45 +42,65 @@ export async function POST(request) {
 
   const recentLogs = (cycleLogs || [])
     .filter(l => l.type === 'cycle' && l.distance && l.duration)
-    .slice(0, 10);
+    .slice(0, 10)
+    .map(l => ({
+      ...l,
+      avgSpeedKmh: Math.round((l.distance / (l.duration / 60)) * 10) / 10,
+    }));
 
   const logsSummary = recentLogs.length > 0
     ? recentLogs.map(l =>
-        `- ${l.date}: ${l.duration}min, ${l.distance}km${l.avg_hr ? `, ${l.avg_hr}bpm` : ''}${l.notes ? `, "${l.notes}"` : ''}`
+        `- ${l.date}: ${l.duration}min, ${l.distance}km, gem. ${l.avgSpeedKmh}km/u${l.avg_hr ? `, ${l.avg_hr}bpm` : ''}${l.notes ? `, opmerking: "${l.notes}"` : ''}`
       ).join('\n')
-    : 'Geen eerdere ritten beschikbaar';
+    : 'Geen eerdere ritten beschikbaar.';
 
-  const prompt = `Je bent een fietscoach die op basis van trainingsdata de juiste afstand voor een rit berekent.
+  const speeds = recentLogs.slice(0, 5).map(l => l.avgSpeedKmh).filter(Boolean);
+  const avgSpeed5 = speeds.length > 0
+    ? (speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(1)
+    : null;
 
-HUIDIGE TRAINING:
-- Titel: ${workout.title}
+  const systemPrompt = `Je bent een persoonlijke fietscoach voor een wielrenner in Nederland (overwegend vlak terrein). \
+Je analyseert trainingsdata en geeft nauwkeurige afstandsschattingen op basis van eerdere prestaties en het trainingsdoel van vandaag. \
+Je antwoord is ALTIJD uitsluitend geldig JSON — geen inleiding, geen uitleg buiten het JSON-object.`;
+
+  const userPrompt = `TRAININGSPROFIEL
+Gemiddelde snelheid afgelopen 5 ritten: ${avgSpeed5 ? `${avgSpeed5} km/u` : 'onbekend'}
+
+VANDAAGSE TRAINING
+- Naam: ${workout.title}
 - Geplande duur: ${workout.dur} minuten
-- HR zone: ${workout.hr || 'niet opgegeven'}
-- Doelsnelheid: ${workout.speed || 'niet opgegeven'}
-- Doel: ${workout.target || 'geen specifiek doel'}
+- HR-zone: ${workout.hr || 'niet opgegeven'}
+- Doelsnelheid: ${workout.speed ? `${workout.speed} km/u` : 'niet opgegeven'}
+- Trainingsdoel: ${workout.target || 'niet opgegeven'}
 - Omschrijving: ${workout.desc || 'geen omschrijving'}
 
-RECENTE RITTEN (meest recent eerst):
+RECENTE RITTEN (nieuwste eerst, gemiddelde snelheid is al berekend)
 ${logsSummary}
 
-ANALYSE-OPDRACHT:
-1. Bereken de gemiddelde snelheid per recent rit (km ÷ duur in uren).
-2. Stel een verwachte snelheid in voor de huidige training op basis van de HR zone en omschrijving. Kijk ook naar de trend en het soort training (herstelrit, Z2-duurrit, Z3-tempo, intervaltraining).
-3. Schat de afstand: duur × verwachte snelheid. Pas aan voor trainingsintensiteit (hogere zone = lagere snelheid maar niet altijd kortere afstand bij vaste duur).
-4. Geef een beknopte onderbouwing die aangeeft welke ritten het meest meewogen en waarom.
+INSTRUCTIES
+1. Gebruik de pre-berekende gemiddelde snelheden als vertrekpunt voor de verwachte snelheid.
+2. Pas de snelheid aan op basis van de HR-zone:
+   - Z1/herstel: −15% van het persoonlijke gemiddelde
+   - Z2/duurrit: −5 tot 0% (basissnelheid)
+   - Z3/tempo: +3 tot +8%
+   - Z4+/interval of race: hogere intensiteit maar kortere blokken, gebruik geplande duur als leidraad
+3. Schat de afstand = (geplande duur in uren) × verwachte snelheid.
+4. Schrijf de rationale in 2 zinnen, direct gericht aan de renner, met de meest bepalende ritten en de verwachte snelheid.
 
-Geef je antwoord ALLEEN als JSON (geen extra tekst):
+Antwoord uitsluitend als JSON:
 {
   "estimatedKm": <geheel getal>,
-  "routeType": "<kort type, bijv. 'Z2 duurrit' of 'Z3 tempotraining'>",
-  "rationale": "<2-3 zinnen: welke recente ritten wogen mee, welke snelheid je verwacht en hoe je op dit getal uitkomt>"
+  "expectedAvgSpeed": <één decimaal, km/u als getal>,
+  "routeType": "<kort label, bijv. 'Z2 duurrit', 'Z3 temporit' of 'herstelrit'>",
+  "rationale": "<2 zinnen gericht aan de renner>"
 }`;
 
   try {
     const message = await client.messages.create({
       model: 'claude-opus-4-7',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 512,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
     });
 
     const text = message.content[0].text.trim();
@@ -94,6 +114,7 @@ Geef je antwoord ALLEEN als JSON (geen extra tekst):
 
     return Response.json({
       estimatedKm: km,
+      expectedAvgSpeed: result.expectedAvgSpeed ?? null,
       routeType: result.routeType || '',
       rationale: result.rationale || '',
       fietsersbondUrl,
