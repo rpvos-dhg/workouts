@@ -30,7 +30,7 @@ export function IconBadge({ type, color, bg, size = 48, iconSize = 24 }) {
   return (
     <span style={{
       width: size, height: size, minWidth: size,
-      borderRadius: '12px', background: bg, color,
+      borderRadius: 'var(--radius)', background: bg, color,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     }}>
       <TypeIcon type={type} size={iconSize} color={color} />
@@ -50,7 +50,7 @@ export function Tag({ label, bg, color, icon: Icon }) {
 export function InfoCard({ children, style, className = '' }) {
   return (
     <div className={`info-card ${className}`.trim()} style={{
-      background: 'var(--surface)', borderRadius: '12px', padding: '16px', marginBottom: '12px', ...style,
+      padding: '16px', marginBottom: '12px', ...style,
     }}>
       {children}
     </div>
@@ -60,7 +60,7 @@ export function InfoCard({ children, style, className = '' }) {
 export function SectionTitle({ title, subtitle }) {
   return (
     <div style={{ margin: '18px 4px 10px' }}>
-      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent-strong)', textTransform: 'uppercase' }}>{title}</div>
+      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent-strong)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</div>
       {subtitle && <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px', lineHeight: 1.4 }}>{subtitle}</div>}
     </div>
   );
@@ -70,15 +70,16 @@ export function Segmented({ options, value, onChange, ariaLabel = 'Tabs' }) {
   return (
     <div role="tablist" aria-label={ariaLabel} style={{
       display: 'flex', overflowX: 'auto', gap: '4px',
-      background: 'var(--surface)', borderRadius: '12px', padding: '4px',
-      margin: '14px 0', border: '1px solid var(--line)',
+      background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '4px',
+      margin: '14px 0', border: '1px solid var(--line)', scrollbarWidth: 'thin',
     }}>
       {options.map(option => (
         <button key={option.key} type="button" role="tab" aria-selected={value === option.key} onClick={() => onChange(option.key)} style={{
-          flex: '1 0 auto', padding: '9px 10px', border: 'none', borderRadius: '8px',
+          flex: '1 0 auto', padding: '10px 14px', border: 'none', borderRadius: 'var(--radius)',
           background: value === option.key ? 'var(--accent)' : 'transparent',
           color: value === option.key ? 'white' : 'var(--muted)',
-          fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+          fontSize: '13px', fontWeight: 700, cursor: 'pointer', minHeight: '40px',
+          whiteSpace: 'nowrap',
         }}>{option.label}</button>
       ))}
     </div>
@@ -87,12 +88,12 @@ export function Segmented({ options, value, onChange, ariaLabel = 'Tabs' }) {
 
 export function MetricTile({ label, value, icon: Icon }) {
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: '8px', padding: '10px', border: '1px solid var(--line)' }}>
-      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '10px 12px', border: '1px solid var(--line)' }}>
+      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         {Icon && <Icon size={13} aria-hidden="true" />}
         {label}
       </div>
-      <div style={{ fontSize: '14px', fontWeight: 800, marginTop: '4px', color: 'var(--accent-strong)' }}>{value}</div>
+      <div style={{ fontSize: '15px', fontWeight: 800, marginTop: '4px', color: 'var(--accent-strong)' }}>{value}</div>
     </div>
   );
 }
@@ -175,10 +176,10 @@ export function TrendCard({ title, unit, points, color, t }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div>
           <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 800 }}>{title}</div>
-          <div style={{ fontSize: '22px', fontWeight: 800, color }}>{Number.isFinite(latest) ? `${latest.toFixed(unit === '%' ? 0 : 1)} ${unit}` : '-'}</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color }}>{Number.isFinite(latest) ? `${latest.toFixed(unit === '%' ? 0 : 1)} ${unit}` : '—'}</div>
         </div>
         {delta !== null && (
-          <Tag label={`${delta >= 0 ? '+' : ''}${delta.toFixed(unit === '%' ? 0 : 1)} ${unit}`} bg="#F0F4FA" color="#003D7A" />
+          <Tag label={`${delta >= 0 ? '+' : ''}${delta.toFixed(unit === '%' ? 0 : 1)} ${unit}`} bg="var(--info-tint)" color="var(--accent)" />
         )}
       </div>
       <MiniChart points={points} color={color} emptyLabel={t('noTrendData')} />

@@ -22,19 +22,12 @@ const sections = [
     ],
   },
   {
-    title: 'Integraties',
+    title: 'Extra functies',
     items: [
-      ['Web Push', 'Trainingen en meetmomenten kunnen om 20:00 Europe/Amsterdam een push reminder sturen als ze nog openstaan.'],
-      ['Open-Meteo fietsweer', 'Fietsdagen krijgen binnen het 16-daagse forecastbereik een beste tijdstip op basis van regen, wind, windvlagen, temperatuur en daglicht.'],
-    ],
-  },
-  {
-    title: 'Beheer en veiligheid',
-    items: [
-      ['Authenticatie', 'Gebruikers loggen in via Supabase Auth met wachtwoord, magic link of wachtwoordherstel.'],
-      ['RLS', 'Supabase Row Level Security zorgt dat gebruikers alleen hun eigen logs, checkins, settings, habits en push subscriptions beheren.'],
-      ['Server secrets', 'Service role, Web Push private key, CRON_SECRET en optionele weerlocatie staan alleen server-side in Vercel environment variables.'],
-      ['Cron', 'Vercel Cron roept dagelijks de reminder-endpoint aan. De endpoint accepteert alleen requests met de juiste CRON_SECRET.'],
+      ['Reminders', 'Open trainingen en meetmomenten kunnen je dagelijks een push reminder sturen rond 20:00 als er nog iets openstaat.'],
+      ['Fietsweer', 'Fietsdagen tonen de beste tijdsblokken voor de komende ~16 dagen op basis van regen, wind, windvlagen, temperatuur en daglicht.'],
+      ['Werkt offline', 'De app draait als installeerbare PWA op telefoon en desktop met een lokale cache voor de shell.'],
+      ['Donkere modus', 'Volgt automatisch de systeemvoorkeur.'],
     ],
   },
 ];
@@ -47,23 +40,31 @@ const walkthroughs = [
       'Open het menu rechtsboven en kies Instellingen.',
       'Vul je kcal-doel, eiwitdoel, waterdoel en rusthartslag-baseline in.',
       'Pas je hartslagzones aan als je Apple Watch of trainingstest andere zones aangeeft.',
-      'Zet Reminders aan of uit en kies de reminder-tijd. Standaard is 20:00.',
-      'Laat timezone op Europe/Amsterdam staan, tenzij je in een andere tijdzone traint.',
+      'Zet reminders aan of uit en kies de reminder-tijd. Standaard is 20:00.',
       'Klik Instellingen opslaan.',
       'De dagchecklist, loganalyse en adaptief advies gebruiken daarna deze persoonlijke waarden.',
     ],
   },
   {
-    title: 'Web Push stap voor stap',
+    title: 'Reminders aanzetten',
     intro: 'Gebruik dit om herinneringen te krijgen voor open trainingen en meetmomenten.',
     steps: [
-      'Controleer in Vercel Production dat WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_SUBJECT en CRON_SECRET zijn ingesteld.',
-      'Redeploy Production na het instellen van deze environment variables.',
-      'Open de live app opnieuw en log in.',
-      'Open Instellingen en klik Web Push aanzetten.',
-      'Sta meldingen toe in de browser.',
-      'Op iPhone werkt dit alleen betrouwbaar als de app aan het beginscherm is toegevoegd als Home Screen web app.',
-      'De Vercel cron draait dagelijks en stuurt rond 20:00 een reminder als er nog een training of meetmoment openstaat.',
+      'Open Instellingen via het menu rechtsboven.',
+      'Klik op "Web Push aanzetten".',
+      'Sta meldingen toe in je browser wanneer daarom gevraagd wordt.',
+      'Op iPhone werkt dit alleen als de app via "Zet op beginscherm" is toegevoegd.',
+      'Je ontvangt rond 20:00 een reminder als er nog een training of meetmoment openstaat.',
+    ],
+  },
+  {
+    title: 'App installeren',
+    intro: 'Installeer de app als zelfstandige PWA voor sneller starten en offline shell.',
+    steps: [
+      'Open de app in Chrome, Edge of Safari.',
+      'Op desktop: klik in de adresbalk op het installatie-icoon, of kies "App installeren" in het menu van je browser.',
+      'Op iPhone: tik op het deel-icoon en kies "Zet op beginscherm".',
+      'Op Android: open het browsermenu en kies "App installeren" of "Toevoegen aan startscherm".',
+      'De app verschijnt nu als zelfstandig icoon op je toestel.',
     ],
   },
 ];
@@ -73,15 +74,21 @@ export const metadata = {
   description: 'Functionele documentatie voor de 6-Weken Plan workouts-app.',
 };
 
+const cardStyle = {
+  background: 'var(--surface)',
+  borderRadius: 'var(--radius-lg)',
+  padding: '18px',
+};
+
 export default function DocsPage() {
   return (
     <main style={{ minHeight: '100vh', color: 'var(--ink)' }}>
       <header className="app-header" style={{ paddingBottom: '54px' }}>
         <div style={{ width: 'min(100%, 980px)', margin: '0 auto' }}>
           <Link href="/" style={{ color: 'rgba(255,255,255,0.82)', fontSize: '13px', fontWeight: 800, textDecoration: 'none' }}>
-            Terug naar app
+            ← Terug naar app
           </Link>
-          <div style={{ marginTop: '24px', fontSize: '12px', opacity: 0.86, fontWeight: 800, textTransform: 'uppercase' }}>
+          <div style={{ marginTop: '24px', fontSize: '12px', opacity: 0.86, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             6-Weken Plan
           </div>
           <h1 style={{
@@ -90,12 +97,12 @@ export default function DocsPage() {
             fontSize: 'clamp(30px, 6vw, 54px)',
             lineHeight: 1.05,
             fontWeight: 800,
-            letterSpacing: 0,
+            letterSpacing: '-0.02em',
           }}>
             App documentatie
           </h1>
           <p style={{ maxWidth: '720px', margin: '14px 0 0', color: 'rgba(255,255,255,0.82)', fontSize: '16px', lineHeight: 1.55 }}>
-            Overzicht van alle schermen, functies, integraties en beheerinstellingen van de workouts-app.
+            Overzicht van alle schermen, functies en hoe je de app op jouw doelen afstemt.
           </p>
         </div>
       </header>
@@ -105,17 +112,17 @@ export default function DocsPage() {
           <div className="signal-card">
             <div className="signal-kicker">Doel</div>
             <div className="signal-value">6 weken trainen, meten en bijsturen</div>
-            <div className="signal-note">Dagplanning, logs, checkins, trends en reminders in een PWA.</div>
+            <div className="signal-note">Dagplanning, logs, checkins, trends en reminders in één app.</div>
           </div>
           <div className="signal-card">
-            <div className="signal-kicker">Data</div>
-            <div className="signal-value">Supabase per gebruiker</div>
-            <div className="signal-note">Alle persoonlijke data valt onder RLS en wordt per account gescheiden.</div>
+            <div className="signal-kicker">Aanpak</div>
+            <div className="signal-value">Persoonlijk en adaptief</div>
+            <div className="signal-note">Je doelen, zones en metingen bepalen wat je elke dag te zien krijgt.</div>
           </div>
           <div className="signal-card">
-            <div className="signal-kicker">Integraties</div>
-            <div className="signal-value">Web Push + fietsweer</div>
-            <div className="signal-note">Push reminders en Open-Meteo beste fietsmomenten rond 2596EC.</div>
+            <div className="signal-kicker">Extra</div>
+            <div className="signal-value">Reminders + fietsweer</div>
+            <div className="signal-note">Push reminders voor open dagen en beste fietsmomenten per dag.</div>
           </div>
         </section>
 
@@ -124,7 +131,7 @@ export default function DocsPage() {
             <SectionHeading title={section.title} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
               {section.items.map(([title, body]) => (
-                <article key={title} className="info-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '16px' }}>
+                <article key={title} className="info-card" style={cardStyle}>
                   <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: 'var(--accent-strong)' }}>{title}</h2>
                   <p style={{ margin: '8px 0 0', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.55 }}>{body}</p>
                 </article>
@@ -137,7 +144,7 @@ export default function DocsPage() {
           <SectionHeading title="Stap voor stap" />
           <div style={{ display: 'grid', gap: '12px' }}>
             {walkthroughs.map(flow => (
-              <article key={flow.title} className="info-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '16px' }}>
+              <article key={flow.title} className="info-card" style={cardStyle}>
                 <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--accent-strong)' }}>{flow.title}</h2>
                 <p style={{ margin: '8px 0 12px', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.55 }}>{flow.intro}</p>
                 <ol style={{ margin: 0, paddingLeft: '22px', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.7 }}>
@@ -149,16 +156,16 @@ export default function DocsPage() {
         </section>
 
         <section style={{ marginTop: '28px' }}>
-          <SectionHeading title="Operationele checklist" />
-          <div className="info-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '16px' }}>
+          <SectionHeading title="Sneltoetsen en tips" />
+          <article className="info-card" style={cardStyle}>
             <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--muted)', fontSize: '14px', lineHeight: 1.7 }}>
-              <li>Supabase schema is uitgevoerd via SQL Editor.</li>
-              <li>Vercel Production bevat alle environment variables.</li>
-              <li>WEATHER_LATITUDE, WEATHER_LONGITUDE en WEATHER_LOCATION_LABEL zijn optioneel; zonder env gebruikt de app 2596EC.</li>
-              <li>Na elke env wijziging is een Production redeploy nodig.</li>
-              <li>Web Push werkt pas nadat de gebruiker meldingen toestaat en de app op iOS als Home Screen web app gebruikt.</li>
+              <li>Escape sluit elk venster en bottom-sheet.</li>
+              <li>De checklist op Vandaag synchroniseert direct met je profiel.</li>
+              <li>Voltooide dagen verschijnen doorgestreept en lichter in de week- en planweergave.</li>
+              <li>De FAB rechtsonder opent altijd het log-formulier, ook tijdens andere taken.</li>
+              <li>Tap een dag in Week of Plan om details en eventueel het fietsweer te bekijken.</li>
             </ul>
-          </div>
+          </article>
         </section>
       </div>
     </main>
@@ -168,7 +175,7 @@ export default function DocsPage() {
 function SectionHeading({ title }) {
   return (
     <div style={{ margin: '0 4px 12px' }}>
-      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent-strong)', textTransform: 'uppercase' }}>{title}</div>
+      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent-strong)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{title}</div>
     </div>
   );
 }

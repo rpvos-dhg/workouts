@@ -5,7 +5,9 @@ import { BarChart3, Bike, Download, Dumbbell, Edit3, Flame, Footprints, Gauge, H
 import { getHeartZone } from '../../lib/insights';
 import { exportLogsCSV } from '../../lib/utils';
 import { InfoCard, Field, StatItem } from './ui';
-import { inputStyle, smallActionStyle } from './styles';
+import { inputStyle, smallActionStyle, ghostButtonStyle, primaryButtonStyle } from './styles';
+import { ModalShell } from './ModalShell';
+import { useToast } from './Toast';
 
 export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, t }) {
   const cycleLogs = logs.filter(l => l.type === 'cycle' && l.distance && l.duration);
@@ -34,13 +36,13 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
       </InfoCard>
 
       {logs.length > 0 && (
-        <div className="premium-card" style={{ padding: '20px', borderRadius: '12px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '11px', opacity: 0.85, fontWeight: 700, letterSpacing: '1px' }}>{t('yourStats')}</div>
+        <div className="premium-card" style={{ padding: '20px', borderRadius: 'var(--radius-lg)', marginBottom: '20px' }}>
+          <div style={{ fontSize: '11px', opacity: 0.85, fontWeight: 800, letterSpacing: '0.1em' }}>{t('yourStats')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('workoutsLogged')}</div><div style={{ fontSize: '24px', fontWeight: 700 }}>{logs.length}</div></div>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgSpeed')}</div><div style={{ fontSize: '24px', fontWeight: 700 }}>{avgSpeed > 0 ? avgSpeed.toFixed(1) : '-'} <span style={{ fontSize: '14px', opacity: 0.7 }}>km/h</span></div></div>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgHr')}</div><div style={{ fontSize: '24px', fontWeight: 700 }}>{avgHR > 0 ? Math.round(avgHR) : '-'} <span style={{ fontSize: '14px', opacity: 0.7 }}>bpm</span></div></div>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('cycleRides')}</div><div style={{ fontSize: '24px', fontWeight: 700 }}>{cycleLogs.length}</div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('workoutsLogged')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{logs.length}</div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgSpeed')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{avgSpeed > 0 ? avgSpeed.toFixed(1) : '—'} <span style={{ fontSize: '14px', opacity: 0.7 }}>km/h</span></div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgHr')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{avgHR > 0 ? Math.round(avgHR) : '—'} <span style={{ fontSize: '14px', opacity: 0.7 }}>bpm</span></div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('cycleRides')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{cycleLogs.length}</div></div>
           </div>
         </div>
       )}
@@ -48,7 +50,7 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
       {logs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)' }}>
           <BarChart3 size={48} aria-hidden="true" style={{ marginBottom: '12px', color: 'var(--accent)' }} />
-          <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '6px' }}>{t('noWorkouts')}</div>
+          <div style={{ fontSize: '17px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>{t('noWorkouts')}</div>
           <div style={{ fontSize: '14px', color: 'var(--muted-2)', marginBottom: '20px' }}>{t('noWorkoutsHelp')}</div>
         </div>
       ) : (
@@ -61,35 +63,58 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
 export function LogCard({ log, settings, deleteLog, onEditLog, t }) {
   const speed = log.distance && log.duration ? (log.distance / (log.duration / 60)).toFixed(1) : null;
   const zone = log.avg_hr ? getHeartZone(Number(log.avg_hr), settings) : null;
+  const borderColor = log.type === 'cycle' ? 'var(--accent)' : log.type === 'strength' ? 'var(--warn)' : 'var(--success)';
 
   return (
-    <div className="log-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '14px', marginBottom: '10px', borderLeft: `4px solid ${log.type === 'cycle' ? '#003D7A' : '#7A3000'}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '11px', color: '#888', fontWeight: 700, letterSpacing: '0.5px' }}>
+    <div className="log-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '14px', marginBottom: '10px', borderLeft: `4px solid ${borderColor}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '11px', color: 'var(--muted-2)', fontWeight: 700, letterSpacing: '0.08em' }}>
             {new Date(log.date).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
           </div>
-          <div style={{ fontSize: '16px', fontWeight: 600, marginTop: '4px' }}>
-            {log.type === 'cycle' ? t('cycle') : log.type === 'strength' ? t('strength') : t('walk')} • {log.duration} min
+          <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '4px', color: 'var(--ink)' }}>
+            {log.type === 'cycle' ? t('cycle') : log.type === 'strength' ? t('strength') : t('walk')} · {log.duration} min
           </div>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '13px', color: '#555' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '13px', color: 'var(--muted)' }}>
             {log.distance && <StatItem icon={Target} label={`${log.distance} km`} />}
             {speed && <StatItem icon={Gauge} label={`${speed} km/h`} />}
             {log.avg_hr && <StatItem icon={HeartPulse} label={`${log.avg_hr} bpm ${zone ? `(${zone})` : ''}`} />}
             {log.kcal && <StatItem icon={Flame} label={`${log.kcal} kcal`} />}
           </div>
-          {log.notes && <div style={{ fontSize: '13px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>"{log.notes}"</div>}
+          {log.notes && <div style={{ fontSize: '13px', color: 'var(--muted-2)', marginTop: '8px', fontStyle: 'italic' }}>"{log.notes}"</div>}
         </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button type="button" aria-label={t('editLog')} onClick={() => onEditLog(log)} style={{ background: 'transparent', border: 'none', color: '#666', fontSize: '16px', cursor: 'pointer', padding: '4px 8px' }}><Edit3 size={16} aria-hidden="true" /></button>
-          <button type="button" aria-label={t('deleteLog')} onClick={() => deleteLog(log.id)} style={{ background: 'transparent', border: 'none', color: '#999', fontSize: '16px', cursor: 'pointer', padding: '4px 8px' }}><Trash2 size={16} aria-hidden="true" /></button>
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+          <button type="button" aria-label={t('editLog')} onClick={() => onEditLog(log)} style={iconButtonStyle}>
+            <Edit3 size={16} aria-hidden="true" />
+          </button>
+          <button type="button" aria-label={t('deleteLog')} onClick={() => deleteLog(log.id)} style={iconButtonStyle}>
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+const iconButtonStyle = {
+  background: 'transparent',
+  border: '1px solid transparent',
+  color: 'var(--muted)',
+  fontSize: '16px',
+  cursor: 'pointer',
+  padding: '0',
+  width: '44px',
+  height: '44px',
+  minWidth: '44px',
+  borderRadius: 'var(--radius)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'background 120ms ease, color 120ms ease',
+};
+
 export function LogForm({ onSave, onClose, todayPlan, initialLog, t }) {
+  const toast = useToast();
   const [form, setForm] = useState({
     date: initialLog?.date || new Date().toISOString().slice(0, 10),
     type: initialLog?.type || (todayPlan?.type === 'strength' ? 'strength' : 'cycle'),
@@ -102,7 +127,10 @@ export function LogForm({ onSave, onClose, todayPlan, initialLog, t }) {
   });
 
   const handleSubmit = () => {
-    if (!form.duration) return alert(t('durationRequired'));
+    if (!form.duration) {
+      toast.error(t('durationRequired'));
+      return;
+    }
     onSave(form);
   };
 
@@ -126,66 +154,73 @@ export function LogForm({ onSave, onClose, todayPlan, initialLog, t }) {
   }
 
   return (
-    <div role="presentation" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
-      <div role="dialog" aria-modal="true" aria-labelledby="log-form-title" onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', width: '100%', maxHeight: '90vh', overflowY: 'auto', borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px' }}>
-        <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
-        <h2 id="log-form-title" style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700 }}>{initialLog ? t('editLog') : t('workoutLog')}</h2>
-        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--muted)' }}>{t('logSubtitle')}</p>
+    <ModalShell open onClose={onClose} titleId="log-form-title" closeLabel={t('cancel')}>
+      <h2 id="log-form-title" style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 800, color: 'var(--ink)' }}>{initialLog ? t('editLog') : t('workoutLog')}</h2>
+      <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--muted)' }}>{t('logSubtitle')}</p>
 
-        <Field label={t('date')} htmlFor="log-date">
-          <input id="log-date" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
-        </Field>
+      <Field label={t('date')} htmlFor="log-date">
+        <input id="log-date" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
+      </Field>
 
-        <Field label={t('type')}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {[
-              { key: 'cycle', label: t('cycle'), Icon: Bike },
-              { key: 'strength', label: t('strength'), Icon: Dumbbell },
-              { key: 'walk', label: t('walk'), Icon: Footprints },
-            ].map(option => (
-              <button key={option.key} type="button" aria-pressed={form.type === option.key} onClick={() => setForm({ ...form, type: option.key })} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: form.type === option.key ? '2px solid var(--accent)' : '2px solid var(--line)', background: form.type === option.key ? '#e8f4f1' : 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                <option.Icon size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '6px' }} />{option.label}
+      <Field label={t('type')}>
+        <div style={{ display: 'flex', gap: '8px' }} role="radiogroup" aria-label={t('type')}>
+          {[
+            { key: 'cycle', label: t('cycle'), Icon: Bike },
+            { key: 'strength', label: t('strength'), Icon: Dumbbell },
+            { key: 'walk', label: t('walk'), Icon: Footprints },
+          ].map(option => {
+            const active = form.type === option.key;
+            return (
+              <button key={option.key} type="button" role="radio" aria-checked={active} onClick={() => setForm({ ...form, type: option.key })} style={{
+                flex: 1, padding: '12px 10px', borderRadius: 'var(--radius)',
+                border: active ? '2px solid var(--accent)' : '2px solid var(--line)',
+                background: active ? 'var(--accent-tint)' : 'var(--surface)',
+                color: active ? 'var(--accent)' : 'var(--ink)',
+                fontSize: '14px', fontWeight: 700, cursor: 'pointer', minHeight: '44px',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              }}>
+                <option.Icon size={16} aria-hidden="true" />{option.label}
               </button>
-            ))}
-          </div>
-        </Field>
-
-        <Field label={t('duration')} htmlFor="log-duration">
-          <input id="log-duration" type="number" inputMode="decimal" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} placeholder="bijv. 45" style={inputStyle} />
-        </Field>
-        {form.type === 'cycle' && (
-          <Field label={t('distance')} htmlFor="log-distance">
-            <input id="log-distance" type="number" inputMode="decimal" step="0.1" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} placeholder="bijv. 12.5" style={inputStyle} />
-          </Field>
-        )}
-        <Field label={t('avgHrFull')} htmlFor="log-avg-hr">
-          <input id="log-avg-hr" type="number" inputMode="numeric" value={form.avgHR} onChange={e => setForm({ ...form, avgHR: e.target.value })} placeholder="bijv. 142" style={inputStyle} />
-        </Field>
-        <Field label={t('maxHr')} htmlFor="log-max-hr">
-          <input id="log-max-hr" type="number" inputMode="numeric" value={form.maxHR} onChange={e => setForm({ ...form, maxHR: e.target.value })} placeholder="bijv. 168" style={inputStyle} />
-        </Field>
-        <Field label={t('calories')} htmlFor="log-kcal">
-          <input id="log-kcal" type="number" inputMode="numeric" value={form.kcal} onChange={e => setForm({ ...form, kcal: e.target.value })} placeholder="bijv. 380" style={inputStyle} />
-        </Field>
-        <Field label={t('optionalNotes')} htmlFor="log-notes">
-          <textarea id="log-notes" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder={t('workoutNotesPlaceholder')} rows={2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-        </Field>
-
-        {analysis && (
-          <div style={{ background: '#F0F4FA', borderRadius: '12px', padding: '14px', marginBottom: '16px', borderLeft: '4px solid #003D7A' }}>
-            <div style={{ fontSize: '11px', color: '#003D7A', fontWeight: 700, letterSpacing: '1px', marginBottom: '8px' }}>{t('analysis')}</div>
-            <div style={{ fontSize: '14px', lineHeight: 1.6 }}>
-              {t('avgSpeed')} <strong>{analysis.speed} km/h</strong> in <strong>{analysis.zone}</strong> ({t('expected', { speed: analysis.expectedSpeed })})
-              <div style={{ marginTop: '6px', color: '#444' }}>{analysis.verdict}</div>
-            </div>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: '2px solid var(--line)', background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>{t('cancel')}</button>
-          <button type="button" onClick={handleSubmit} style={{ flex: 2, padding: '14px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>{t('save')}</button>
+            );
+          })}
         </div>
+      </Field>
+
+      <Field label={t('duration')} htmlFor="log-duration">
+        <input id="log-duration" type="number" inputMode="decimal" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} placeholder="bijv. 45" style={inputStyle} required />
+      </Field>
+      {form.type === 'cycle' && (
+        <Field label={t('distance')} htmlFor="log-distance">
+          <input id="log-distance" type="number" inputMode="decimal" step="0.1" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} placeholder="bijv. 12.5" style={inputStyle} />
+        </Field>
+      )}
+      <Field label={t('avgHrFull')} htmlFor="log-avg-hr">
+        <input id="log-avg-hr" type="number" inputMode="numeric" value={form.avgHR} onChange={e => setForm({ ...form, avgHR: e.target.value })} placeholder="bijv. 142" style={inputStyle} />
+      </Field>
+      <Field label={t('maxHr')} htmlFor="log-max-hr">
+        <input id="log-max-hr" type="number" inputMode="numeric" value={form.maxHR} onChange={e => setForm({ ...form, maxHR: e.target.value })} placeholder="bijv. 168" style={inputStyle} />
+      </Field>
+      <Field label={t('calories')} htmlFor="log-kcal">
+        <input id="log-kcal" type="number" inputMode="numeric" value={form.kcal} onChange={e => setForm({ ...form, kcal: e.target.value })} placeholder="bijv. 380" style={inputStyle} />
+      </Field>
+      <Field label={t('optionalNotes')} htmlFor="log-notes">
+        <textarea id="log-notes" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder={t('workoutNotesPlaceholder')} rows={2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+      </Field>
+
+      {analysis && (
+        <div style={{ background: 'var(--info-tint)', borderRadius: 'var(--radius-lg)', padding: '14px', marginBottom: '16px', borderLeft: '4px solid var(--accent)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 800, letterSpacing: '0.1em', marginBottom: '8px' }}>{t('analysis')}</div>
+          <div style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--ink)' }}>
+            {t('avgSpeed')} <strong>{analysis.speed} km/h</strong> in <strong>{analysis.zone}</strong> ({t('expected', { speed: analysis.expectedSpeed })})
+            <div style={{ marginTop: '6px', color: 'var(--muted)' }}>{analysis.verdict}</div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button type="button" onClick={onClose} style={ghostButtonStyle}>{t('cancel')}</button>
+        <button type="button" onClick={handleSubmit} style={{ ...primaryButtonStyle, flex: 2 }}>{t('save')}</button>
       </div>
-    </div>
+    </ModalShell>
   );
 }

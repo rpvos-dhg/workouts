@@ -16,7 +16,7 @@ export function getWeatherQualityLabel(quality, t) {
 
 export function getWeatherQualityColor(quality) {
   if (quality === 'good') return 'var(--success)';
-  if (quality === 'ok') return '#B86E00';
+  if (quality === 'ok') return 'var(--warn)';
   return 'var(--danger)';
 }
 
@@ -66,8 +66,8 @@ export function CyclingWeatherCard({ recommendation, status, location, onRetry, 
     return (
       <InfoCard>
         <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('cyclingWeather')}</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', color: 'var(--muted)', fontSize: '14px' }}>
-          <CloudSun size={16} aria-hidden="true" />
+        <div role="status" aria-live="polite" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px', color: 'var(--muted)', fontSize: '14px' }}>
+          <span className="spinner spinner--inline" aria-hidden="true" />
           {t('weatherLoading')}
         </div>
       </InfoCard>
@@ -82,15 +82,15 @@ export function CyclingWeatherCard({ recommendation, status, location, onRetry, 
           {status === 'error' ? t('weatherError') : t('weatherUnavailable')}
         </div>
         <div style={{ color: 'var(--muted)', marginTop: '4px', fontSize: '13px' }}>
-          {status === 'error' ? 'Weerdata kon niet geladen worden.' : t('weatherNoForecast')}
+          {status === 'error' ? t('weatherCouldNotLoad') : t('weatherNoForecast')}
         </div>
         {status === 'error' && onRetry && (
           <button type="button" onClick={onRetry} style={{
             marginTop: '10px', border: '1px solid var(--line)', background: 'var(--surface-2)',
-            color: 'var(--accent-strong)', borderRadius: '8px', padding: '7px 10px',
-            fontSize: '13px', fontWeight: 800, cursor: 'pointer',
+            color: 'var(--accent-strong)', borderRadius: 'var(--radius)', padding: '10px 14px',
+            fontSize: '13px', fontWeight: 800, cursor: 'pointer', minHeight: '44px',
           }}>
-            Opnieuw proberen
+            {t('weatherRetry')}
           </button>
         )}
       </InfoCard>
@@ -120,8 +120,8 @@ export function CyclingWeatherCard({ recommendation, status, location, onRetry, 
             <div key={`${window.startTime}-${index}`} style={{
               flex: '0 0 156px', minWidth: '156px',
               border: `${isTopWindow ? 2 : 1}px solid ${isTopWindow ? windowColor : 'var(--line)'}`,
-              background: isTopWindow ? 'var(--surface-2)' : 'white',
-              borderRadius: '8px', padding: '9px', display: 'grid', gap: '7px',
+              background: isTopWindow ? 'var(--surface-2)' : 'var(--surface)',
+              borderRadius: 'var(--radius)', padding: '10px', display: 'grid', gap: '7px',
               alignContent: 'start', scrollSnapAlign: 'start',
             }}>
               <div style={{ minWidth: 0 }}>
@@ -192,9 +192,9 @@ export function CyclingWeatherBarGraph({ hourlyScores, t }) {
     if (item.rank === 1) return 'var(--action)';
     if (item.rank === 2) return 'var(--accent)';
     if (item.rank === 3) return 'var(--success)';
-    if (item.quality === 'good') return '#8abda6';
-    if (item.quality === 'ok') return '#d8b86c';
-    return '#d98989';
+    if (item.quality === 'good') return 'var(--success)';
+    if (item.quality === 'ok') return 'var(--warn)';
+    return 'var(--danger)';
   };
 
   return (
@@ -216,11 +216,11 @@ export function CyclingWeatherBarGraph({ hourlyScores, t }) {
               flex: '0 0 42px', minWidth: '42px', display: 'grid', gap: '4px', justifyItems: 'center',
               scrollSnapAlign: 'center',
               border: highlighted ? `2px solid ${barColor}` : '1px solid var(--line)',
-              background: highlighted ? 'rgba(244, 182, 63, 0.10)' : 'var(--surface-2)',
-              borderRadius: '8px', padding: '7px 4px',
+              background: highlighted ? 'var(--warn-tint)' : 'var(--surface-2)',
+              borderRadius: 'var(--radius)', padding: '7px 4px',
             }}>
-              <div style={{ height: '74px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', borderRadius: '6px', background: 'white', border: '1px solid rgba(213, 222, 219, 0.8)', padding: '4px' }}>
-                <div style={{ width: '12px', height: `${Math.min(66, barHeight)}px`, borderRadius: '999px 999px 4px 4px', background: barColor, boxShadow: highlighted ? '0 4px 10px rgba(11,24,34,0.18)' : 'none' }} />
+              <div style={{ height: '74px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)', padding: '4px' }}>
+                <div style={{ width: '12px', height: `${Math.min(66, barHeight)}px`, borderRadius: '999px 999px 4px 4px', background: barColor, boxShadow: highlighted ? '0 4px 10px rgba(0, 58, 113, 0.18)' : 'none' }} />
               </div>
               <div style={{ fontSize: '11px', color: 'var(--ink)', fontWeight: 900 }}>{item.startTime.slice(0, 2)}u</div>
               {highlighted && <div style={{ fontSize: '10px', color: 'var(--accent-strong)', fontWeight: 900, whiteSpace: 'nowrap' }}>#{item.rank}</div>}

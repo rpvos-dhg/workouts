@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "WebSearch",
+      "PowerShell(Get-ChildItem \"c:\\\\rpvos-dhg\\\\Workouts-fresh\" | Where-Object { $_.Name -ne \"node_modules\" })",
+      "WebFetch(domain:github.com)",
+      "Bash(find /tmp/Moetikeenjasaan.paul -type f -name \"*.css\" -o -name \"*.html\" -o -name \"*.json\" | head -20)",
+      "Read(//tmp/**)",
+      "Bash(ls -la /tmp/Moetikeenjasaan.paul/)",
+      "Bash(Get-ChildItem -Path \"c:\\\\rpvos-dhg\\\\Workouts-fresh\" -Recurse -Force)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)"
+    ]
+  }
+}

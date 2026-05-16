@@ -1,5 +1,6 @@
 import { Bricolage_Grotesque, Inter } from 'next/font/google';
 import './globals.css';
+import { ServiceWorkerRegister } from './components/ServiceWorkerRegister';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,15 +27,19 @@ export const metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: '6-Weken',
   },
+  formatDetection: { telephone: false },
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#003a71',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#003a71' },
+    { media: '(prefers-color-scheme: dark)',  color: '#002050' },
+  ],
 };
 
 export default function RootLayout({ children }) {
@@ -42,6 +47,7 @@ export default function RootLayout({ children }) {
     <html lang="nl">
       <body className={`${inter.variable} ${bricolage.variable}`} style={{ fontFamily: 'var(--font-body), system-ui, sans-serif' }}>
         {children}
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

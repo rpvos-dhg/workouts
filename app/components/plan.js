@@ -18,6 +18,7 @@ import {
 } from './ui';
 import { CyclingWeatherCard, getWeatherQualityLabel, WeatherConditionIcon } from './weather';
 import { CyclingRouteCard } from './route';
+import { ModalShell } from './ModalShell';
 
 export function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   const meta = TYPE_META[today.type];
@@ -48,12 +49,12 @@ export function DashboardStrip({ today, overview, progressPct, dueMeasurement, t
 }
 
 export function AdaptiveAdviceCard({ advice, t }) {
-  const color = advice.level === 'warning' ? 'var(--danger)' : advice.level === 'caution' ? '#B86E00' : 'var(--success)';
-  const bg = advice.level === 'warning' ? '#FFE5E5' : advice.level === 'caution' ? '#FFF4DD' : '#E0F0E0';
+  const color = advice.level === 'warning' ? 'var(--danger)' : advice.level === 'caution' ? 'var(--warn)' : 'var(--success)';
+  const bg = advice.level === 'warning' ? 'var(--danger-tint)' : advice.level === 'caution' ? 'var(--warn-tint)' : 'var(--success-tint)';
   return (
     <InfoCard style={{ borderLeft: `4px solid ${color}` }}>
       <div className="signal-kicker" style={{ color }}>{t('adaptiveAdvice')}</div>
-      <div style={{ fontSize: '17px', fontWeight: 800, marginTop: '4px' }}>{advice.title}</div>
+      <div style={{ fontSize: '17px', fontWeight: 800, marginTop: '4px', color: 'var(--ink)' }}>{advice.title}</div>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
         {advice.alarms?.map(alarm => <Tag key={alarm} icon={Activity} label={alarm} bg={bg} color={color} />)}
       </div>
@@ -79,9 +80,9 @@ export function DailyHabitCard({ day, habit, settings, onToggle, t }) {
         {items.map(([key, label, hint]) => {
           const checked = !!habit[key];
           return (
-            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '44px', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: checked ? '#E0F0E0' : 'var(--surface-2)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={checked} onChange={e => onToggle({ [key]: e.target.checked })} />
-              <span style={{ flex: 1, fontSize: '14px', fontWeight: 700 }}>{label}</span>
+            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '44px', padding: '10px', borderRadius: 'var(--radius)', border: '1px solid var(--line)', background: checked ? 'var(--success-tint)' : 'var(--surface-2)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={checked} onChange={e => onToggle({ [key]: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: 'var(--success)', cursor: 'pointer' }} />
+              <span style={{ flex: 1, fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>{label}</span>
               <span style={{ color: 'var(--muted)', fontSize: '12px' }}>{hint}</span>
             </label>
           );
@@ -94,16 +95,16 @@ export function DailyHabitCard({ day, habit, settings, onToggle, t }) {
 export function MeasurementBanner({ moment, onOpen, t }) {
   const isOverdue = moment.date < getTodayString();
   return (
-    <InfoCard style={{ borderLeft: '4px solid var(--action)', marginBottom: 0, background: 'linear-gradient(135deg, #fffaf0, #ffffff)' }}>
+    <InfoCard style={{ borderLeft: '4px solid var(--action)', marginBottom: 0, background: 'var(--warn-tint)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#8b5a10', fontWeight: 800, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '11px', color: 'var(--warn)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {isOverdue ? t('measurementOpen') : t('measurementToday')}
           </div>
-          <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px' }}>{moment.title}</div>
-          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{formatDateShort(moment.date)} - {moment.focus}</div>
+          <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px', color: 'var(--ink)' }}>{moment.title}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{formatDateShort(moment.date)} · {moment.focus}</div>
         </div>
-        <button onClick={onOpen} style={{ border: 'none', background: 'var(--accent)', color: 'white', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', flex: '0 0 auto' }}>
+        <button type="button" onClick={onOpen} style={{ border: 'none', background: 'var(--accent)', color: 'white', borderRadius: 'var(--radius)', padding: '12px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', flex: '0 0 auto', minHeight: '44px' }}>
           {t('open')}
         </button>
       </div>
@@ -119,40 +120,40 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
 
   return (
     <div className="dashboard-grid">
-      <div className="info-card hero-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '24px', border: `2px solid ${isComplete ? 'var(--success)' : meta.color}` }}>
+      <div className="info-card hero-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '24px', borderLeft: `4px solid ${isComplete ? 'var(--success)' : meta.color}` }}>
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '12px', color: meta.color, fontWeight: 800, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '12px', color: meta.color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }).toUpperCase()}
           </div>
-          <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '26px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '26px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--ink)' }}>
             <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={48} iconSize={26} />
             {title}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
           {day.dur > 0 && <Tag icon={Clock3} label={`${day.dur} min`} bg={meta.bg} color={meta.color} />}
-          {day.hr && <Tag icon={HeartPulse} label={`HR ${day.hr}`} bg="#FFE5E5" color="#DC3545" />}
-          {day.speed && <Tag icon={Gauge} label={day.speed} bg="#E5F0FF" color="#003D7A" />}
-          {day.target && <Tag icon={Target} label={day.target} bg="#FFF4DD" color="#B86E00" />}
+          {day.hr && <Tag icon={HeartPulse} label={`HR ${day.hr}`} bg="var(--danger-tint)" color="var(--danger)" />}
+          {day.speed && <Tag icon={Gauge} label={day.speed} bg="var(--info-tint)" color="var(--accent)" />}
+          {day.target && <Tag icon={Target} label={day.target} bg="var(--warn-tint)" color="var(--warn)" />}
         </div>
         {day.desc && <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.5, marginBottom: '20px' }}>{day.desc}</div>}
         {measurementMoment && (
           <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.5, marginBottom: '20px' }}>
-            <div style={{ fontWeight: 700, marginBottom: '6px' }}>{measurementMoment.focus}</div>
+            <div style={{ fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>{measurementMoment.focus}</div>
             <SimpleList items={measurementMoment.items} />
-            <button type="button" onClick={() => onOpenMeasurement(day.date)} style={{ width: '100%', marginTop: '14px', padding: '12px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer' }}>
+            <button type="button" onClick={() => onOpenMeasurement(day.date)} style={{ width: '100%', marginTop: '14px', padding: '14px', borderRadius: 'var(--radius)', border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer', minHeight: '44px' }}>
               {t('openMeasurement')}
             </button>
           </div>
         )}
-        <button type="button" onClick={() => toggleComplete(day.id)} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: 'none', background: isComplete ? 'var(--success)' : meta.color, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
+        <button type="button" onClick={() => toggleComplete(day.id)} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius)', border: 'none', background: isComplete ? 'var(--success)' : meta.color, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer', minHeight: '44px' }}>
           {isComplete ? t('completed') : t('markComplete')}
         </button>
       </div>
 
       <div className="side-panel">
-        <div className="premium-card" style={{ borderRadius: '12px', padding: '18px' }}>
-          <div style={{ fontSize: '11px', opacity: 0.78, fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>{t('dayGoals')}</div>
+        <div className="premium-card" style={{ borderRadius: 'var(--radius-lg)', padding: '18px' }}>
+          <div style={{ fontSize: '11px', opacity: 0.78, fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.08em' }}>{t('dayGoals')}</div>
           <div className="metric-grid">
             <MetricTile icon={Flame} label="Kcal" value={overview.kcal} />
             <MetricTile icon={Dumbbell} label={t('protein')} value="130g" />
@@ -163,8 +164,8 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
         {day.type === 'cycle' && <CyclingWeatherCard recommendation={cyclingWeather.byDate?.[day.date]} status={cyclingWeather.status} location={cyclingWeather.location} onRetry={onRetryWeather} t={t} />}
         {day.type === 'cycle' && <CyclingRouteCard day={day} cycleLogs={logs} userEmail={userEmail} t={t} />}
         <DailyHabitCard day={day} habit={habit} settings={settings} onToggle={(patch) => saveDailyHabit(habit.date, patch)} t={t} />
-        <div className="info-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '18px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>{t('rememberToday')}</div>
+        <div className="info-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '18px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.08em' }}>{t('rememberToday')}</div>
           <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--muted)', lineHeight: 1.7 }}>
             <li>{t('proteinReminder')}</li>
             <li>{t('waterReminder')}</li>
@@ -185,29 +186,51 @@ export function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, c
   const isComplete = !!completed[day.id];
   const dateStr = new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
   const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
-  const open = () => onSelectDay(day);
 
   return (
-    <div role="button" tabIndex={0} onClick={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }} aria-label={`${day.title}, ${dateStr}`} className="day-card" style={{ background: 'var(--surface)', borderRadius: '12px', padding: '14px', marginBottom: '10px', borderLeft: `4px solid ${meta.color}`, cursor: 'pointer', opacity: isComplete ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <IconBadge type={day.type} color={meta.color} bg={meta.bg} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '11px', color: meta.color, fontWeight: 700, letterSpacing: '0.5px' }}>
-          {day.day.toUpperCase()} {dateStr.toUpperCase()} {day.dur > 0 ? `• ${day.dur} MIN` : ''}
-        </div>
-        <div style={{ fontSize: '15px', fontWeight: 600, marginTop: '2px', textDecoration: isComplete ? 'line-through' : 'none' }}>
-          {day.title}
-          {day.intense && <Flame size={15} aria-label="Intensief" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--copper)' }} />}
-          {day.big && <Star size={15} aria-label="Belangrijk" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--action)' }} />}
-        </div>
-        {!compact && day.target && <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '2px' }}>{day.target}</div>}
-        {!compact && weather && (
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--accent-strong)', fontSize: '12px', fontWeight: 800, marginTop: '6px' }}>
-            <WeatherConditionIcon weatherCode={weather.weatherCode} isDay={weather.isDay} size={14} />
-            {weather.startTime}-{weather.endTime} · {getWeatherQualityLabel(weather.quality, t)}
+    <div className="day-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '14px', marginBottom: '10px', borderLeft: `4px solid ${meta.color}`, opacity: isComplete ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <button
+        type="button"
+        onClick={() => onSelectDay(day)}
+        aria-label={`${day.title}, ${dateStr}`}
+        style={{
+          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px',
+          background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+          textAlign: 'left', color: 'inherit', minHeight: '44px',
+        }}
+      >
+        <IconBadge type={day.type} color={meta.color} bg={meta.bg} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '11px', color: meta.color, fontWeight: 700, letterSpacing: '0.08em' }}>
+            {day.day.toUpperCase()} {dateStr.toUpperCase()} {day.dur > 0 ? `· ${day.dur} MIN` : ''}
           </div>
-        )}
-      </div>
-      <button type="button" aria-label={isComplete ? `${day.title} ${t('markIncomplete')}` : `${day.title} ${t('markComplete')}`} onClick={e => { e.stopPropagation(); toggleComplete(day.id); }} style={{ width: '44px', height: '44px', minWidth: '44px', borderRadius: '999px', border: `2px solid ${isComplete ? 'var(--success)' : 'var(--line)'}`, background: isComplete ? 'var(--success)' : 'white', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 700, flexShrink: 0 }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, marginTop: '2px', textDecoration: isComplete ? 'line-through' : 'none', color: 'var(--ink)' }}>
+            {day.title}
+            {day.intense && <Flame size={15} aria-label="Intensief" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--warn)' }} />}
+            {day.big && <Star size={15} aria-label="Belangrijk" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--action)' }} />}
+          </div>
+          {!compact && day.target && <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '2px' }}>{day.target}</div>}
+          {!compact && weather && (
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--accent-strong)', fontSize: '12px', fontWeight: 800, marginTop: '6px' }}>
+              <WeatherConditionIcon weatherCode={weather.weatherCode} isDay={weather.isDay} size={14} />
+              {weather.startTime}-{weather.endTime} · {getWeatherQualityLabel(weather.quality, t)}
+            </div>
+          )}
+        </div>
+      </button>
+      <button
+        type="button"
+        aria-label={isComplete ? `${day.title} ${t('markIncomplete')}` : `${day.title} ${t('markComplete')}`}
+        aria-pressed={isComplete}
+        onClick={() => toggleComplete(day.id)}
+        style={{
+          width: '44px', height: '44px', minWidth: '44px', borderRadius: '999px',
+          border: `2px solid ${isComplete ? 'var(--success)' : 'var(--line)'}`,
+          background: isComplete ? 'var(--success)' : 'var(--surface)',
+          color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 700, flexShrink: 0,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
         {isComplete ? <CheckCircle2 size={18} aria-hidden="true" /> : <span className="sr-only">{t('notCompleted')}</span>}
       </button>
     </div>
@@ -220,32 +243,29 @@ export function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeat
   const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
 
   return (
-    <div role="presentation" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
-      <div role="dialog" aria-modal="true" aria-labelledby="day-detail-title" onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', width: '100%', maxHeight: '85vh', overflowY: 'auto', borderTopLeftRadius: '12px', borderTopRightRadius: '12px', padding: '24px' }}>
-        <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 20px' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={46} iconSize={24} />
-          <div>
-            <div style={{ fontSize: '12px', color: meta.color, fontWeight: 700, letterSpacing: '1px' }}>
-              {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
-            </div>
-            <div id="day-detail-title" style={{ fontSize: '24px', fontWeight: 700 }}>{day.title}</div>
+    <ModalShell open onClose={onClose} titleId="day-detail-title" closeLabel={t('cancel')}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+        <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={46} iconSize={24} />
+        <div>
+          <div style={{ fontSize: '12px', color: meta.color, fontWeight: 700, letterSpacing: '0.08em' }}>
+            {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
           </div>
+          <div id="day-detail-title" style={{ fontSize: '24px', fontWeight: 800, color: 'var(--ink)' }}>{day.title}</div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-          {day.dur > 0 && <Tag icon={Clock3} label={`${day.dur} min`} bg={meta.bg} color={meta.color} />}
-          {day.hr && <Tag icon={HeartPulse} label={day.hr} bg="#FFE5E5" color="#DC3545" />}
-          {day.speed && <Tag icon={Gauge} label={day.speed} bg="#E5F0FF" color="#003D7A" />}
-          {day.target && <Tag icon={Target} label={day.target} bg="#FFF4DD" color="#B86E00" />}
-        </div>
-        {day.desc && <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '20px', background: 'var(--surface-2)', padding: '16px', borderRadius: '8px' }}>{day.desc}</div>}
-        {day.type === 'cycle' && <CyclingWeatherCard recommendation={weather} status={cyclingWeather?.status || 'idle'} location={cyclingWeather?.location} onRetry={onRetryWeather} t={t} />}
-        {day.type === 'cycle' && <CyclingRouteCard day={day} cycleLogs={logs} userEmail={userEmail} t={t} />}
-        <button type="button" onClick={() => { toggleComplete(day.id); onClose(); }} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: 'none', background: isComplete ? '#666' : meta.color, color: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
-          {isComplete ? t('markIncomplete') : t('completeDay')}
-        </button>
       </div>
-    </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        {day.dur > 0 && <Tag icon={Clock3} label={`${day.dur} min`} bg={meta.bg} color={meta.color} />}
+        {day.hr && <Tag icon={HeartPulse} label={day.hr} bg="var(--danger-tint)" color="var(--danger)" />}
+        {day.speed && <Tag icon={Gauge} label={day.speed} bg="var(--info-tint)" color="var(--accent)" />}
+        {day.target && <Tag icon={Target} label={day.target} bg="var(--warn-tint)" color="var(--warn)" />}
+      </div>
+      {day.desc && <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '20px', background: 'var(--surface-2)', padding: '16px', borderRadius: 'var(--radius)' }}>{day.desc}</div>}
+      {day.type === 'cycle' && <CyclingWeatherCard recommendation={weather} status={cyclingWeather?.status || 'idle'} location={cyclingWeather?.location} onRetry={onRetryWeather} t={t} />}
+      {day.type === 'cycle' && <CyclingRouteCard day={day} cycleLogs={logs} userEmail={userEmail} t={t} />}
+      <button type="button" onClick={() => { toggleComplete(day.id); onClose(); }} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius)', border: 'none', background: isComplete ? 'var(--muted)' : meta.color, color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer', minHeight: '44px' }}>
+        {isComplete ? t('markIncomplete') : t('completeDay')}
+      </button>
+    </ModalShell>
   );
 }
 
@@ -316,15 +336,15 @@ function ZonesSection({ t }) {
         <InfoCard key={zone.zone}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#003D7A' }}>{zone.zone}</div>
-              <div style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>{zone.feel}</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--accent)' }}>{zone.zone}</div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{zone.feel}</div>
             </div>
-            <div style={{ textAlign: 'right', fontSize: '13px', color: '#555' }}>
-              <div style={{ fontWeight: 700 }}>{zone.hr} bpm</div>
+            <div style={{ textAlign: 'right', fontSize: '13px', color: 'var(--muted)' }}>
+              <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{zone.hr} bpm</div>
               <div>{zone.speed}</div>
             </div>
           </div>
-          <div style={{ fontSize: '13px', color: '#444', marginTop: '10px' }}>{zone.goal}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '10px' }}>{zone.goal}</div>
         </InfoCard>
       ))}
       <SectionTitle title={t('yourReference')} subtitle={t('referenceSub')} />
@@ -332,10 +352,10 @@ function ZonesSection({ t }) {
         <InfoCard key={item.label}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: '#003D7A' }}>{item.label}</div>
-              <div style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>{item.detail}</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent)' }}>{item.label}</div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{item.detail}</div>
             </div>
-            <div style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 700, textAlign: 'right' }}>{item.value}</div>
+            <div style={{ fontSize: '13px', color: 'var(--ink)', fontWeight: 700, textAlign: 'right' }}>{item.value}</div>
           </div>
         </InfoCard>
       ))}
@@ -353,11 +373,11 @@ function NutritionSection({ currentWeek, t }) {
       {NUTRITION_GUIDE.proteinSources.map(([name, portion, protein, tip]) => (
         <InfoCard key={name}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.7fr', gap: '8px', alignItems: 'center' }}>
-            <div style={{ fontWeight: 700 }}>{name}</div>
-            <div style={{ fontSize: '13px', color: '#555' }}>{portion}</div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#003D7A' }}>{protein}</div>
+            <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{name}</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{portion}</div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>{protein}</div>
           </div>
-          <div style={{ fontSize: '13px', color: '#666', marginTop: '6px' }}>{tip}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px' }}>{tip}</div>
         </InfoCard>
       ))}
       <SectionTitle title={t('sampleDay')} />
@@ -383,21 +403,21 @@ function StrengthTable({ title, rows, t }) {
       {rows.map(exercise => (
         <InfoCard key={exercise.name}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-            <div style={{ fontWeight: 700 }}>{exercise.name}</div>
+            <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{exercise.name}</div>
             {exercise.guideUrl && (
-              <a href={exercise.guideUrl} target="_blank" rel="noopener noreferrer" style={{ flex: '0 0 auto', padding: '8px 10px', borderRadius: '10px', background: '#003D7A', color: 'white', fontSize: '12px', fontWeight: 800, textDecoration: 'none' }}>
+              <a href={exercise.guideUrl} target="_blank" rel="noopener noreferrer" style={{ flex: '0 0 auto', padding: '10px 14px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '12px', fontWeight: 800, textDecoration: 'none', minHeight: '36px', display: 'inline-flex', alignItems: 'center' }}>
                 {t('explanation', { source: exercise.guideSource })}
               </a>
             )}
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <Tag icon={Dumbbell} label={exercise.sets} bg="#F0F4FA" color="#003D7A" />
-            <Tag icon={Clock3} label={exercise.rest} bg="#FFF4DD" color="#B86E00" />
+            <Tag icon={Dumbbell} label={exercise.sets} bg="var(--info-tint)" color="var(--accent)" />
+            <Tag icon={Clock3} label={exercise.rest} bg="var(--warn-tint)" color="var(--warn)" />
           </div>
-          <div style={{ fontSize: '13px', color: '#555', marginTop: '8px', lineHeight: 1.5 }}>{exercise.notes}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px', lineHeight: 1.5 }}>{exercise.notes}</div>
           {exercise.steps && (
             <div style={{ marginTop: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, color: '#003D7A', letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>{t('execution')}</div>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>{t('execution')}</div>
               <SimpleList items={exercise.steps} />
             </div>
           )}
@@ -412,7 +432,7 @@ function TipsSection({ t }) {
     <div>
       {PRACTICAL_TIPS.map(group => (
         <InfoCard key={group.title}>
-          <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{group.title}</div>
+          <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px', color: 'var(--ink)' }}>{group.title}</div>
           <SimpleList items={group.items} />
         </InfoCard>
       ))}

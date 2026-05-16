@@ -64,7 +64,7 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
           <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.5 }}>{advice}</div>
           <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '8px' }}>{t('weekGoal', { kcal: overview.kcal })}</div>
           {notificationStatus !== 'granted' && (
-            <button type="button" onClick={enableNotifications} style={{ marginTop: '12px', border: '1px solid var(--line)', background: 'var(--surface-3)', color: 'var(--accent-strong)', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+            <button type="button" onClick={enableNotifications} style={{ marginTop: '12px', border: '1px solid var(--line)', background: 'var(--surface-3)', color: 'var(--accent-strong)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', minHeight: '44px' }}>
               {t('enableMeasurementNotification')}
             </button>
           )}
@@ -73,7 +73,7 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
         {alarms.length > 0 && (
           <InfoCard>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {alarms.map(alarm => <Tag key={alarm} icon={Activity} label={alarm} bg="#FFE5E5" color="#DC3545" />)}
+              {alarms.map(alarm => <Tag key={alarm} icon={Activity} label={alarm} bg="var(--danger-tint)" color="var(--danger)" />)}
             </div>
           </InfoCard>
         )}
@@ -86,8 +86,8 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
             </div>
             <SimpleList items={currentMoment.items} />
             {currentMoment.photoReminder && (
-              <div style={{ margin: '10px 0 4px', padding: '10px 12px', borderRadius: '8px', background: '#fff4dd', color: '#7a4b00', fontSize: '13px', fontWeight: 700 }}>
-                Foto: {currentMoment.photoReminder}
+              <div style={{ margin: '10px 0 4px', padding: '10px 12px', borderRadius: 'var(--radius)', background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: '13px', fontWeight: 700, borderLeft: '3px solid var(--warn)' }}>
+                {t('photo')}: {currentMoment.photoReminder}
               </div>
             )}
             <div style={{ height: '12px' }} />
@@ -107,7 +107,7 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
             <Field label={t('notes')} htmlFor="measurement-notes">
               <textarea id="measurement-notes" value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder={t('howFeel')} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
             </Field>
-            <button type="submit" style={{ width: '100%', padding: '14px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer' }}>{t('saveMeasurement')}</button>
+            <button type="submit" style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius)', border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer', minHeight: '44px' }}>{t('saveMeasurement')}</button>
             {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: [t('measurementSaved'), t('notificationOn')].includes(message) ? 'var(--success)' : 'var(--danger)', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
           </InfoCard>
         </form>
@@ -121,13 +121,13 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
               const isSaved = savedMomentDates.has(moment.date);
               const isDue = moment.date <= getTodayString() && !isSaved;
               return (
-                <button key={moment.key} type="button" onClick={() => { setDate(moment.date); setMessage(''); }} style={{ textAlign: 'left', border: `2px solid ${isSelected ? 'var(--accent)' : isDue ? 'var(--action)' : 'var(--line)'}`, background: isSelected ? '#e8f4f1' : 'white', borderRadius: '8px', padding: '12px', cursor: 'pointer' }}>
+                <button key={moment.key} type="button" onClick={() => { setDate(moment.date); setMessage(''); }} aria-pressed={isSelected} style={{ textAlign: 'left', border: `2px solid ${isSelected ? 'var(--accent)' : isDue ? 'var(--action)' : 'var(--line)'}`, background: isSelected ? 'var(--accent-tint)' : 'var(--surface)', borderRadius: 'var(--radius)', padding: '12px', cursor: 'pointer', minHeight: '44px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--ink)' }}>{moment.title}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '3px' }}>Week {moment.week} - {formatDateShort(moment.date)}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '3px' }}>Week {moment.week} · {formatDateShort(moment.date)}</div>
                     </div>
-                    <Tag icon={isSaved ? CheckCircle2 : Clock3} label={isSaved ? t('saved') : isDue ? t('now') : t('later')} bg={isSaved ? '#E0F0E0' : isDue ? '#FFF4DD' : '#F0F4FA'} color={isSaved ? '#2C7A2C' : isDue ? '#B86E00' : '#003D7A'} />
+                    <Tag icon={isSaved ? CheckCircle2 : Clock3} label={isSaved ? t('saved') : isDue ? t('now') : t('later')} bg={isSaved ? 'var(--success-tint)' : isDue ? 'var(--warn-tint)' : 'var(--info-tint)'} color={isSaved ? 'var(--success)' : isDue ? 'var(--warn)' : 'var(--accent)'} />
                   </div>
                 </button>
               );
@@ -137,13 +137,13 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
 
         <SectionTitle title={t('history')} />
         {checkins.filter(isMeasurementCheckin).length === 0 ? (
-          <InfoCard><div style={{ fontSize: '13px', color: '#666' }}>{t('noMeasurements')}</div></InfoCard>
+          <InfoCard><div style={{ fontSize: '13px', color: 'var(--muted)' }}>{t('noMeasurements')}</div></InfoCard>
         ) : checkins.filter(isMeasurementCheckin).map(item => (
           <InfoCard key={item.id || item.date}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ fontWeight: 700 }}>{getMeasurementTitle(item.date)}</div>
-              <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>{formatDateShort(item.date)}</div>
-              <div style={{ fontSize: '13px', color: '#666' }}>{[item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && t('sleepShort', { hours: item.sleep_hours })].filter(Boolean).join(' · ')}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{getMeasurementTitle(item.date)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '4px' }}>{formatDateShort(item.date)}</div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{[item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && t('sleepShort', { hours: item.sleep_hours })].filter(Boolean).join(' · ')}</div>
             </div>
           </InfoCard>
         ))}

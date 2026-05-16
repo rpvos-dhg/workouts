@@ -39,9 +39,19 @@
   /* Semantic */
   --success:       #2e7d57;
   --danger:        #b23a48;
-  --warn:          #d97706;
-  --copper:        #003a71;   /* kept for component compat — maps to navy */
-  --focus:         #ffcc00;   /* yellow focus ring — high visibility */
+  --warn:          #b8650a;        /* darker amber — AA contrast on white */
+  --copper:        #003a71;        /* kept for component compat — maps to navy */
+  --focus:         #ffcc00;        /* yellow focus ring — high visibility */
+
+  /* Semantic tints (light bg + readable ink) — dark-mode aware */
+  --success-tint:  #e6f1eb;
+  --danger-tint:   #fbe7e9;
+  --warn-tint:     #fdf2dc;
+  --info-tint:     #e6edf6;
+
+  /* Overlays — navy-tinted for cohesion with theme */
+  --overlay:       rgba(0, 25, 60, 0.45);
+  --handle:        #c8d0dc;        /* bottom-sheet drag handle */
 
   /* Shadows — navy-tinted, crisp */
   --shadow-soft: 0 1px 2px rgba(0,58,113,0.06), 0 2px 8px rgba(0,58,113,0.04);
@@ -578,6 +588,220 @@ input, textarea {
 }
 
 /* =========================================
+   MODAL / BOTTOM SHEET
+   Consistent backdrop, drag handle, slide-in
+   ========================================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: modal-fade-in 180ms ease-out;
+}
+
+.modal-sheet {
+  background: var(--surface);
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-lift);
+  animation: modal-slide-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+@media (min-width: 800px) {
+  .modal-backdrop {
+    align-items: center;
+  }
+  .modal-sheet {
+    border-radius: var(--radius-xl);
+    max-height: 85vh;
+  }
+}
+
+.modal-handle {
+  width: 44px;
+  height: 4px;
+  background: var(--handle);
+  border-radius: 999px;
+  margin: 0 auto 20px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.modal-close:hover {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-slide-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* =========================================
+   TOAST
+   Bottom-anchored, slide-in, auto-dismiss
+   ========================================= */
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  width: min(calc(100% - 24px), 420px);
+}
+
+@media (min-width: 800px) {
+  .toast-stack {
+    bottom: 32px;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lift);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toast-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 3px solid var(--action);
+}
+
+.toast--success { border-left-color: var(--success); }
+.toast--error   { border-left-color: var(--danger); }
+.toast--info    { border-left-color: var(--accent); }
+
+.toast button {
+  background: transparent;
+  border: none;
+  color: var(--action);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-left: auto;
+  min-height: 32px;
+  border-radius: 6px;
+}
+
+.toast button:hover { background: rgba(255,255,255,0.10); }
+
+@keyframes toast-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* =========================================
+   SPINNER / LOADING
+   ========================================= */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--accent-tint);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: spin 700ms linear infinite;
+}
+
+.spinner--inline {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  display: inline-block;
+  vertical-align: -3px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =========================================
+   SKELETON
+   ========================================= */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    var(--surface-3) 50%,
+    var(--surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* =========================================
+   ERROR BOUNDARY FALLBACK
+   ========================================= */
+.error-fallback {
+  margin: 40px auto;
+  padding: 24px;
+  max-width: 520px;
+  background: var(--danger-tint);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  text-align: center;
+}
+
+.error-fallback button {
+  margin-top: 12px;
+  padding: 10px 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+/* =========================================
    RESPONSIVE
    ========================================= */
 @media (min-width: 800px) {
@@ -649,9 +873,15 @@ input, textarea {
     --action:        #ffd426;  /* slightly brighter yellow */
     --action-ink:    #0f1d2e;
     --success:       #4ade80;
-    --danger:        #ff6b6b;
+    --danger:        #ff8a8a;
     --warn:          #fbbf24;
     --focus:         #ffd426;
+    --success-tint:  #0e2e22;
+    --danger-tint:   #3a141a;
+    --warn-tint:     #3a2a0e;
+    --info-tint:     #112540;
+    --overlay:       rgba(0, 5, 18, 0.65);
+    --handle:        #2a3d5c;
     --shadow-soft: 0 1px 3px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.32);
     --shadow:      0 3px 14px rgba(0,0,0,0.55), 0 1px 4px rgba(0,0,0,0.38);
     --shadow-lift: 0 12px 36px rgba(0,0,0,0.68), 0 4px 12px rgba(0,0,0,0.42);

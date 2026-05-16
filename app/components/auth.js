@@ -8,10 +8,10 @@ import { inputStyle } from './styles';
 
 export function Loading({ t }) {
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+    <div role="status" aria-live="polite" aria-busy="true" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
       <div style={{ textAlign: 'center', color: 'var(--muted)' }}>
-        <Bike size={32} style={{ marginBottom: '12px' }} aria-hidden="true" />
-        <div>{t('loading')}</div>
+        <div className="spinner" aria-hidden="true" style={{ margin: '0 auto 14px' }} />
+        <div style={{ fontSize: '14px', fontWeight: 600 }}>{t('loading')}</div>
       </div>
     </div>
   );
@@ -21,11 +21,11 @@ export function LanguageToggle({ t, lang, setLang, onChange }) {
   return (
     <div style={{ display: 'flex', gap: '4px' }}>
       {['nl', 'en'].map(l => (
-        <button key={l} type="button" onClick={() => { setLang(l); onChange?.(); }} style={{
-          padding: '5px 10px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700,
+        <button key={l} type="button" onClick={() => { setLang(l); onChange?.(); }} aria-pressed={lang === l} style={{
+          padding: '10px 14px', borderRadius: 'var(--radius)', border: 'none', fontSize: '12px', fontWeight: 700,
           background: lang === l ? 'var(--accent)' : 'var(--surface-2)',
           color: lang === l ? 'white' : 'var(--muted)',
-          cursor: 'pointer',
+          cursor: 'pointer', minHeight: '40px', minWidth: '44px',
         }}>{l.toUpperCase()}</button>
       ))}
     </div>
@@ -35,10 +35,11 @@ export function LanguageToggle({ t, lang, setLang, onChange }) {
 export function AuthModeButton({ onClick, icon: Icon, label }) {
   return (
     <button type="button" onClick={onClick} style={{
-      width: '100%', padding: '11px', borderRadius: '8px',
+      width: '100%', padding: '12px', borderRadius: 'var(--radius)',
       border: '1px solid var(--line)', background: 'transparent',
       color: 'var(--muted)', fontSize: '14px', cursor: 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+      minHeight: '44px',
     }}>
       {Icon && <Icon size={15} aria-hidden="true" />}
       {label}
@@ -110,25 +111,25 @@ export function Auth({ t, lang, setLang }) {
               <input id="auth-password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={mode === 'signup' ? t('passwordPlaceholder') : t('password')} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={mode === 'signup' ? 6 : undefined} style={inputStyle} />
             </Field>
           )}
-          <button type="submit" disabled={busy} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: 'none', background: busy ? '#7b8791' : 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer' }}>
+          <button type="submit" disabled={busy} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius)', border: 'none', background: 'var(--accent)', opacity: busy ? 0.7 : 1, color: 'white', fontSize: '15px', fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer', minHeight: '44px' }}>
             {busy ? t('busy') : mode === 'signup' ? t('signUp') : mode === 'forgot' ? t('sendResetLink') : mode === 'magic' ? t('sendMagicLink') : t('signIn')}
           </button>
         </form>
 
         {msg && (
-          <div role="status" aria-live="polite" style={{ marginTop: '14px', padding: '12px', borderRadius: '8px', background: successMessages.includes(msg) ? '#e7f6ef' : '#fdeaea', color: successMessages.includes(msg) ? 'var(--success)' : 'var(--danger)', fontSize: '13px', textAlign: 'center', fontWeight: 700 }}>{msg}</div>
+          <div role="status" aria-live="polite" style={{ marginTop: '14px', padding: '12px', borderRadius: 'var(--radius)', background: successMessages.includes(msg) ? 'var(--success-tint)' : 'var(--danger-tint)', color: successMessages.includes(msg) ? 'var(--success)' : 'var(--danger)', fontSize: '13px', textAlign: 'center', fontWeight: 700 }}>{msg}</div>
         )}
 
         {(mode === 'signin' || mode === 'signup') && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '16px 0 12px' }}>
               <div style={{ flex: 1, height: '1px', background: 'var(--line)' }} />
-              <span style={{ fontSize: '12px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>of</span>
+              <span style={{ fontSize: '12px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{t('or')}</span>
               <div style={{ flex: 1, height: '1px', background: 'var(--line)' }} />
             </div>
-            <button type="button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--line)', background: 'white', color: '#3c4043', fontSize: '15px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <button type="button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius)', border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', fontSize: '15px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', minHeight: '44px' }}>
               <GoogleLogo size={18} />
-              Inloggen met Google
+              {t('signInWithGoogle')}
             </button>
           </>
         )}

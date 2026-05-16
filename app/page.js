@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Activity, BarChart3, BookOpen, Calendar, Dumbbell, Home as HomeIcon, KeyRound, LogOut, Map, MoreHorizontal, Plus, Settings } from 'lucide-react';
+import { Activity, BarChart3, BookOpen, Calendar, Dumbbell, Home as HomeIcon, KeyRound, LogOut, Map, MoreHorizontal, Plus, RefreshCw, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA } from '../lib/plan-data';
 import { DEFAULT_USER_SETTINGS, getAdaptiveAdvice, withDefaultSettings } from '../lib/insights';
@@ -14,6 +14,9 @@ import { CheckInView } from './components/checkin';
 import { InsightsView } from './components/insights';
 import { LogView, LogForm } from './components/logs';
 import { SettingsDialog, PasswordDialog } from './components/settings';
+import { ToastProvider, useToast } from './components/Toast';
+import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function Home() {
   const [session, setSession] = useState(null);
@@ -71,18 +74,26 @@ export default function Home() {
   if (loading) return <Loading t={t} />;
   if (!session) return <Auth t={t} lang={lang} setLang={setLang} />;
   return (
-    <App
-      user={session.user}
-      t={t}
-      lang={lang}
-      setLang={setLang}
-      forcePasswordUpdate={forcePasswordUpdate}
-      onPasswordUpdateHandled={() => setForcePasswordUpdate(false)}
-    />
+    <ToastProvider>
+      <ConfirmProvider>
+        <ErrorBoundary label="Er ging iets mis in de app.">
+          <App
+            user={session.user}
+            t={t}
+            lang={lang}
+            setLang={setLang}
+            forcePasswordUpdate={forcePasswordUpdate}
+            onPasswordUpdateHandled={() => setForcePasswordUpdate(false)}
+          />
+        </ErrorBoundary>
+      </ConfirmProvider>
+    </ToastProvider>
   );
 }
 
 function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHandled }) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [completed, setCompleted] = useState({});
   const [logs, setLogs] = useState([]);
   const [checkins, setCheckins] = useState([]);
@@ -108,6 +119,20 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const [updateCountdown, setUpdateCountdown] = useState(10);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (showMenu) setShowMenu(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showMenu]);
+
+  useEffect(() => {
+    sessionStorage.setItem('workouts-view', view);
+  }, [view]);
+
+  useEffect(() => {
     const currentVersion = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
     const check = async () => {
       try {
@@ -120,20 +145,21 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         }
       } catch { /* ignore */ }
     };
-    const id = setInterval(check, 60 * 1000);
-    return () => clearInterval(id);
+    const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', onVisible);
+    const id = setInterval(check, 5 * 60 * 1000);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   useEffect(() => {
     if (!updateAvailable) return;
     if (updateCountdown <= 0) {
-      sessionStorage.setItem('workouts-view', view);
       window.location.reload();
       return;
     }
     const id = setTimeout(() => setUpdateCountdown(n => n - 1), 1000);
     return () => clearTimeout(id);
-  }, [updateAvailable, updateCountdown, view]);
+  }, [updateAvailable, updateCountdown]);
 
   useEffect(() => {
     if (forcePasswordUpdate) setShowPasswordDialog(true);
@@ -211,13 +237,15 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const toggleComplete = async (id) => {
     setSyncing(true);
     if (completed[id]) {
-      await supabase.from('completions').delete().eq('user_id', user.id).eq('day_id', id);
       const next = { ...completed };
       delete next[id];
       setCompleted(next);
+      const { error } = await supabase.from('completions').delete().eq('user_id', user.id).eq('day_id', id);
+      if (error) { setCompleted(completed); toast.error(error.message); }
     } else {
-      await supabase.from('completions').insert({ user_id: user.id, day_id: id });
       setCompleted({ ...completed, [id]: true });
+      const { error } = await supabase.from('completions').insert({ user_id: user.id, day_id: id });
+      if (error) { setCompleted(completed); toast.error(error.message); }
     }
     setSyncing(false);
   };
@@ -237,7 +265,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const saveLog = async (log) => {
     setSyncing(true);
     const { data, error } = await supabase.from('workout_logs').insert(buildLogPayload(log)).select();
-    if (!error && data) setLogs([data[0], ...logs]);
+    if (error) { toast.error(error.message); }
+    else if (data) { setLogs([data[0], ...logs]); toast.success(t('saved')); }
     setSyncing(false);
     setShowLogForm(false);
   };
@@ -253,8 +282,10 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       .eq('user_id', user.id)
       .eq('id', editingLog.id)
       .select();
-    if (!error && data?.[0]) {
+    if (error) { toast.error(error.message); }
+    else if (data?.[0]) {
       setLogs(logs.map(item => item.id === editingLog.id ? data[0] : item));
+      toast.success(t('saved'));
     }
     setSyncing(false);
     setEditingLog(null);
@@ -262,9 +293,19 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   };
 
   const deleteLog = async (id) => {
-    if (!confirm(t('deleteConfirm'))) return;
-    await supabase.from('workout_logs').delete().eq('id', id);
+    const ok = await confirm({
+      title: t('sureDelete'),
+      message: t('deleteThisLog'),
+      confirmLabel: t('deleteAction'),
+      cancelLabel: t('cancel'),
+      tone: 'danger',
+    });
+    if (!ok) return;
+    const previous = logs;
     setLogs(logs.filter(l => l.id !== id));
+    const { error } = await supabase.from('workout_logs').delete().eq('id', id);
+    if (error) { setLogs(previous); toast.error(error.message); }
+    else toast.success(t('saved'));
   };
 
   const openMeasurement = (date) => {
@@ -338,12 +379,13 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       notes: next.notes || null,
       updated_at: new Date().toISOString(),
     };
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('daily_habits')
       .upsert(payload, { onConflict: 'user_id,date' })
       .select()
       .single();
-    if (data) setHabits([data, ...habits.filter(item => item.date !== date)]);
+    if (error) toast.error(error.message);
+    else if (data) setHabits([data, ...habits.filter(item => item.date !== date)]);
   };
 
   const signOut = async () => { await supabase.auth.signOut(); };
@@ -404,36 +446,38 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     if (Notification.permission !== 'granted') return;
     const storageKey = `measurement-notification-${dueMeasurement.key}-${dueMeasurement.date}`;
     if (window.localStorage.getItem(storageKey)) return;
-    new Notification(`${t('navMeasure')}: ${dueMeasurement.title}`, {
-      body: `${formatDateShort(dueMeasurement.date)} - ${t('openMeasurement').toLowerCase()}.`,
-    });
-    window.localStorage.setItem(storageKey, 'sent');
+    try {
+      new Notification(`${t('navMeasure')}: ${dueMeasurement.title}`, {
+        body: `${formatDateShort(dueMeasurement.date)} · ${t('openMeasurement').toLowerCase()}.`,
+      });
+      window.localStorage.setItem(storageKey, 'sent');
+    } catch { /* ignore */ }
   }, [dueMeasurement, t]);
 
   return (
     <div className="app-shell">
-      <a href="#main-content" className="skip-link">Ga naar inhoud</a>
+      <a href="#main-content" className="skip-link">{t('skipToContent')}</a>
       <header className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
-            <div style={{ fontSize: '12px', opacity: 0.86, fontWeight: 700, textTransform: 'uppercase' }}>{t('weekOf', { week: currentWeek })}</div>
-            <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <div style={{ fontSize: '12px', opacity: 0.86, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('weekOf', { week: currentWeek })}</div>
+            <h1 style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, margin: '4px 0 0', display: 'flex', alignItems: 'baseline', gap: '10px', letterSpacing: '-0.01em' }}>
               {t('appTitle')}
-              <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.55, letterSpacing: '0.5px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.55, letterSpacing: '0.05em' }}>
                 #{process.env.NEXT_PUBLIC_BUILD_ID || 'dev'}
               </span>
               {streak > 0 && (
-                <span style={{ fontSize: '13px', fontWeight: 700, opacity: 0.9 }} title={`${streak} dagen op rij voltooid`}>
+                <span style={{ fontSize: '13px', fontWeight: 700, opacity: 0.9 }} title={t('streakHint', { days: streak })}>
                   🔥 {streak}
                 </span>
               )}
-            </div>
+            </h1>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.16)', padding: '8px 12px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
-              {completedCount}/{totalCount}
+            <div style={{ background: 'rgba(255,255,255,0.16)', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
+              {t('progressTotal', { done: completedCount, total: totalCount })}
             </div>
-            <button type="button" aria-label={t('openMenu')} aria-expanded={showMenu} onClick={() => setShowMenu(!showMenu)} style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)', color: 'white', padding: '6px 12px', borderRadius: '999px', cursor: 'pointer', fontWeight: 600 }}>
+            <button type="button" aria-label={t('openMenu')} aria-expanded={showMenu} aria-haspopup="menu" onClick={() => setShowMenu(!showMenu)} style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)', color: 'white', padding: '6px 12px', borderRadius: '999px', cursor: 'pointer', fontWeight: 600, minHeight: '40px', minWidth: '44px' }}>
               <MoreHorizontal size={18} aria-hidden="true" />
             </button>
           </div>
@@ -449,28 +493,28 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       </header>
 
       {updateAvailable && (
-        <div style={{ background: '#1a7f4e', color: 'white', textAlign: 'center', padding: '10px 16px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-          <span>🆕 Nieuwe versie beschikbaar — automatisch vernieuwen over {updateCountdown}s</span>
-          <button type="button" onClick={() => window.location.reload()} style={{ background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '4px 12px', borderRadius: '999px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}>
-            Nu vernieuwen
+        <div role="status" aria-live="polite" style={{ background: 'var(--success)', color: 'white', textAlign: 'center', padding: '12px 16px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <span>{t('updateAvailable', { seconds: updateCountdown })}</span>
+          <button type="button" onClick={() => window.location.reload()} style={{ background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '6px 14px', borderRadius: '999px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, minHeight: '36px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <RefreshCw size={14} aria-hidden="true" /> {t('refreshNow')}
           </button>
         </div>
       )}
 
       {showMenu && (
-        <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,15,40,0.35)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
-          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '70px', right: '20px', background: 'var(--surface)', borderRadius: '16px', padding: '8px', boxShadow: '0 8px 32px rgba(0,58,113,0.18), 0 2px 8px rgba(0,58,113,0.10)', border: '1px solid var(--line)', minWidth: '192px' }}>
-            <button type="button" onClick={() => { setShowMenu(false); setShowSettings(true); }} style={{ width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', fontWeight: 500 }}>
-              <Settings size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('settings')}
+        <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'var(--overlay)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+          <div role="menu" aria-label={t('openMenu')} onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '70px', right: '20px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '8px', boxShadow: 'var(--shadow-lift)', border: '1px solid var(--line)', minWidth: '208px' }}>
+            <button type="button" role="menuitem" onClick={() => { setShowMenu(false); setShowSettings(true); }} style={menuItemStyle}>
+              <Settings size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('settings')}
             </button>
-            <a href="/docs" onClick={() => setShowMenu(false)} style={{ display: 'block', width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', textDecoration: 'none', boxSizing: 'border-box', fontWeight: 500 }}>
-              <BookOpen size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('documentation')}
+            <a href="/docs" role="menuitem" onClick={() => setShowMenu(false)} style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', textDecoration: 'none', boxSizing: 'border-box' }}>
+              <BookOpen size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('documentation')}
             </a>
-            <button type="button" onClick={() => { setShowMenu(false); setShowPasswordDialog(true); }} style={{ width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', fontWeight: 500 }}>
-              <KeyRound size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('changePassword')}
+            <button type="button" role="menuitem" onClick={() => { setShowMenu(false); setShowPasswordDialog(true); }} style={menuItemStyle}>
+              <KeyRound size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('changePassword')}
             </button>
-            <button type="button" onClick={() => { setShowMenu(false); signOut(); }} style={{ width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', fontWeight: 500 }}>
-              <LogOut size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('logout')}
+            <button type="button" role="menuitem" onClick={() => { setShowMenu(false); signOut(); }} style={menuItemStyle}>
+              <LogOut size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('logout')}
             </button>
             <div style={{ padding: '8px 8px 4px', borderTop: '1px solid var(--line)', marginTop: '4px' }}>
               <LanguageToggle t={t} lang={lang} setLang={setLang} onChange={() => setShowMenu(false)} />
@@ -479,7 +523,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         </div>
       )}
 
-      <nav className="app-nav" aria-label="Hoofdnavigatie">
+      <nav className="app-nav" aria-label={t('mainNav')}>
         {[
           { key: 'today',    label: t('navToday'),                     Icon: HomeIcon },
           { key: 'week',     label: t('navWeek', { week: currentWeek }), Icon: Calendar },
@@ -510,12 +554,14 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       )}
 
       <main id="main-content" className="view-main" style={{ padding: '20px 16px' }}>
-        {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
-        {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
-        {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
-        {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
-        {view === 'insights' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
-        {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
+        <ErrorBoundary>
+          {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
+          {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
+          {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
+          {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
+          {view === 'insights' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
+          {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
+        </ErrorBoundary>
       </main>
 
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
@@ -529,9 +575,25 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         />
       )}
 
-      <button type="button" aria-label={t('workoutLog')} className="fab" onClick={() => setShowLogForm(true)}>
+      <button type="button" aria-label={t('fabAddWorkout')} className="fab" onClick={() => setShowLogForm(true)}>
         <Plus size={30} aria-hidden="true" />
       </button>
     </div>
   );
 }
+
+const menuItemStyle = {
+  width: '100%',
+  padding: '12px 14px',
+  border: 'none',
+  background: 'transparent',
+  textAlign: 'left',
+  fontSize: '14px',
+  cursor: 'pointer',
+  borderRadius: 'var(--radius)',
+  color: 'var(--ink)',
+  fontWeight: 600,
+  minHeight: '44px',
+  display: 'flex',
+  alignItems: 'center',
+};
