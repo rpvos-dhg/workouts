@@ -1,12 +1,12 @@
 'use client';
 
+import { useMemo } from 'react';
 import { BarChart3, Gauge, HeartPulse } from 'lucide-react';
-import { calculateTrendStats } from '../../lib/insights';
-import { withDefaultSettings } from '../../lib/insights';
+import { calculateTrendStats, withDefaultSettings } from '../../lib/insights';
 import { InfoCard, SectionTitle, MetricTile, SimpleList, TrendCard } from './ui';
 
 export function InsightsView({ logs, checkins, completed, settings, adaptiveAdvice, t }) {
-  const stats = calculateTrendStats({ logs, checkins, completed });
+  const stats = useMemo(() => calculateTrendStats({ logs, checkins, completed }), [logs, checkins, completed]);
   const cards = [
     { title: t('weight'), unit: 'kg', points: stats.weight, color: 'var(--accent)' },
     { title: t('waist'), unit: 'cm', points: stats.waist, color: 'var(--accent-strong)' },
@@ -14,6 +14,9 @@ export function InsightsView({ logs, checkins, completed, settings, adaptiveAdvi
     { title: t('restingHr'), unit: 'bpm', points: stats.restingHr, color: 'var(--danger)' },
     { title: t('avgSpeed'), unit: 'km/h', points: stats.speed, color: 'var(--accent)' },
     { title: t('avgHr'), unit: 'bpm', points: stats.avgHr, color: 'var(--warn)' },
+    { title: t('hrvTrend'), unit: 'ms', points: stats.hrv, color: 'var(--success)' },
+    { title: t('energyTrend'), unit: '/5', points: stats.energy, color: 'var(--warn)' },
+    { title: t('moodTrend'), unit: '/5', points: stats.mood, color: 'var(--accent)' },
   ];
 
   return (

@@ -150,19 +150,18 @@ export function MiniChart({ points, color, emptyLabel }) {
   const max = Math.max(...values);
   const range = max - min || 1;
   const width = 320, height = 120, pad = 16;
-  const coords = points.map((p, i) => {
-    const x = pad + (i / Math.max(points.length - 1, 1)) * (width - pad * 2);
-    const y = height - pad - ((Number(p.value) - min) / range) * (height - pad * 2);
-    return `${x},${y}`;
-  }).join(' ');
+  const coordPairs = points.map((p, i) => ({
+    x: pad + (i / Math.max(points.length - 1, 1)) * (width - pad * 2),
+    y: height - pad - ((Number(p.value) - min) / range) * (height - pad * 2),
+  }));
+  const polylinePoints = coordPairs.map(c => `${c.x},${c.y}`).join(' ');
   return (
     <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Trendgrafiek" style={{ width: '100%', height: '120px', display: 'block' }}>
       <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="var(--line)" strokeWidth="2" />
-      <polyline fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" points={coords} />
-      {points.map((p, i) => {
-        const [x, y] = coords.split(' ')[i].split(',').map(Number);
-        return <circle key={`${p.date}-${i}`} cx={x} cy={y} r="4" fill="white" stroke={color} strokeWidth="3" />;
-      })}
+      <polyline fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" points={polylinePoints} />
+      {points.map((p, i) => (
+        <circle key={`${p.date}-${i}`} cx={coordPairs[i].x} cy={coordPairs[i].y} r="4" fill="white" stroke={color} strokeWidth="3" />
+      ))}
     </svg>
   );
 }

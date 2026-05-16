@@ -5,15 +5,27 @@ import { Activity, CheckCircle2, Clock3 } from 'lucide-react';
 import { MEASUREMENT_MOMENTS, getMeasurementMomentByDate, getMeasurementTitle, getSuggestedMeasurementMoment, isMeasurementCheckin } from '../../lib/plan-content';
 import { getAlarmSignals, checkinToForm, getTodayString, formatDateShort } from '../../lib/utils';
 import { getWeekOverview } from '../../lib/plan-content';
-import { InfoCard, SectionTitle, Tag, SimpleList, Field } from './ui';
-import { inputStyle } from './styles';
+import { InfoCard, SectionTitle, Tag, SimpleList, Field, MetricInput } from './ui';
+import { inputStyle, primaryButtonStyle } from './styles';
 
-function MetricInputLocal({ label, value, onChange, placeholder }) {
-  const id = `metric-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+function RatingPicker({ label, value, onChange }) {
   return (
     <div style={{ marginBottom: '14px' }}>
-      <label htmlFor={id} style={{ display: 'block', fontSize: '13px', color: 'var(--muted)', fontWeight: 700, marginBottom: '6px' }}>{label}</label>
-      <input id={id} type="number" inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
+      <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 700, marginBottom: '6px' }}>{label}</div>
+      <div role="radiogroup" aria-label={label} style={{ display: 'flex', gap: '6px' }}>
+        {[1, 2, 3, 4, 5].map(n => {
+          const active = Number(value) === n;
+          return (
+            <button key={n} type="button" role="radio" aria-checked={active} onClick={() => onChange(String(n))} style={{
+              flex: 1, padding: '10px 0', borderRadius: 'var(--radius)', minHeight: '44px',
+              border: `2px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
+              background: active ? 'var(--accent)' : 'var(--surface-2)',
+              color: active ? 'white' : 'var(--muted)',
+              fontSize: '15px', fontWeight: 800, cursor: 'pointer',
+            }}>{n}</button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -91,23 +103,23 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
               </div>
             )}
             <div style={{ height: '12px' }} />
-            <MetricInputLocal label={t('weight')} value={form.weightKg} onChange={v => update('weightKg', v)} placeholder="bijv. 88.4" />
-            <MetricInputLocal label={t('waist')} value={form.waistCm} onChange={v => update('waistCm', v)} placeholder="bijv. 96" />
-            <MetricInputLocal label={t('sleep')} value={form.sleepHours} onChange={v => update('sleepHours', v)} placeholder="bijv. 7.5" />
-            <MetricInputLocal label={t('restingHr')} value={form.restingHr} onChange={v => update('restingHr', v)} placeholder="bijv. 56" />
-            <MetricInputLocal label="HRV" value={form.hrv} onChange={v => update('hrv', v)} placeholder="optioneel" />
-            <MetricInputLocal label={t('energy')} value={form.energyLevel} onChange={v => update('energyLevel', v)} placeholder="3" />
-            <MetricInputLocal label={t('mood')} value={form.moodLevel} onChange={v => update('moodLevel', v)} placeholder="3" />
-            <MetricInputLocal label={t('soreness')} value={form.sorenessHours} onChange={v => update('sorenessHours', v)} placeholder="bijv. 24" />
-            <MetricInputLocal label={t('hunger')} value={form.hungerLevel} onChange={v => update('hungerLevel', v)} placeholder="3" />
-            <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: 'var(--muted)', margin: '10px 0 14px' }}>
-              <input type="checkbox" checked={form.hrvLowSignal} onChange={e => update('hrvLowSignal', e.target.checked)} />
+            <MetricInput label={t('weight')} value={form.weightKg} onChange={v => update('weightKg', v)} placeholder="bijv. 88.4" />
+            <MetricInput label={t('waist')} value={form.waistCm} onChange={v => update('waistCm', v)} placeholder="bijv. 96" />
+            <MetricInput label={t('sleep')} value={form.sleepHours} onChange={v => update('sleepHours', v)} placeholder="bijv. 7.5" />
+            <MetricInput label={t('restingHr')} value={form.restingHr} onChange={v => update('restingHr', v)} placeholder="bijv. 56" />
+            <MetricInput label="HRV" value={form.hrv} onChange={v => update('hrv', v)} placeholder="optioneel" />
+            <RatingPicker label={t('energy')} value={form.energyLevel} onChange={v => update('energyLevel', v)} />
+            <RatingPicker label={t('mood')} value={form.moodLevel} onChange={v => update('moodLevel', v)} />
+            <MetricInput label={t('soreness')} value={form.sorenessHours} onChange={v => update('sorenessHours', v)} placeholder="bijv. 24" />
+            <RatingPicker label={t('hunger')} value={form.hungerLevel} onChange={v => update('hungerLevel', v)} />
+            <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: 'var(--muted)', margin: '10px 0 14px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.hrvLowSignal} onChange={e => update('hrvLowSignal', e.target.checked)} style={{ width: '18px', height: '18px', accentColor: 'var(--accent)' }} />
               {t('hrvLow')}
             </label>
             <Field label={t('notes')} htmlFor="measurement-notes">
               <textarea id="measurement-notes" value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} placeholder={t('howFeel')} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
             </Field>
-            <button type="submit" style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius)', border: 'none', background: 'var(--accent)', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer', minHeight: '44px' }}>{t('saveMeasurement')}</button>
+            <button type="submit" style={{ ...primaryButtonStyle, width: '100%' }}>{t('saveMeasurement')}</button>
             {message && <div role="status" aria-live="polite" style={{ fontSize: '13px', color: [t('measurementSaved'), t('notificationOn')].includes(message) ? 'var(--success)' : 'var(--danger)', marginTop: '10px', textAlign: 'center', fontWeight: 700 }}>{message}</div>}
           </InfoCard>
         </form>

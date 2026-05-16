@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Activity, BarChart3, BookOpen, Calendar, Dumbbell, Home as HomeIcon, KeyRound, LogOut, Map, MoreHorizontal, Plus, RefreshCw, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA } from '../lib/plan-data';
@@ -94,6 +94,7 @@ export default function Home() {
 function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHandled }) {
   const toast = useToast();
   const confirm = useConfirm();
+  const scrollPositions = useRef({});
   const [completed, setCompleted] = useState({});
   const [logs, setLogs] = useState([]);
   const [checkins, setCheckins] = useState([]);
@@ -154,12 +155,17 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   useEffect(() => {
     if (!updateAvailable) return;
     if (updateCountdown <= 0) {
-      window.location.reload();
+      const formOpen = showLogForm || showSettings || showPasswordDialog || !!selectedDay;
+      if (!formOpen) {
+        window.location.reload();
+      } else {
+        setUpdateCountdown(60);
+      }
       return;
     }
     const id = setTimeout(() => setUpdateCountdown(n => n - 1), 1000);
     return () => clearTimeout(id);
-  }, [updateAvailable, updateCountdown]);
+  }, [updateAvailable, updateCountdown, showLogForm, showSettings, showPasswordDialog, selectedDay]);
 
   useEffect(() => {
     if (forcePasswordUpdate) setShowPasswordDialog(true);
@@ -188,11 +194,43 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   useEffect(() => {
     const channel = supabase
       .channel('app-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'completions', filter: `user_id=eq.${user.id}` }, () => reloadCompletions())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'workout_logs', filter: `user_id=eq.${user.id}` }, () => reloadLogs())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_checkins', filter: `user_id=eq.${user.id}` }, () => reloadCheckins())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_settings', filter: `user_id=eq.${user.id}` }, () => reloadSettings())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_habits', filter: `user_id=eq.${user.id}` }, () => reloadHabits())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'completions', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT' && payload.new?.day_id) {
+          setCompleted(prev => ({ ...prev, [payload.new.day_id]: true }));
+        } else if (payload.eventType === 'DELETE' && payload.old?.day_id) {
+          setCompleted(prev => { const next = { ...prev }; delete next[payload.old.day_id]; return next; });
+        } else {
+          reloadCompletions();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'workout_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setLogs(prev => [payload.new, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+        } else if (payload.eventType === 'UPDATE') {
+          setLogs(prev => prev.map(l => l.id === payload.new.id ? payload.new : l));
+        } else if (payload.eventType === 'DELETE') {
+          setLogs(prev => prev.filter(l => l.id !== payload.old?.id));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_checkins', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          setCheckins(prev => [payload.new, ...prev.filter(c => c.id !== payload.new.id)].sort((a, b) => b.date.localeCompare(a.date)));
+        } else if (payload.eventType === 'DELETE') {
+          setCheckins(prev => prev.filter(c => c.id !== payload.old?.id));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_settings', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          setSettings(withDefaultSettings(payload.new || {}));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_habits', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          setHabits(prev => [payload.new, ...prev.filter(h => h.date !== payload.new.date)]);
+        } else if (payload.eventType === 'DELETE') {
+          setHabits(prev => prev.filter(h => h.id !== payload.old?.id));
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user.id]);
@@ -305,13 +343,21 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     setLogs(logs.filter(l => l.id !== id));
     const { error } = await supabase.from('workout_logs').delete().eq('id', id);
     if (error) { setLogs(previous); toast.error(error.message); }
-    else toast.success(t('saved'));
+    else toast.success(t('logDeleted'));
   };
+
+  const switchView = useCallback((newView) => {
+    scrollPositions.current[view] = window.scrollY;
+    setView(newView);
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollPositions.current[newView] ?? 0);
+    });
+  }, [view]);
 
   const openMeasurement = (date) => {
     setSelectedMeasurementDate(date);
     setSelectedDay(null);
-    setView('checkin');
+    switchView('checkin');
   };
 
   const openDay = (day) => {
@@ -390,29 +436,33 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
 
   const signOut = async () => { await supabase.auth.signOut(); };
 
-  const today = PLAN_DATA.find(d => d.id === todayId) || PLAN_DATA[0];
+  const todayString = useMemo(() => getTodayString(), []);
+  const today = useMemo(() => PLAN_DATA.find(d => d.id === todayId) || PLAN_DATA[0], [todayId]);
   const currentWeek = today.week;
-  const currentOverview = getWeekOverview(currentWeek);
-  const weekDays = PLAN_DATA.filter(d => d.week === currentWeek);
-  const completedCount = Object.values(completed).filter(Boolean).length;
+  const currentOverview = useMemo(() => getWeekOverview(currentWeek), [currentWeek]);
+  const weekDays = useMemo(() => PLAN_DATA.filter(d => d.week === currentWeek), [currentWeek]);
+  const completedCount = useMemo(() => Object.values(completed).filter(Boolean).length, [completed]);
   const totalCount = PLAN_DATA.length;
-  const progressPct = (completedCount / totalCount) * 100;
-  const todayString = getTodayString();
-  const streak = (() => {
+  const progressPct = useMemo(() => (completedCount / totalCount) * 100, [completedCount]);
+  const streak = useMemo(() => {
     const past = PLAN_DATA.filter(d => d.date <= todayString).sort((a, b) => b.date.localeCompare(a.date));
     let count = 0;
-    for (const d of past) { if (completed[d.id]) count++; else break; }
+    for (const d of past) {
+      if (d.type === 'rest') continue;
+      if (completed[d.id]) count++;
+      else break;
+    }
     return count;
-  })();
-  const dueMeasurement = getDueMeasurementMoment(checkins, todayString);
-  const todayHabit = habits.find(item => item.date === todayString) || { date: todayString };
-  const adaptiveAdvice = getAdaptiveAdvice({ today, completed, logs, checkins, settings, todayString });
+  }, [completed, todayString]);
+  const dueMeasurement = useMemo(() => getDueMeasurementMoment(checkins, todayString), [checkins, todayString]);
+  const todayHabit = useMemo(() => habits.find(item => item.date === todayString) || { date: todayString }, [habits, todayString]);
+  const adaptiveAdvice = useMemo(() => getAdaptiveAdvice({ today, completed, logs, checkins, settings, todayString }), [today, completed, logs, checkins, settings, todayString]);
   const weatherTimezone = withDefaultSettings(settings).timezone;
-  const weatherForecastEnd = addDaysString(todayString, 13);
-  const weatherCycleDays = PLAN_DATA
+  const weatherForecastEnd = useMemo(() => addDaysString(todayString, 13), [todayString]);
+  const weatherCycleDays = useMemo(() => PLAN_DATA
     .filter(day => day.type === 'cycle' && day.date >= todayString && day.date <= weatherForecastEnd)
-    .map(day => ({ date: day.date, durationMin: day.dur || 60 }));
-  const weatherRequestKey = weatherCycleDays.map(day => `${day.date}:${day.durationMin}`).join('|');
+    .map(day => ({ date: day.date, durationMin: day.dur || 60 })), [todayString, weatherForecastEnd]);
+  const weatherRequestKey = useMemo(() => weatherCycleDays.map(day => `${day.date}:${day.durationMin}`).join('|'), [weatherCycleDays]);
 
   useEffect(() => {
     if (!weatherRequestKey) {
@@ -525,21 +575,24 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
 
       <nav className="app-nav" aria-label={t('mainNav')}>
         {[
-          { key: 'today',    label: t('navToday'),                     Icon: HomeIcon },
+          { key: 'today',    label: t('navToday'),                       Icon: HomeIcon },
           { key: 'week',     label: t('navWeek', { week: currentWeek }), Icon: Calendar },
-          { key: 'plan',     label: t('navPlan'),                      Icon: Map },
-          { key: 'checkin',  label: t('navMeasure'),                   Icon: Activity },
-          { key: 'insights', label: t('navInsights'),                  Icon: BarChart3 },
-          { key: 'log',      label: t('navLog'),                       Icon: Dumbbell },
-        ].map(({ key, label, Icon }) => (
+          { key: 'plan',     label: t('navPlan'),                        Icon: Map },
+          { key: 'checkin',  label: t('navMeasure'),                     Icon: Activity, badge: !!dueMeasurement },
+          { key: 'insights', label: t('navInsights'),                    Icon: BarChart3 },
+          { key: 'log',      label: t('navLog'),                         Icon: Dumbbell },
+        ].map(({ key, label, Icon, badge }) => (
           <button
             key={key}
             type="button"
             aria-current={view === key ? 'page' : undefined}
-            onClick={() => setView(key)}
+            onClick={() => switchView(key)}
             className={`app-nav-btn${view === key ? ' app-nav-btn--active' : ''}`}
           >
-            <span className="nav-icon" aria-hidden="true"><Icon size={20} /></span>
+            <span className="nav-icon" style={{ position: 'relative' }} aria-hidden="true">
+              <Icon size={20} />
+              {badge && <span style={{ position: 'absolute', top: '-3px', right: '-5px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--action)', border: '2px solid var(--bg)' }} />}
+            </span>
             <span className="nav-label">{label}</span>
           </button>
         ))}
@@ -565,7 +618,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       </main>
 
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
-      {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} t={t} />}
+      {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} settings={settings} t={t} />}
       {showSettings && <SettingsDialog settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} t={t} />}
       {showPasswordDialog && (
         <PasswordDialog

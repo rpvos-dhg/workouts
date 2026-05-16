@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { BarChart3, Bike, Download, Dumbbell, Edit3, Flame, Footprints, Gauge, HeartPulse, Plus, Target, Trash2 } from 'lucide-react';
 import { getHeartZone } from '../../lib/insights';
 import { exportLogsCSV } from '../../lib/utils';
-import { InfoCard, Field, StatItem } from './ui';
+import { InfoCard, Field, StatItem, MetricTile, SectionTitle } from './ui';
 import { inputStyle, smallActionStyle, ghostButtonStyle, primaryButtonStyle } from './styles';
 import { ModalShell } from './ModalShell';
 import { useToast } from './Toast';
@@ -13,6 +13,12 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
   const cycleLogs = logs.filter(l => l.type === 'cycle' && l.distance && l.duration);
   const avgSpeed = cycleLogs.length ? cycleLogs.reduce((s, l) => s + (l.distance / (l.duration / 60)), 0) / cycleLogs.length : 0;
   const avgHR = cycleLogs.filter(l => l.avg_hr).length ? cycleLogs.filter(l => l.avg_hr).reduce((s, l) => s + Number(l.avg_hr), 0) / cycleLogs.filter(l => l.avg_hr).length : 0;
+  const longestRide = cycleLogs.length ? cycleLogs.reduce((b, l) => Number(l.distance) > Number(b?.distance ?? 0) ? l : b, null) : null;
+  const fastestRide = cycleLogs.length ? cycleLogs.reduce((b, l) => {
+    const s = Number(l.distance) / (Number(l.duration) / 60);
+    return s > (b?.speed ?? 0) ? { ...l, speed: s } : b;
+  }, null) : null;
+  const mostKcal = logs.some(l => l.kcal) ? logs.reduce((b, l) => Number(l.kcal) > Number(b?.kcal ?? 0) ? l : b, null) : null;
 
   return (
     <div>
@@ -45,6 +51,17 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
             <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('cycleRides')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{cycleLogs.length}</div></div>
           </div>
         </div>
+      )}
+
+      {(longestRide || fastestRide || mostKcal?.kcal) && (
+        <InfoCard>
+          <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('personalRecords')}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginTop: '10px' }}>
+            {longestRide && <MetricTile icon={Target} label={t('longestRide')} value={`${longestRide.distance} km`} />}
+            {fastestRide && <MetricTile icon={Gauge} label={t('fastestSpeed')} value={`${fastestRide.speed.toFixed(1)} km/h`} />}
+            {mostKcal?.kcal && <MetricTile icon={Flame} label={t('mostKcal')} value={`${mostKcal.kcal} kcal`} />}
+          </div>
+        </InfoCard>
       )}
 
       {logs.length === 0 ? (
@@ -113,12 +130,12 @@ const iconButtonStyle = {
   transition: 'background 120ms ease, color 120ms ease',
 };
 
-export function LogForm({ onSave, onClose, todayPlan, initialLog, t }) {
+export function LogForm({ onSave, onClose, todayPlan, initialLog, settings, t }) {
   const toast = useToast();
   const [form, setForm] = useState({
     date: initialLog?.date || new Date().toISOString().slice(0, 10),
     type: initialLog?.type || (todayPlan?.type === 'strength' ? 'strength' : 'cycle'),
-    duration: initialLog?.duration ?? '',
+    duration: initialLog?.duration ?? (todayPlan?.dur ? String(todayPlan.dur) : ''),
     distance: initialLog?.distance ?? '',
     avgHR: initialLog?.avg_hr ?? '',
     maxHR: initialLog?.max_hr ?? '',
@@ -134,16 +151,14 @@ export function LogForm({ onSave, onClose, todayPlan, initialLog, t }) {
     onSave(form);
   };
 
+  const ZONE_SPEED_MAP = { 'Z1': '11-13', 'Z2': '14-17', 'Z3': '16-18', 'Z4': '17-20', 'Z5': '18-22' };
+
   let analysis = null;
   if (form.type === 'cycle' && form.distance && form.duration && form.avgHR) {
     const speed = form.distance / (form.duration / 60);
     const hr = Number(form.avgHR);
-    let expectedSpeed, zone;
-    if (hr < 134) { zone = 'Z1'; expectedSpeed = '11-13'; }
-    else if (hr < 147) { zone = 'Z2'; expectedSpeed = '14-17'; }
-    else if (hr < 160) { zone = 'Z3'; expectedSpeed = '16-18'; }
-    else if (hr < 173) { zone = 'Z4'; expectedSpeed = '17-20'; }
-    else { zone = 'Z5'; expectedSpeed = '18-22'; }
+    const zone = getHeartZone(hr, settings) || 'Z2';
+    const expectedSpeed = ZONE_SPEED_MAP[zone] || '14-17';
     const [low, high] = expectedSpeed.split('-').map(Number);
     let verdict = '';
     if (speed >= low && speed <= high) verdict = t('verdictPerfect');
