@@ -1,15 +1,15 @@
-import { Atkinson_Hyperlegible, Sora } from 'next/font/google';
+import { Bricolage_Grotesque, Inter } from 'next/font/google';
 import './globals.css';
 
-const atkinson = Atkinson_Hyperlegible({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '700'],
+  weight: ['400', '500', '600'],
   variable: '--font-body',
 });
 
-const sora = Sora({
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['600', '700', '800'],
+  weight: ['400', '600', '800'],
   variable: '--font-display',
 });
 
@@ -34,13 +34,13 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#14100c',
+  themeColor: '#003a71',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="nl">
-      <body className={`${atkinson.variable} ${sora.variable}`} style={{ fontFamily: 'var(--font-body), system-ui, sans-serif' }}>
+      <body className={`${inter.variable} ${bricolage.variable}`} style={{ fontFamily: 'var(--font-body), system-ui, sans-serif' }}>
         {children}
       </body>
     </html>

@@ -458,21 +458,21 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       )}
 
       {showMenu && (
-        <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.3)' }}>
-          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '70px', right: '20px', background: 'white', borderRadius: '12px', padding: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: '180px' }}>
-            <button type="button" onClick={() => { setShowMenu(false); setShowSettings(true); }} style={{ width: '100%', padding: '12px 16px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px' }}>
-              <Settings size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('settings')}
+        <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,15,40,0.35)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '70px', right: '20px', background: 'var(--surface)', borderRadius: '16px', padding: '8px', boxShadow: '0 8px 32px rgba(0,58,113,0.18), 0 2px 8px rgba(0,58,113,0.10)', border: '1px solid var(--line)', minWidth: '192px' }}>
+            <button type="button" onClick={() => { setShowMenu(false); setShowSettings(true); }} style={{ width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', fontWeight: 500 }}>
+              <Settings size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('settings')}
             </button>
-            <a href="/docs" onClick={() => setShowMenu(false)} style={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px', color: 'inherit', textDecoration: 'none', boxSizing: 'border-box' }}>
-              <BookOpen size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('documentation')}
+            <a href="/docs" onClick={() => setShowMenu(false)} style={{ display: 'block', width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', textDecoration: 'none', boxSizing: 'border-box', fontWeight: 500 }}>
+              <BookOpen size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('documentation')}
             </a>
-            <button type="button" onClick={() => { setShowMenu(false); setShowPasswordDialog(true); }} style={{ width: '100%', padding: '12px 16px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px' }}>
-              <KeyRound size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('changePassword')}
+            <button type="button" onClick={() => { setShowMenu(false); setShowPasswordDialog(true); }} style={{ width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', fontWeight: 500 }}>
+              <KeyRound size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('changePassword')}
             </button>
-            <button type="button" onClick={() => { setShowMenu(false); signOut(); }} style={{ width: '100%', padding: '12px 16px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '8px' }}>
-              <LogOut size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px' }} />{t('logout')}
+            <button type="button" onClick={() => { setShowMenu(false); signOut(); }} style={{ width: '100%', padding: '11px 14px', border: 'none', background: 'transparent', textAlign: 'left', fontSize: '14px', cursor: 'pointer', borderRadius: '10px', color: 'var(--ink)', fontWeight: 500 }}>
+              <LogOut size={16} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: '8px', color: 'var(--accent)' }} />{t('logout')}
             </button>
-            <div style={{ padding: '8px 8px 4px' }}>
+            <div style={{ padding: '8px 8px 4px', borderTop: '1px solid var(--line)', marginTop: '4px' }}>
               <LanguageToggle t={t} lang={lang} setLang={setLang} onChange={() => setShowMenu(false)} />
             </div>
           </div>
