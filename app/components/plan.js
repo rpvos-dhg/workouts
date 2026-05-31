@@ -285,7 +285,7 @@ export function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum
 export function AllView({ completed, toggleComplete, onSelectDay, cyclingWeather, t }) {
   return (
     <div className="section-shell">
-      {[1, 2, 3, 4, 5, 6].map(w => {
+      {[...new Set(PLAN_DATA.map(d => d.week))].map(w => {
         const wd = PLAN_DATA.filter(d => d.week === w);
         const compl = wd.filter(d => completed[d.id]).length;
         return (
