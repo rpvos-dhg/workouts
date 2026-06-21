@@ -489,6 +489,11 @@ input, textarea {
   letter-spacing: 0.10em;
 }
 
+/* Accent variant — replaces a repeated inline `color: var(--accent-strong)`. */
+.signal-kicker--accent {
+  color: var(--accent-strong);
+}
+
 .signal-value {
   color: var(--ink);
   font-size: clamp(15px, 2vw, 18px);

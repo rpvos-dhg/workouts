@@ -71,7 +71,7 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
     <div className="dashboard-grid">
       <div>
         <InfoCard className="hero-card" style={{ borderLeft: `4px solid ${alarms.length >= 2 ? 'var(--danger)' : 'var(--success)'}` }}>
-          <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('plannedMeasurements')}</div>
+          <div className="signal-kicker signal-kicker--accent">{t('plannedMeasurements')}</div>
           <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '6px' }}>{t('alarmSignals', { count: alarms.length })}</div>
           <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.5 }}>{advice}</div>
           <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '8px' }}>{t('weekGoal', { kcal: overview.kcal })}</div>
@@ -93,7 +93,7 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
         <form onSubmit={submit}>
           <InfoCard>
             <div style={{ marginBottom: '14px' }}>
-              <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{currentMoment.title}</div>
+              <div className="signal-kicker signal-kicker--accent">{currentMoment.title}</div>
               <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5 }}>{currentMoment.focus}</div>
             </div>
             <SimpleList items={currentMoment.items} />

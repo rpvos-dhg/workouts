@@ -25,7 +25,7 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
       <InfoCard>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div>
-            <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('workoutLog')}</div>
+            <div className="signal-kicker signal-kicker--accent">{t('workoutLog')}</div>
             <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{t('logSubtitle')}</div>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -55,7 +55,7 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
 
       {(longestRide || fastestRide || mostKcal?.kcal) && (
         <InfoCard>
-          <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('personalRecords')}</div>
+          <div className="signal-kicker signal-kicker--accent">{t('personalRecords')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginTop: '10px' }}>
             {longestRide && <MetricTile icon={Target} label={t('longestRide')} value={`${longestRide.distance} km`} />}
             {fastestRide && <MetricTile icon={Gauge} label={t('fastestSpeed')} value={`${fastestRide.speed.toFixed(1)} km/h`} />}

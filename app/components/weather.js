@@ -65,7 +65,7 @@ export function CyclingWeatherCard({ recommendation, status, location, onRetry, 
   if (status === 'loading' && !recommendation) {
     return (
       <InfoCard>
-        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('cyclingWeather')}</div>
+        <div className="signal-kicker signal-kicker--accent">{t('cyclingWeather')}</div>
         <div role="status" aria-live="polite" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px', color: 'var(--muted)', fontSize: '14px' }}>
           <span className="spinner spinner--inline" aria-hidden="true" />
           {t('weatherLoading')}
@@ -77,7 +77,7 @@ export function CyclingWeatherCard({ recommendation, status, location, onRetry, 
   if (!recommendation) {
     return (
       <InfoCard>
-        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('cyclingWeather')}</div>
+        <div className="signal-kicker signal-kicker--accent">{t('cyclingWeather')}</div>
         <div style={{ color: status === 'error' ? 'var(--danger)' : 'var(--muted)', marginTop: '8px', fontSize: '14px', fontWeight: 700 }}>
           {status === 'error' ? t('weatherError') : t('weatherUnavailable')}
         </div>
