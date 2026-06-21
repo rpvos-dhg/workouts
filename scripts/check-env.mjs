@@ -36,5 +36,8 @@ for (const key of optionalRuntime) {
 }
 
 if (missing.length > 0) {
-  throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  // Warn but don't fail the build: a deployment without these env vars (e.g. a
+  // Vercel preview) should still build. The app surfaces the missing config at
+  // runtime instead of breaking the whole build/prerender.
+  console.warn(`[env] WARNING: missing recommended environment variables: ${missing.join(', ')}. The build will continue, but Supabase features will not work until they are set.`);
 }

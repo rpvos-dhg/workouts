@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BarChart3, Bike, Download, Dumbbell, Edit3, Flame, Footprints, Gauge, HeartPulse, Plus, Target, Trash2 } from 'lucide-react';
 import { getHeartZone } from '../../lib/insights';
-import { exportLogsCSV } from '../../lib/utils';
+import { exportLogsCSV, getTodayString } from '../../lib/utils';
 import { InfoCard, Field, StatItem, MetricTile, SectionTitle } from './ui';
 import { inputStyle, smallActionStyle, ghostButtonStyle, primaryButtonStyle } from './styles';
 import { ModalShell } from './ModalShell';
@@ -87,7 +87,7 @@ export function LogCard({ log, settings, deleteLog, onEditLog, t }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '11px', color: 'var(--muted-2)', fontWeight: 700, letterSpacing: '0.08em' }}>
-            {new Date(log.date).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
+            {new Date(`${log.date}T12:00:00`).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
           </div>
           <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '4px', color: 'var(--ink)' }}>
             {log.type === 'cycle' ? t('cycle') : log.type === 'strength' ? t('strength') : t('walk')} · {log.duration} min
@@ -133,7 +133,7 @@ const iconButtonStyle = {
 export function LogForm({ onSave, onClose, todayPlan, initialLog, settings, t }) {
   const toast = useToast();
   const [form, setForm] = useState({
-    date: initialLog?.date || new Date().toISOString().slice(0, 10),
+    date: initialLog?.date || getTodayString(),
     type: initialLog?.type || (todayPlan?.type === 'strength' ? 'strength' : 'cycle'),
     duration: initialLog?.duration ?? (todayPlan?.dur ? String(todayPlan.dur) : ''),
     distance: initialLog?.distance ?? '',

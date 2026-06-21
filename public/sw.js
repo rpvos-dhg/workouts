@@ -1,4 +1,4 @@
-const CACHE_NAME = 'workouts-shell-v1';
+const CACHE_NAME = 'workouts-shell-v2';
 const SHELL_ASSETS = ['/', '/manifest.json', '/icon.png', '/icon.svg'];
 
 self.addEventListener('install', event => {
@@ -25,9 +25,13 @@ self.addEventListener('fetch', event => {
   if (url.pathname.startsWith('/api/')) return;
   if (url.pathname.startsWith('/_next/data/')) return;
 
-  event.respondWith(
-    caches.match(request).then(cached => {
-      const network = fetch(request)
+  const isNavigation = request.mode === 'navigate';
+
+  if (isNavigation) {
+    // Network-first for HTML so a freshly deployed app shell is served immediately;
+    // fall back to the cached shell (offline) and finally to the cached root.
+    event.respondWith(
+      fetch(request)
         .then(response => {
           if (response && response.ok && response.type === 'basic') {
             const clone = response.clone();
@@ -35,8 +39,22 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(() => cached);
-      return cached || network;
+        .catch(() => caches.match(request).then(cached => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Cache-first for static, content-hashed assets (immutable across a build).
+  event.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+      return fetch(request).then(response => {
+        if (response && response.ok && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+        }
+        return response;
+      });
     })
   );
 });
