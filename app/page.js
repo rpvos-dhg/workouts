@@ -554,44 +554,79 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     } catch { /* ignore */ }
   }, [dueMeasurement, t]);
 
+  const viewTitles = {
+    today: t('navToday'), agenda: t('navAgenda'), progress: t('navProgress'),
+    log: t('navLog'), checkin: t('navMeasure'), guide: t('guide'),
+  };
+  const navItems = [
+    { key: 'today', label: t('navToday'), Icon: HomeIcon },
+    { key: 'agenda', label: t('navAgenda'), Icon: Calendar },
+    { key: 'progress', label: t('navProgress'), Icon: BarChart3, parentFor: ['progress', 'checkin'] },
+    { key: 'log', label: t('navLog'), Icon: Dumbbell },
+  ];
+  const isActive = (item) => (item.parentFor ? item.parentFor.includes(view) : view === item.key);
+  const todayLine = `${today.day} ${formatDateShort(today.date, t('localeTag'))} · ${t(today.type)}: ${today.title}`;
+  const ring = 2 * Math.PI * 16;
+
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">{t('skipToContent')}</a>
-      <header className="app-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-          <div>
-            <div style={{ fontSize: '12px', opacity: 0.86, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('weekOf', { week: currentWeek })}</div>
-            <h1 style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, margin: '4px 0 0', display: 'flex', alignItems: 'baseline', gap: '10px', letterSpacing: '-0.01em' }}>
-              {t('appTitle')}
-              <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.55, letterSpacing: '0.05em' }}>
-                #{process.env.NEXT_PUBLIC_BUILD_ID || 'dev'}
-              </span>
-              {streak > 0 && (
-                <span className="tnum" style={{ fontSize: '13px', fontWeight: 700, opacity: 0.9 }} title={t('streakHint', { days: streak })}>
-                  🔥 {streak}
-                </span>
-              )}
-            </h1>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <div className="tnum" style={{ background: 'rgba(255,255,255,0.16)', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
-              {t('progressTotal', { done: completedCount, total: totalCount })}
-            </div>
-            <button type="button" aria-label={t('openMenu')} aria-expanded={showMenu} aria-haspopup="menu" onClick={() => setShowMenu(!showMenu)} style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)', color: 'white', padding: '6px 12px', borderRadius: '999px', cursor: 'pointer', fontWeight: 600, minHeight: '40px', minWidth: '44px' }}>
-              <MoreHorizontal size={18} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-        <div aria-label={t('progressLabel', { progress: Math.round(progressPct) })} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPct)} style={{ background: 'rgba(255,255,255,0.22)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
-          <div style={{ background: 'var(--action)', height: '100%', width: `${progressPct}%`, borderRadius: '999px', transition: 'width 0.4s ease' }} />
-        </div>
-        <div style={{ fontSize: '12px', opacity: 0.88, marginTop: '8px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-          <span>{t('completedPct', { progress: Math.round(progressPct) })}</span>
-          {syncing && <span role="status" aria-live="polite">{t('sync')}</span>}
-          {!syncing && <span style={{ opacity: 0.6 }}>{user.email}</span>}
-        </div>
-      </header>
 
+      <aside className="app-rail" aria-label={t('mainNav')}>
+        <div className="rail-brand">
+          <span className="mark" aria-hidden="true" style={{ fontFamily: 'var(--font-display), sans-serif', fontWeight: 800, fontSize: '15px' }}>6W</span>
+          <span className="txt">{t('appTitle')}<small>#{process.env.NEXT_PUBLIC_BUILD_ID || 'dev'}</small></span>
+        </div>
+        <button type="button" className="rail-record" aria-haspopup="dialog" onClick={() => setShowRecord(true)}>
+          <Plus size={20} aria-hidden="true" />{t('navRecord')}
+          {dueMeasurement && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--danger)' }} />}
+        </button>
+        <nav className="rail-nav" aria-label={t('mainNav')}>
+          {navItems.map((item) => {
+            const active = isActive(item);
+            const { key, label, Icon } = item;
+            return (
+              <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => switchView(key)} className={`rail-item${active ? ' rail-item--active' : ''}`}>
+                <Icon size={19} aria-hidden="true" />{label}
+                {key === 'progress' && dueMeasurement && <span className="badge-dot" aria-hidden="true" />}
+              </button>
+            );
+          })}
+          <button type="button" aria-current={view === 'guide' ? 'page' : undefined} onClick={() => switchView('guide')} className={`rail-item${view === 'guide' ? ' rail-item--active' : ''}`}>
+            <Map size={19} aria-hidden="true" />{t('guide')}
+          </button>
+        </nav>
+        <div className="rail-spacer" />
+        <div className="rail-progress">
+          <svg width="40" height="40" viewBox="0 0 40 40" role="img" aria-label={t('progressLabel', { progress: Math.round(progressPct) })}>
+            <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="4" />
+            <circle cx="20" cy="20" r="16" fill="none" stroke="var(--action)" strokeWidth="4" strokeLinecap="round" strokeDasharray={ring} strokeDashoffset={ring * (1 - progressPct / 100)} transform="rotate(-90 20 20)" />
+          </svg>
+          <span className="meta" style={{ color: 'rgba(255,255,255,0.82)' }}>
+            <b>{t('progressTotal', { done: completedCount, total: totalCount })}</b><br />
+            {streak > 0 ? `🔥 ${t('streakHint', { days: streak })}` : t('completedPct', { progress: Math.round(progressPct) })}
+          </span>
+        </div>
+        <div className="rail-foot">
+          <button type="button" className="rail-item" onClick={() => setShowSettings(true)}>
+            <Settings size={19} aria-hidden="true" />{t('settings')}
+          </button>
+          <a href="/docs" className="rail-item">
+            <BookOpen size={19} aria-hidden="true" />{t('documentation')}
+          </a>
+          <button type="button" className="rail-item" onClick={() => setShowPasswordDialog(true)}>
+            <KeyRound size={19} aria-hidden="true" />{t('changePassword')}
+          </button>
+          <button type="button" className="rail-item" onClick={signOut}>
+            <LogOut size={19} aria-hidden="true" />{t('logout')}
+          </button>
+          <div style={{ padding: '8px 6px 0' }}>
+            <LanguageToggle t={t} lang={lang} setLang={setLang} />
+          </div>
+        </div>
+      </aside>
+
+      <div className="app-frame">
       {updateAvailable && (
         <div role="status" aria-live="polite" style={{ background: 'var(--success)', color: 'white', textAlign: 'center', padding: '12px 16px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <span>{t('updateAvailable', { seconds: updateCountdown })}</span>
@@ -609,6 +644,27 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           </button>
         </div>
       )}
+
+      <header className="app-masthead">
+        <div className="masthead-watermark" aria-hidden="true">{currentWeek}</div>
+        <div className="masthead-top">
+          <div className="masthead-eyebrow">{t('weekOf', { week: currentWeek })} · {t('appTitle')}</div>
+          <button type="button" className="masthead-menu" aria-label={t('openMenu')} aria-expanded={showMenu} aria-haspopup="menu" onClick={() => setShowMenu(!showMenu)}>
+            <MoreHorizontal size={18} aria-hidden="true" />
+          </button>
+        </div>
+        <h1 className="masthead-title">{viewTitles[view] || t('appTitle')}</h1>
+        <div className="masthead-sub">{todayLine}</div>
+        <div className="masthead-stats">
+          <div className="masthead-stat"><div className="n tnum">{t('progressTotal', { done: completedCount, total: totalCount })}</div><div className="l">{t('status')}</div></div>
+          <div className="masthead-stat"><div className="n tnum">{Math.round(progressPct)}%</div><div className="l">{t('weekProgress')}</div></div>
+          {streak > 0 && <div className="masthead-stat"><div className="n tnum">🔥 {streak}</div><div className="l">{t('streakLabel')}</div></div>}
+          {syncing && <div className="masthead-stat" role="status" aria-live="polite"><div className="n" style={{ fontSize: '14px' }}>{t('sync')}</div></div>}
+        </div>
+        <div className="masthead-rail" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPct)} aria-label={t('progressLabel', { progress: Math.round(progressPct) })}>
+          <div style={{ width: `${progressPct}%` }} />
+        </div>
+      </header>
 
       {showMenu && (
         <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'var(--overlay)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
@@ -688,7 +744,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         </div>
       )}
 
-      <main id="main-content" className="view-main" style={{ padding: '20px 16px' }}>
+      <main id="main-content" className="view-main">
         <ErrorBoundary label={t('genericError')} reloadLabel={t('reloadPage')}>
           {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
           {view === 'agenda' && <AgendaView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
@@ -698,6 +754,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           {view === 'guide' && <GuideView currentWeek={currentWeek} t={t} />}
         </ErrorBoundary>
       </main>
+      </div>
 
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
       {showRecord && (
