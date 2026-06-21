@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, BarChart3, BookOpen, Calendar, Dumbbell, Home as HomeIcon, KeyRound, LogOut, Map, MoreHorizontal, Plus, RefreshCw, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, Calendar, Dumbbell, Home as HomeIcon, KeyRound, LogOut, Map, MoreHorizontal, Plus, RefreshCw, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PLAN_DATA } from '../lib/plan-data';
 import { DEFAULT_USER_SETTINGS, getAdaptiveAdvice, withDefaultSettings } from '../lib/insights';
@@ -10,10 +10,11 @@ import { makeT } from '../lib/i18n';
 import { getTodayString, addDaysString, formatDateShort, safeStorageGet, safeStorageSet } from '../lib/utils';
 import { computeStreak, computeProgress, upsertLogList } from '../lib/progress';
 import { Loading, Auth, LanguageToggle } from './components/auth';
-import { DashboardStrip, MeasurementBanner, TodayView, WeekView, PlanView, DayDetail } from './components/plan';
+import { DashboardStrip, MeasurementBanner, TodayView, AgendaView, GuideView, DayDetail } from './components/plan';
 import { CheckInView } from './components/checkin';
 import { InsightsView } from './components/insights';
 import { LogView, LogForm } from './components/logs';
+import { RecordSheet } from './components/RecordSheet';
 import { SettingsDialog, PasswordDialog } from './components/settings';
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
@@ -105,12 +106,16 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     if (typeof window === 'undefined') return 'today';
     let saved = null;
     try { saved = sessionStorage.getItem('workouts-view'); } catch { /* ignore */ }
-    return ['today', 'week', 'plan', 'checkin', 'insights', 'log'].includes(saved) ? saved : 'today';
+    // Migrate the pre-revamp 6-view keys onto the new IA.
+    const migrate = { week: 'agenda', plan: 'agenda', insights: 'progress' };
+    if (saved && migrate[saved]) saved = migrate[saved];
+    return ['today', 'agenda', 'checkin', 'progress', 'log', 'guide'].includes(saved) ? saved : 'today';
   });
   const [todayId, setTodayId] = useState(1);
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedMeasurementDate, setSelectedMeasurementDate] = useState(null);
   const [showLogForm, setShowLogForm] = useState(false);
+  const [showRecord, setShowRecord] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -496,7 +501,6 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const today = useMemo(() => PLAN_DATA.find(d => d.id === todayId) || PLAN_DATA[0], [todayId]);
   const currentWeek = today.week;
   const currentOverview = useMemo(() => getWeekOverview(currentWeek), [currentWeek]);
-  const weekDays = useMemo(() => PLAN_DATA.filter(d => d.week === currentWeek), [currentWeek]);
   const { done: completedCount, total: totalCount, pct: progressPct } = useMemo(() => computeProgress(completed), [completed]);
   const streak = useMemo(() => computeStreak(completed, todayString), [completed, todayString]);
   const dueMeasurement = useMemo(() => getDueMeasurementMoment(checkins, todayString), [checkins, todayString]);
@@ -609,7 +613,10 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       {showMenu && (
         <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'var(--overlay)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div role="menu" aria-label={t('openMenu')} onClick={e => e.stopPropagation()} onKeyDown={handleMenuKey} style={{ position: 'absolute', top: '70px', right: '20px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '8px', boxShadow: 'var(--shadow-lift)', border: '1px solid var(--line)', minWidth: '208px' }}>
-            <button type="button" role="menuitem" autoFocus onClick={() => { setShowMenu(false); setShowSettings(true); }} style={menuItemStyle}>
+            <button type="button" role="menuitem" autoFocus onClick={() => { setShowMenu(false); switchView('guide'); }} style={menuItemStyle}>
+              <Map size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('guide')}
+            </button>
+            <button type="button" role="menuitem" onClick={() => { setShowMenu(false); setShowSettings(true); }} style={menuItemStyle}>
               <Settings size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('settings')}
             </button>
             <a href="/docs" role="menuitem" onClick={() => setShowMenu(false)} style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', textDecoration: 'none', boxSizing: 'border-box' }}>
@@ -630,28 +637,47 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
 
       <nav className="app-nav" aria-label={t('mainNav')}>
         {[
-          { key: 'today',    label: t('navToday'),                       Icon: HomeIcon },
-          { key: 'week',     label: t('navWeek', { week: currentWeek }), Icon: Calendar },
-          { key: 'plan',     label: t('navPlan'),                        Icon: Map },
-          { key: 'checkin',  label: t('navMeasure'),                     Icon: Activity, badge: !!dueMeasurement },
-          { key: 'insights', label: t('navInsights'),                    Icon: BarChart3 },
-          { key: 'log',      label: t('navLog'),                         Icon: Dumbbell },
-        ].map(({ key, label, Icon, badge }) => (
-          <button
-            key={key}
-            type="button"
-            aria-current={view === key ? 'page' : undefined}
-            aria-label={badge ? `${label} — ${t('measurementDueShort')}` : undefined}
-            onClick={() => switchView(key)}
-            className={`app-nav-btn${view === key ? ' app-nav-btn--active' : ''}`}
-          >
-            <span className="nav-icon" style={{ position: 'relative' }} aria-hidden="true">
-              <Icon size={20} />
-              {badge && <span style={{ position: 'absolute', top: '-3px', right: '-5px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--action)', border: '2px solid var(--bg)' }} />}
-            </span>
-            <span className="nav-label">{label}</span>
-          </button>
-        ))}
+          { key: 'today',    label: t('navToday'),    Icon: HomeIcon },
+          { key: 'agenda',   label: t('navAgenda'),   Icon: Calendar },
+          { record: true },
+          { key: 'progress', label: t('navProgress'), Icon: BarChart3, parentFor: ['progress', 'checkin'] },
+          { key: 'log',      label: t('navLog'),      Icon: Dumbbell },
+        ].map((item) => {
+          if (item.record) {
+            return (
+              <button
+                key="record"
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={dueMeasurement ? `${t('navRecord')} — ${t('measurementDueShort')}` : t('navRecord')}
+                onClick={() => setShowRecord(true)}
+                className="app-nav-record"
+              >
+                <span className="record-disc" aria-hidden="true" style={{ position: 'relative' }}>
+                  <Plus size={24} />
+                  {dueMeasurement && <span style={{ position: 'absolute', top: '-1px', right: '-1px', width: '11px', height: '11px', borderRadius: '50%', background: 'var(--danger)', border: '2px solid var(--bg)' }} />}
+                </span>
+                <span className="nav-label">{t('navRecord')}</span>
+              </button>
+            );
+          }
+          const active = item.parentFor ? item.parentFor.includes(view) : view === item.key;
+          const { key, label, Icon } = item;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-current={active ? 'page' : undefined}
+              onClick={() => switchView(key)}
+              className={`app-nav-btn${active ? ' app-nav-btn--active' : ''}`}
+            >
+              <span className="nav-icon" aria-hidden="true">
+                <Icon size={20} />
+              </span>
+              <span className="nav-label">{label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <DashboardStrip today={today} overview={currentOverview} progressPct={progressPct} dueMeasurement={dueMeasurement} t={t} />
@@ -665,15 +691,26 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       <main id="main-content" className="view-main" style={{ padding: '20px 16px' }}>
         <ErrorBoundary label={t('genericError')} reloadLabel={t('reloadPage')}>
           {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
-          {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
-          {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
+          {view === 'agenda' && <AgendaView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
           {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
-          {view === 'insights' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
+          {view === 'progress' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
           {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
+          {view === 'guide' && <GuideView currentWeek={currentWeek} t={t} />}
         </ErrorBoundary>
       </main>
 
       {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} completed={completed} toggleComplete={toggleComplete} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
+      {showRecord && (
+        <RecordSheet
+          onClose={() => setShowRecord(false)}
+          onLogWorkout={() => { setShowRecord(false); setEditingLog(null); setShowLogForm(true); }}
+          onLogMeasurement={() => { setShowRecord(false); openMeasurement(dueMeasurement?.date); }}
+          onMarkToday={() => { setShowRecord(false); if (!completed[today.id]) toggleComplete(today.id); }}
+          todayTitle={today.title}
+          todayComplete={!!completed[today.id]}
+          t={t}
+        />
+      )}
       {showLogForm && <LogForm onSave={editingLog ? updateLog : saveLog} onClose={() => { setShowLogForm(false); setEditingLog(null); }} todayPlan={today} initialLog={editingLog} settings={settings} t={t} />}
       {showSettings && <SettingsDialog settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} t={t} />}
       {showPasswordDialog && (
@@ -684,9 +721,6 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         />
       )}
 
-      <button type="button" aria-label={t('fabAddWorkout')} className="fab" onClick={() => setShowLogForm(true)}>
-        <Plus size={30} aria-hidden="true" />
-      </button>
     </div>
   );
 }

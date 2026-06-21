@@ -299,14 +299,9 @@ export function AllView({ completed, toggleComplete, onSelectDay, cyclingWeather
   );
 }
 
-export function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, cyclingWeather, t }) {
-  const [section, setSection] = useState('days');
+// Agenda — week focus + the full 6-week plan. The reference manual moved to Gids.
+export function AgendaView({ completed, toggleComplete, onSelectDay, currentWeek, cyclingWeather, t }) {
   const overview = getWeekOverview(currentWeek);
-  const sections = [
-    { key: 'days', label: t('days') }, { key: 'zones', label: t('zones') },
-    { key: 'food', label: t('nutrition') }, { key: 'strength', label: t('strength') },
-    { key: 'tips', label: t('tips') },
-  ];
   return (
     <div>
       <InfoCard style={{ background: 'var(--surface-2)', borderLeft: '4px solid var(--accent)' }}>
@@ -318,9 +313,31 @@ export function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, 
           <MetricTile icon={Flame} label={t('nutrition')} value={`${overview.kcal} kcal`} />
         </div>
       </InfoCard>
-      <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} idBase="plan" />
-      <div role="tabpanel" id={`plan-panel-${section}`} aria-labelledby={`plan-tab-${section}`} tabIndex={0}>
-        {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />}
+      <div className="route-strip" aria-hidden="true" style={{ margin: '14px 4px' }}>
+        <span className="route-line" />
+      </div>
+      <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />
+    </div>
+  );
+}
+
+// Gids — the reference manual (zones, nutrition, strength, tips), reachable from
+// the header menu now that Agenda holds the calendar.
+export function GuideView({ currentWeek, t }) {
+  const [section, setSection] = useState('zones');
+  const sections = [
+    { key: 'zones', label: t('zones') },
+    { key: 'food', label: t('nutrition') }, { key: 'strength', label: t('strength') },
+    { key: 'tips', label: t('tips') },
+  ];
+  return (
+    <div>
+      <InfoCard style={{ background: 'var(--surface-2)', borderLeft: '4px solid var(--accent)' }}>
+        <div className="signal-kicker signal-kicker--accent">{t('guide')}</div>
+        <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.5 }}>{t('guideSub')}</div>
+      </InfoCard>
+      <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} idBase="guide" />
+      <div role="tabpanel" id={`guide-panel-${section}`} aria-labelledby={`guide-tab-${section}`} tabIndex={0}>
         {section === 'zones' && <ZonesSection t={t} />}
         {section === 'food' && <NutritionSection currentWeek={currentWeek} t={t} />}
         {section === 'strength' && <StrengthSection t={t} />}
@@ -334,11 +351,11 @@ function ZonesSection({ t }) {
   return (
     <div>
       <SectionTitle title={t('heartZones')} subtitle={t('heartZonesSub')} />
-      {HEART_ZONES.map(zone => (
-        <InfoCard key={zone.zone}>
+      {HEART_ZONES.map((zone, i) => (
+        <InfoCard key={zone.zone} style={{ borderLeft: `4px solid var(--zone-${Math.min(i + 1, 5)})` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--accent)' }}>{zone.zone}</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: `var(--zone-${Math.min(i + 1, 5)})` }}>{zone.zone}</div>
               <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{zone.feel}</div>
             </div>
             <div style={{ textAlign: 'right', fontSize: '13px', color: 'var(--muted)' }}>
