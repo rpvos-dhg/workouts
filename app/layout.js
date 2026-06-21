@@ -14,9 +14,14 @@ const bricolage = Bricolage_Grotesque({
   variable: '--font-display',
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://localhost:3000');
+
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: '6-Weken Plan',
-  description: 'Jouw persoonlijke trainingsplan',
+  description: 'Jouw persoonlijke trainingsplan: dagplanning, logs, metingen, trends, fietsweer en reminders.',
+  applicationName: '6-Weken Plan',
   manifest: '/manifest.json',
   icons: {
     icon: [
@@ -30,12 +35,26 @@ export const metadata = {
     statusBarStyle: 'black-translucent',
     title: '6-Weken',
   },
+  // Private, auth-gated app — keep it out of search indexes.
+  robots: { index: false, follow: false },
+  openGraph: {
+    type: 'website',
+    title: '6-Weken Plan',
+    description: 'Persoonlijk trainingsplan met dagplanning, logs, metingen, trends en fietsweer.',
+    siteName: '6-Weken Plan',
+  },
+  twitter: {
+    card: 'summary',
+    title: '6-Weken Plan',
+    description: 'Persoonlijk trainingsplan met dagplanning, logs, metingen, trends en fietsweer.',
+  },
   formatDetection: { telephone: false },
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover', // honour env(safe-area-inset-*) on notched devices
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#003a71' },
     { media: '(prefers-color-scheme: dark)',  color: '#002050' },

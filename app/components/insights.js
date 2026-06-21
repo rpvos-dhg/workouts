@@ -23,7 +23,7 @@ export function InsightsView({ logs, checkins, completed, settings, adaptiveAdvi
     <div className="dashboard-grid">
       <div>
         <InfoCard className="hero-card">
-          <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('insights')}</div>
+          <div className="signal-kicker signal-kicker--accent">{t('insights')}</div>
           <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '24px', fontWeight: 800, marginTop: '6px', color: 'var(--ink)' }}>{adaptiveAdvice.title}</div>
           <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px' }}>{adaptiveAdvice.items[0]}</div>
           <div className="metric-grid" style={{ marginTop: '14px' }}>
@@ -42,7 +42,7 @@ export function InsightsView({ logs, checkins, completed, settings, adaptiveAdvi
       <aside className="side-panel">
         <TrendCard title={t('weekProgress')} unit="%" points={stats.weekProgress} color="var(--accent)" t={t} />
         <InfoCard>
-          <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('settings')}</div>
+          <div className="signal-kicker signal-kicker--accent">{t('settings')}</div>
           <SimpleList items={[
             `${t('kcalGoal')}: ${withDefaultSettings(settings).kcal_target}`,
             `${t('proteinGoal')}: ${withDefaultSettings(settings).protein_target}g`,

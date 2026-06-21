@@ -5,6 +5,8 @@
 **Date:** 2026-06-21.
 **Skill applied:** [Dammyjay93/interface-design](https://github.com/Dammyjay93/interface-design) (craft-first interface-design discipline) — used as the lens for the UI/visual findings.
 
+> **Round 2 (follow-up PR):** the previously-documented 🟡/🔵 recommendations have now been implemented, along with a design-system refresh. See **[Round 2 — recommendations implemented](#round-2--recommendations-implemented)** at the end. The design direction is captured in [`.interface-design/system.md`](../.interface-design/system.md).
+
 ## How to read this
 
 Each finding has a severity, an **impact** (what degrades for the user) and a concrete **fix**. Items marked **[fixed]** were implemented in this PR. 🔴 Critical and 🟠 High items are implemented; 🟡 Medium and 🔵 Low are documented recommendations unless trivially co-located with a fix.
@@ -202,3 +204,112 @@ Each finding has a severity, an **impact** (what degrades for the user) and a co
   - Colour-contrast borderline greens (§4) — verify with a contrast checker at rendered size on a real display (light + dark mode).
   - PWA installability / maskable icon (§7) — verify via Lighthouse PWA audit.
 - **Not changed (left as documented recommendations):** ARIA menu/tabs patterns, CSP, i18n string sweep, `completedPct` denominator, README — these are either larger refactors or product decisions and are out of scope for a minimal, low-risk PR.
+
+---
+
+## Round 2 — recommendations implemented
+
+A follow-up PR (branch `claude/design-refresh-and-recommendations`) implements the
+remaining 🟡/🔵 recommendations plus a design-system refresh. Verified: `npm test`
+22/22, `next build` green **with and without** Supabase env.
+
+### Retraction
+- **§1.8 `completedPct` denominator — withdrawn.** On re-examination, *every* day
+  type (including `check`) can be marked complete via the toggle circle in
+  `DayCard`, so 100% is reachable. The denominator (`PLAN_DATA.length`) is correct;
+  no change made.
+
+### Design system refresh (interface-design skill) — [done]
+- Added a real **spacing scale** (`--space-1..10`, 4px base) and **type scale**
+  (`--text-caption..display`, 1.25 ratio) and a **radius scale** (`--radius-sm..xl`).
+- Committed to a single **depth strategy** (soft shadows + 1px borders) and removed
+  the dead `--copper` alias.
+- **Tabular numerals** (`.tnum`) on dynamic figures (header progress/streak, log
+  stats, metric tiles, trend values, route km).
+- **`text-wrap: balance`** on headings, **`pretty`** on paragraphs; optical
+  letter-spacing on large type.
+- **Hover effects isolated** to `@media (hover: hover)` (no sticky hover on touch).
+- Tactile **press feedback** on nav icons.
+- Design direction persisted in `.interface-design/system.md`.
+
+### Accessibility — [done]
+- **§4 contrast:** `--success` darkened `#2e7d57 → #157347` to clear AA (≥4.5:1) for
+  white text on green buttons.
+- **§4 ARIA tabs:** `Segmented` now has roving tabindex + Arrow/Home/End keys and
+  `aria-controls`; Plan content wrapped in `role="tabpanel"` linked to its tab.
+- **§4 ARIA menu:** header dropdown supports Arrow/Home/End roving focus.
+- **§4 charts:** trend charts get a descriptive, translatable `aria-label`
+  (title + latest value + delta) instead of a generic one.
+- **§4 hit areas:** modal close and toast buttons raised to 44×44px.
+
+### i18n — [done]
+- Hard-coded Dutch strings routed through `t()`: dashboard/menu/chart/toast/confirm/
+  error-boundary ARIA + labels.
+- Date formatting is locale-aware via `t('localeTag')` (`nl-NL`/`en-GB`) using new
+  `formatDate`/`parseLocalDate` helpers.
+
+### Functional / robustness — [done]
+- **§1.9 initial load:** `Promise.all` errors are caught → red retry banner +
+  toast instead of silent empty data.
+- **§1.10 storage safety:** `localStorage`/`sessionStorage` reads/writes wrapped
+  (`safeStorageGet/Set`) against quota/private-mode throws.
+- **§1.11 CSV injection:** every cell escaped via `escapeCsvValue` (neutralises
+  `= + - @` formula prefixes).
+- **§2 undo:** deleting a log shows an **Undo** toast that re-creates it.
+- Extracted streak/progress/log-dedupe into `lib/progress.js` (unit-tested).
+- Fixed a latent ESM bug: `lib/utils.js` imported `./i18n` without the `.js`
+  extension (worked in webpack, broke Node ESM).
+
+### PWA / SEO / security — [done]
+- **§7 manifest:** dropped `maskable` from the SVG icon (PNG 512 remains maskable).
+- **§7 viewport:** added `viewportFit: 'cover'` for notched devices.
+- **§8 CSP + headers:** `next.config.js` now sends `X-Content-Type-Options`,
+  `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, and a **Report-Only**
+  CSP (won't break Supabase realtime/OAuth/Open-Meteo; ready to enforce after
+  browser validation).
+- **§10 SEO:** added Open Graph / Twitter / `metadataBase` / `robots: noindex`
+  (private app) to `layout.js`.
+
+### Code quality — [done]
+- Added `README.md` (setup, env table, scripts, layout).
+- New tests: `tests/progress.test.mjs`, `tests/utils.test.mjs` (streak edge cases,
+  dedupe, date helpers, CSV escaping).
+
+### Round 3 — CSP enforced + style extraction [done]
+- **CSP now enforced** — `next.config.js` ships `Content-Security-Policy` (was
+  Report-Only) plus `upgrade-insecure-requests`. Verified the header (and the four
+  hardening headers) are emitted at runtime via `next start` + `curl -D`. Kept
+  `'unsafe-inline'` for script/style (Next bootstrap + inline styles need it absent
+  a nonce pipeline); `connect-src` allows Supabase REST + realtime websockets.
+- **Inline-style extraction** — the repeated `className="signal-kicker"
+  style={{ color: 'var(--accent-strong)' }}` (10 sites across 5 files) replaced
+  with a `.signal-kicker--accent` modifier class. Identical rendering, no inline
+  override.
+
+### Round 4 — finishing the remaining items
+
+- **Offline fallback page — [done].** Added `app/offline/page.js` (brand-styled),
+  precached in the service worker, and used as the navigation fallback when both
+  network and cache miss. `CACHE_NAME` bumped to `workouts-shell-v3`.
+- **Inline-style extraction (eyebrows) — [done].** Extracted the repeated
+  `11px/800/uppercase/0.08em` caption into a `.eyebrow` class and applied it to the
+  four exact-match sites in `plan.js` (colour/opacity/margin stay inline where they
+  vary). Remaining uppercase labels are genuine one-offs or already single-definition
+  components (`SectionTitle`, `MetricTile`) — left inline, which is correct per the
+  design discipline (extract repetition, not one-offs).
+- **Nonce-based CSP to drop `'unsafe-inline'` — attempted, reverted (won't fix).**
+  Implemented a middleware that sets a per-request `script-src 'nonce-…'
+  'strict-dynamic'`. **Verified via `next start` + `curl` that it blanks the app:**
+  the served `/` HTML had 16 `<script>` tags with **0 nonces**, because the root is a
+  static client shell prerendered at build time — the per-request nonce never reaches
+  the baked script tags, so `'strict-dynamic'` blocks every script. Making it work
+  needs forcing all pages to dynamic rendering (loses static prerender) with
+  uncertain Turbopack nonce propagation, for low real gain: the app has **no
+  HTML-injection sinks** (no `dangerouslySetInnerHTML` anywhere), so `'unsafe-inline'`
+  on `script-src` is low-risk here. Kept the working enforced CSP from Round 3.
+
+### Still open (documented, not done)
+- A true nonce/hash CSP that drops `'unsafe-inline'` would require (a) converting the
+  app's inline `style={{…}}` attributes to classes (style nonces don't cover
+  attributes) and (b) forcing dynamic rendering for script nonces. Large refactor;
+  not worthwhile until inline styles are largely removed.
