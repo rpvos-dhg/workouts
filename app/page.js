@@ -205,7 +205,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'workout_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setLogs(prev => [payload.new, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+          // Dedupe: the optimistic insert in saveLog may have already added this row.
+          setLogs(prev => prev.some(l => l.id === payload.new.id) ? prev : [payload.new, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
         } else if (payload.eventType === 'UPDATE') {
           setLogs(prev => prev.map(l => l.id === payload.new.id ? payload.new : l));
         } else if (payload.eventType === 'DELETE') {
@@ -274,16 +275,23 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
 
   const toggleComplete = async (id) => {
     setSyncing(true);
-    if (completed[id]) {
-      const next = { ...completed };
-      delete next[id];
-      setCompleted(next);
-      const { error } = await supabase.from('completions').delete().eq('user_id', user.id).eq('day_id', id);
-      if (error) { setCompleted(completed); toast.error(error.message); }
-    } else {
-      setCompleted({ ...completed, [id]: true });
-      const { error } = await supabase.from('completions').insert({ user_id: user.id, day_id: id });
-      if (error) { setCompleted(completed); toast.error(error.message); }
+    // Functional updates so rapid toggles and realtime events don't clobber each other via a stale closure.
+    const wasComplete = !!completed[id];
+    setCompleted(prev => {
+      const next = { ...prev };
+      if (wasComplete) delete next[id]; else next[id] = true;
+      return next;
+    });
+    const { error } = wasComplete
+      ? await supabase.from('completions').delete().eq('user_id', user.id).eq('day_id', id)
+      : await supabase.from('completions').insert({ user_id: user.id, day_id: id });
+    if (error) {
+      setCompleted(prev => {
+        const next = { ...prev };
+        if (wasComplete) next[id] = true; else delete next[id];
+        return next;
+      });
+      toast.error(error.message);
     }
     setSyncing(false);
   };
@@ -304,7 +312,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     setSyncing(true);
     const { data, error } = await supabase.from('workout_logs').insert(buildLogPayload(log)).select();
     if (error) { toast.error(error.message); }
-    else if (data) { setLogs([data[0], ...logs]); toast.success(t('saved')); }
+    else if (data) { setLogs(prev => prev.some(l => l.id === data[0].id) ? prev : [data[0], ...prev]); toast.success(t('saved')); }
     setSyncing(false);
     setShowLogForm(false);
   };
@@ -450,6 +458,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     for (const d of past) {
       if (d.type === 'rest') continue;
       if (completed[d.id]) count++;
+      // Today's workout being still open should not reset the streak earned on prior days.
+      else if (d.date === todayString) continue;
       else break;
     }
     return count;
@@ -486,7 +496,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       .catch(error => {
         if (error.name === 'AbortError') return;
         setCyclingWeather(current => ({ ...current, status: 'error', error: error.message }));
-        retryTimer = setTimeout(() => setWeatherRetry(n => n + 1), 5000);
+        // Cap automatic retries so a persistent failure can't loop forever (manual retry stays available).
+        if (weatherRetry < 3) retryTimer = setTimeout(() => setWeatherRetry(n => n + 1), 5000);
       });
     return () => { controller.abort(); clearTimeout(retryTimer); };
   }, [weatherRequestKey, weatherTimezone, weatherRetry]);
@@ -554,7 +565,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       {showMenu && (
         <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'var(--overlay)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div role="menu" aria-label={t('openMenu')} onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '70px', right: '20px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '8px', boxShadow: 'var(--shadow-lift)', border: '1px solid var(--line)', minWidth: '208px' }}>
-            <button type="button" role="menuitem" onClick={() => { setShowMenu(false); setShowSettings(true); }} style={menuItemStyle}>
+            <button type="button" role="menuitem" autoFocus onClick={() => { setShowMenu(false); setShowSettings(true); }} style={menuItemStyle}>
               <Settings size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('settings')}
             </button>
             <a href="/docs" role="menuitem" onClick={() => setShowMenu(false)} style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', textDecoration: 'none', boxSizing: 'border-box' }}>
@@ -586,6 +597,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
             key={key}
             type="button"
             aria-current={view === key ? 'page' : undefined}
+            aria-label={badge ? `${label} — ${t('measurementDueShort')}` : undefined}
             onClick={() => switchView(key)}
             className={`app-nav-btn${view === key ? ' app-nav-btn--active' : ''}`}
           >

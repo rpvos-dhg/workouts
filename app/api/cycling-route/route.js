@@ -10,17 +10,38 @@ function normalizeEmail(email = '') {
   return `${normalLocal}@${domain}`;
 }
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Lazily construct clients inside the handler so a missing env var returns a clean
+// 500 at request time instead of throwing while the route module is imported.
+let cachedClient = null;
+let cachedSupabaseAdmin = null;
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-);
+function getAnthropic() {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not configured');
+  if (!cachedClient) cachedClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return cachedClient;
+}
+
+function getSupabaseAdmin() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase admin is not configured');
+  }
+  if (!cachedSupabaseAdmin) {
+    cachedSupabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  }
+  return cachedSupabaseAdmin;
+}
 
 export async function POST(request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');
   if (!token) {
     return Response.json({ error: 'Niet ingelogd' }, { status: 401 });
+  }
+
+  let supabaseAdmin;
+  try {
+    supabaseAdmin = getSupabaseAdmin();
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 503 });
   }
 
   const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
@@ -96,7 +117,7 @@ Antwoord uitsluitend als JSON:
 }`;
 
   try {
-    const message = await client.messages.create({
+    const message = await getAnthropic().messages.create({
       model: 'claude-opus-4-7',
       max_tokens: 512,
       system: systemPrompt,

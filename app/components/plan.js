@@ -17,7 +17,7 @@ import {
   IconBadge, InfoCard, MetricTile, SectionTitle, Segmented, SimpleList, Tag,
 } from './ui';
 import { CyclingWeatherCard, getWeatherQualityLabel, WeatherConditionIcon } from './weather';
-import { CyclingRouteCard } from './route';
+import { CyclingRouteCard } from './cycling-route-card';
 import { ModalShell } from './ModalShell';
 
 export function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
@@ -123,7 +123,7 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
       <div className="info-card hero-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '24px', borderLeft: `4px solid ${isComplete ? 'var(--success)' : meta.color}` }}>
         <div style={{ marginBottom: '16px' }}>
           <div style={{ fontSize: '12px', color: meta.color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }).toUpperCase()}
+            {day.day.toUpperCase()} {new Date(`${day.date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }).toUpperCase()}
           </div>
           <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '26px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--ink)' }}>
             <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={48} iconSize={26} />
@@ -184,7 +184,7 @@ export function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, c
   const day = rawDay.type === 'check' ? { ...rawDay, title: getMeasurementTitle(rawDay.date) } : rawDay;
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
-  const dateStr = new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  const dateStr = new Date(`${day.date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
   const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
 
   return (
@@ -248,7 +248,7 @@ export function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeat
         <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={46} iconSize={24} />
         <div>
           <div style={{ fontSize: '12px', color: meta.color, fontWeight: 700, letterSpacing: '0.08em' }}>
-            {day.day.toUpperCase()} {new Date(day.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
+            {day.day.toUpperCase()} {new Date(`${day.date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
           </div>
           <div id="day-detail-title" style={{ fontSize: '24px', fontWeight: 800, color: 'var(--ink)' }}>{day.title}</div>
         </div>
