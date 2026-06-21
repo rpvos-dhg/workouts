@@ -572,7 +572,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     <div className="app-shell">
       <a href="#main-content" className="skip-link">{t('skipToContent')}</a>
 
-      <aside className="app-rail" aria-label={t('mainNav')}>
+      <div className="app-rail">
         <div className="rail-brand">
           <span className="mark" aria-hidden="true" style={{ fontFamily: 'var(--font-display), sans-serif', fontWeight: 800, fontSize: '15px' }}>6W</span>
           <span className="txt">{t('appTitle')}<small>#{process.env.NEXT_PUBLIC_BUILD_ID || 'dev'}</small></span>
@@ -624,7 +624,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
             <LanguageToggle t={t} lang={lang} setLang={setLang} />
           </div>
         </div>
-      </aside>
+      </div>
 
       <div className="app-frame">
       {updateAvailable && (
