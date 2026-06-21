@@ -54,6 +54,11 @@ Nav active mapping: `checkin` highlights **Voortgang**; `guide` highlights nothi
 - **Phase 4 — Voortgang merge (done).** `MeasurementHistory` extracted from the
   check-in and folded into Voortgang under the trends; rows link back into the
   check-in form.
+- **Phase 5 — Cockpit shell (done).** Full spatial overhaul: desktop fixed navy
+  **left rail** (`.app-rail`) + content `.app-frame` replacing the desktop top
+  bar; **editorial masthead** with a giant week-number watermark, contextual
+  display headline, stat row and progress rail; mobile keeps the bottom tab bar +
+  centre Record. Shared `SectionTitle` upgraded to a road-sign tick marker.
 
 ## Guardrails
 

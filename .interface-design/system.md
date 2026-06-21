@@ -41,7 +41,10 @@ A craft reference for the workouts app. If you touch UI, read this first and hol
 - **Premium card** — ink/navy background, yellow top border; used for the dark stats block.
 - **Buttons** (`app/components/styles.js`): primary = navy fill / white / 44px min-height / `--radius`; ghost = surface + 2px line; small action = surface-2 + 1px line + accent text.
 - **Tabs** (`Segmented`) — roving tabindex, arrow/Home/End keys, `aria-controls` → `role="tabpanel"`.
-- **Nav** — mobile fixed bottom tab bar (yellow pip on active), desktop sticky top bar (navy fill on active). **4 tabs + centre Record (⊕):** a lifted yellow disc (`.app-nav-record`) opening the Record bottom-sheet (log workout · log measurement · mark today done). Replaces the old FAB.
+- **Cockpit shell** — desktop (≥800px) is a fixed navy **left rail** (`.app-rail`: brand, Record, nav, Gids, progress donut, settings/logout, language) beside the content `.app-frame`; the bottom tab bar is hidden. Below 800px it flips to the **mobile bottom tab bar**. One nav model, two spatial layouts.
+- **Editorial masthead** (`.app-masthead`) — a navy band with a giant faded **week-number watermark**, an eyebrow (week · plan), a display-scale **contextual headline** (the active view's name), a today-orientation sub-line, a stat row and a thick progress rail.
+- **Nav** — mobile fixed bottom tab bar (yellow pip on active) with the **centre Record (⊕)** lifted yellow disc (`.app-nav-record`) opening the Record bottom-sheet (log workout · log measurement · mark today done). Desktop uses the rail's Record button. Replaces the old FAB.
+- **Section marker** (`SectionTitle`) — a yellow road-sign tick + uppercase tracked label; the unified section divider across Guide, Voortgang and detail screens.
 - **Route-strip** (`.route-strip` + child `.route-line`) — a navy dashed rail capped with knooppunt dots; a section divider that makes the route metaphor literal.
 - **Route-profile** (`.route-profile`, `RouteProfile`) — a week rendered as an intensity ramp: bars sized by duration and coloured by the HR zone ramp on a knooppunt rail, today ringed and done days faded. On Vandaag (this week) and Agenda (per week).
 

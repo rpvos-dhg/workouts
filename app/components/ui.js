@@ -59,9 +59,12 @@ export function InfoCard({ children, style, className = '' }) {
 
 export function SectionTitle({ title, subtitle }) {
   return (
-    <div style={{ margin: '18px 4px 10px' }}>
-      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent-strong)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</div>
-      {subtitle && <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px', lineHeight: 1.4 }}>{subtitle}</div>}
+    <div style={{ margin: '22px 4px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span aria-hidden="true" style={{ width: '18px', height: '3px', borderRadius: '999px', background: 'var(--action)', flex: '0 0 auto' }} />
+        <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--accent-strong)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{title}</div>
+      </div>
+      {subtitle && <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.45, paddingLeft: '28px' }}>{subtitle}</div>}
     </div>
   );
 }
