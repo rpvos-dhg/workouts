@@ -230,18 +230,16 @@ input, textarea {
   align-items: stretch;
   background: rgba(253, 252, 247, 0.97);
   border-top: 1px solid var(--line);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 2px);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow:
     0 -1px 0 rgba(0,58,113,0.06),
     0 -4px 20px rgba(0,58,113,0.07);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.app-nav::-webkit-scrollbar {
-  display: none;
+  /* The five items fit without scrolling; keep overflow visible so the lifted
+     Record disc and its badge aren't clipped (overflow-x:auto would force
+     overflow-y to clip the part that sticks up above the bar). */
+  overflow: visible;
 }
 
 .app-nav-btn {
