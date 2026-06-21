@@ -98,7 +98,7 @@ export function MeasurementBanner({ moment, onOpen, t }) {
     <InfoCard style={{ borderLeft: '4px solid var(--action)', marginBottom: 0, background: 'var(--warn-tint)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: '11px', color: 'var(--warn)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <div className="eyebrow" style={{ color: 'var(--warn)' }}>
             {isOverdue ? t('measurementOpen') : t('measurementToday')}
           </div>
           <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px', color: 'var(--ink)' }}>{moment.title}</div>
@@ -153,7 +153,7 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
 
       <div className="side-panel">
         <div className="premium-card" style={{ borderRadius: 'var(--radius-lg)', padding: '18px' }}>
-          <div style={{ fontSize: '11px', opacity: 0.78, fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.08em' }}>{t('dayGoals')}</div>
+          <div className="eyebrow" style={{ opacity: 0.78, marginBottom: '10px' }}>{t('dayGoals')}</div>
           <div className="metric-grid">
             <MetricTile icon={Flame} label="Kcal" value={overview.kcal} />
             <MetricTile icon={Dumbbell} label={t('protein')} value="130g" />
@@ -165,7 +165,7 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
         {day.type === 'cycle' && <CyclingRouteCard day={day} cycleLogs={logs} userEmail={userEmail} t={t} />}
         <DailyHabitCard day={day} habit={habit} settings={settings} onToggle={(patch) => saveDailyHabit(habit.date, patch)} t={t} />
         <div className="info-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '18px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.08em' }}>{t('rememberToday')}</div>
+          <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: '10px' }}>{t('rememberToday')}</div>
           <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--muted)', lineHeight: 1.7 }}>
             <li>{t('proteinReminder')}</li>
             <li>{t('waterReminder')}</li>
@@ -419,7 +419,7 @@ function StrengthTable({ title, rows, t }) {
           <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px', lineHeight: 1.5 }}>{exercise.notes}</div>
           {exercise.steps && (
             <div style={{ marginTop: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>{t('execution')}</div>
+              <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: '8px' }}>{t('execution')}</div>
               <SimpleList items={exercise.steps} />
             </div>
           )}

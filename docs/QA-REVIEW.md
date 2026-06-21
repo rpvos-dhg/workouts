@@ -286,9 +286,30 @@ remaining 🟡/🔵 recommendations plus a design-system refresh. Verified: `npm
   with a `.signal-kicker--accent` modifier class. Identical rendering, no inline
   override.
 
+### Round 4 — finishing the remaining items
+
+- **Offline fallback page — [done].** Added `app/offline/page.js` (brand-styled),
+  precached in the service worker, and used as the navigation fallback when both
+  network and cache miss. `CACHE_NAME` bumped to `workouts-shell-v3`.
+- **Inline-style extraction (eyebrows) — [done].** Extracted the repeated
+  `11px/800/uppercase/0.08em` caption into a `.eyebrow` class and applied it to the
+  four exact-match sites in `plan.js` (colour/opacity/margin stay inline where they
+  vary). Remaining uppercase labels are genuine one-offs or already single-definition
+  components (`SectionTitle`, `MetricTile`) — left inline, which is correct per the
+  design discipline (extract repetition, not one-offs).
+- **Nonce-based CSP to drop `'unsafe-inline'` — attempted, reverted (won't fix).**
+  Implemented a middleware that sets a per-request `script-src 'nonce-…'
+  'strict-dynamic'`. **Verified via `next start` + `curl` that it blanks the app:**
+  the served `/` HTML had 16 `<script>` tags with **0 nonces**, because the root is a
+  static client shell prerendered at build time — the per-request nonce never reaches
+  the baked script tags, so `'strict-dynamic'` blocks every script. Making it work
+  needs forcing all pages to dynamic rendering (loses static prerender) with
+  uncertain Turbopack nonce propagation, for low real gain: the app has **no
+  HTML-injection sinks** (no `dangerouslySetInnerHTML` anywhere), so `'unsafe-inline'`
+  on `script-src` is low-risk here. Kept the working enforced CSP from Round 3.
+
 ### Still open (documented, not done)
-- Extracting the *remaining* varied eyebrow/caption inline styles into shared
-  components/classes (incremental; values differ per use, so done case-by-case).
-- A dedicated offline fallback page (SW currently falls back to the cached shell).
-- If a stricter CSP is wanted, move to a nonce-based pipeline (middleware) to drop
-  `'unsafe-inline'` — larger change, needs the inline `style={{…}}` usage reduced first.
+- A true nonce/hash CSP that drops `'unsafe-inline'` would require (a) converting the
+  app's inline `style={{…}}` attributes to classes (style nonces don't cover
+  attributes) and (b) forcing dynamic rendering for script nonces. Large refactor;
+  not worthwhile until inline styles are largely removed.

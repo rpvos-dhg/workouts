@@ -1,5 +1,5 @@
-const CACHE_NAME = 'workouts-shell-v2';
-const SHELL_ASSETS = ['/', '/manifest.json', '/icon.png', '/icon.svg'];
+const CACHE_NAME = 'workouts-shell-v3';
+const SHELL_ASSETS = ['/', '/offline', '/manifest.json', '/icon.png', '/icon.svg'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -39,7 +39,7 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(() => caches.match(request).then(cached => cached || caches.match('/')))
+        .catch(() => caches.match(request).then(cached => cached || caches.match('/offline') || caches.match('/')))
     );
     return;
   }

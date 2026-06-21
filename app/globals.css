@@ -494,6 +494,15 @@ input, textarea {
   color: var(--accent-strong);
 }
 
+/* Uppercase caption/eyebrow — extracts the repeated 11px/800/0.08em label.
+   Colour, opacity and margin stay inline where they vary per use. */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .signal-value {
   color: var(--ink);
   font-size: clamp(15px, 2vw, 18px);
