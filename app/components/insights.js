@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { BarChart3, Gauge, HeartPulse } from 'lucide-react';
 import { calculateTrendStats, withDefaultSettings } from '../../lib/insights';
 import { InfoCard, SectionTitle, MetricTile, SimpleList, TrendCard } from './ui';
+import { MeasurementHistory } from './checkin';
 
 export function InsightsView({ logs, checkins, completed, settings, adaptiveAdvice, t }) {
   const stats = useMemo(() => calculateTrendStats({ logs, checkins, completed }), [logs, checkins, completed]);
@@ -50,6 +51,17 @@ export function InsightsView({ logs, checkins, completed, settings, adaptiveAdvi
           ]} />
         </InfoCard>
       </aside>
+    </div>
+  );
+}
+
+// Voortgang — trends + the merged measurement history (Phase 4). Records link
+// back into the check-in form via onOpenMeasurement.
+export function ProgressView({ logs, checkins, completed, settings, adaptiveAdvice, onOpenMeasurement, t }) {
+  return (
+    <div>
+      <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />
+      <MeasurementHistory checkins={checkins} onOpenMeasurement={onOpenMeasurement} t={t} />
     </div>
   );
 }

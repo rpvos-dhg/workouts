@@ -361,6 +361,48 @@ input, textarea {
   }
 }
 
+/* Route-profile — the week as an elevation/intensity ramp. Bars coloured by
+   the HR zone ramp sit on a knooppunt rail; today is ringed, done days fade. */
+.route-profile {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--line);
+}
+
+.route-profile-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.route-profile-bar {
+  width: 100%;
+  max-width: 22px;
+  border-radius: 4px 4px 0 0;
+  transition: opacity 160ms ease;
+}
+
+.route-profile-bar--today {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.route-profile-day {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.route-profile-day--today {
+  color: var(--accent);
+}
+
 /* Route-strip — signature navy roadbook line with knooppunt end-dots.
    A section divider / rail that makes the "route" metaphor literal. */
 .route-strip {

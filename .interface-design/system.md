@@ -43,6 +43,7 @@ A craft reference for the workouts app. If you touch UI, read this first and hol
 - **Tabs** (`Segmented`) — roving tabindex, arrow/Home/End keys, `aria-controls` → `role="tabpanel"`.
 - **Nav** — mobile fixed bottom tab bar (yellow pip on active), desktop sticky top bar (navy fill on active). **4 tabs + centre Record (⊕):** a lifted yellow disc (`.app-nav-record`) opening the Record bottom-sheet (log workout · log measurement · mark today done). Replaces the old FAB.
 - **Route-strip** (`.route-strip` + child `.route-line`) — a navy dashed rail capped with knooppunt dots; a section divider that makes the route metaphor literal.
+- **Route-profile** (`.route-profile`, `RouteProfile`) — a week rendered as an intensity ramp: bars sized by duration and coloured by the HR zone ramp on a knooppunt rail, today ringed and done days faded. On Vandaag (this week) and Agenda (per week).
 
 ## i18n
 

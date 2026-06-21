@@ -47,11 +47,13 @@ Nav active mapping: `checkin` highlights **Voortgang**; `guide` highlights nothi
 - **Phase 1 — Navigation + Record (this PR).** 4-tab + ⊕ nav, `RecordSheet`,
   `AgendaView`, `GuideView`; route `checkin`/`guide` as sub-views; move Gids to
   the header menu; retire FAB.
-- **Phase 2 — Vandaag as command centre.** Re-rank the Today hero, StatHero,
-  route-profile strip.
-- **Phase 3 — Agenda route profile.** Per-day intensity ramp + knooppunt rail.
-- **Phase 4 — Voortgang merge.** Fold measurement history + adaptive advice into
-  Voortgang alongside trends.
+- **Phase 2 — Vandaag as command centre (done).** Week route-profile strip at the
+  top of Today + an inline weather verdict chip in the hero for cycle days.
+- **Phase 3 — Agenda route profile (done).** Per-week `RouteProfile` (intensity
+  ramp on a knooppunt rail) above each week's day list.
+- **Phase 4 — Voortgang merge (done).** `MeasurementHistory` extracted from the
+  check-in and folded into Voortgang under the trends; rows link back into the
+  check-in form.
 
 ## Guardrails
 

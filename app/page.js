@@ -12,7 +12,7 @@ import { computeStreak, computeProgress, upsertLogList } from '../lib/progress';
 import { Loading, Auth, LanguageToggle } from './components/auth';
 import { DashboardStrip, MeasurementBanner, TodayView, AgendaView, GuideView, DayDetail } from './components/plan';
 import { CheckInView } from './components/checkin';
-import { InsightsView } from './components/insights';
+import { ProgressView } from './components/insights';
 import { LogView, LogForm } from './components/logs';
 import { RecordSheet } from './components/RecordSheet';
 import { SettingsDialog, PasswordDialog } from './components/settings';
@@ -693,7 +693,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
           {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
           {view === 'agenda' && <AgendaView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
           {view === 'checkin' && <CheckInView checkins={checkins} onSave={saveCheckin} currentWeek={currentWeek} dueMeasurement={dueMeasurement} selectedMeasurementDate={selectedMeasurementDate} t={t} />}
-          {view === 'progress' && <InsightsView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} t={t} />}
+          {view === 'progress' && <ProgressView logs={logs} checkins={checkins} completed={completed} settings={settings} adaptiveAdvice={adaptiveAdvice} onOpenMeasurement={openMeasurement} t={t} />}
           {view === 'log' && <LogView logs={logs} settings={settings} setShowLogForm={setShowLogForm} deleteLog={deleteLog} onEditLog={(log) => { setEditingLog(log); setShowLogForm(true); }} t={t} />}
           {view === 'guide' && <GuideView currentWeek={currentWeek} t={t} />}
         </ErrorBoundary>

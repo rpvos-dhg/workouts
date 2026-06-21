@@ -5,7 +5,7 @@ import { Activity, CheckCircle2, Clock3 } from 'lucide-react';
 import { MEASUREMENT_MOMENTS, getMeasurementMomentByDate, getMeasurementTitle, getSuggestedMeasurementMoment, isMeasurementCheckin } from '../../lib/plan-content';
 import { getAlarmSignals, checkinToForm, getTodayString, formatDateShort } from '../../lib/utils';
 import { getWeekOverview } from '../../lib/plan-content';
-import { InfoCard, SectionTitle, Tag, SimpleList, Field, MetricInput } from './ui';
+import { InfoCard, Tag, SimpleList, Field, MetricInput } from './ui';
 import { inputStyle, primaryButtonStyle } from './styles';
 
 function RatingPicker({ label, value, onChange }) {
@@ -147,19 +147,52 @@ export function CheckInView({ checkins, onSave, currentWeek, dueMeasurement, sel
           </div>
         </InfoCard>
 
-        <SectionTitle title={t('history')} />
-        {checkins.filter(isMeasurementCheckin).length === 0 ? (
-          <InfoCard><div style={{ fontSize: '13px', color: 'var(--muted)' }}>{t('noMeasurements')}</div></InfoCard>
-        ) : checkins.filter(isMeasurementCheckin).map(item => (
-          <InfoCard key={item.id || item.date}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{getMeasurementTitle(item.date)}</div>
-              <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '4px' }}>{formatDateShort(item.date)}</div>
-              <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{[item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && t('sleepShort', { hours: item.sleep_hours })].filter(Boolean).join(' · ')}</div>
-            </div>
-          </InfoCard>
-        ))}
+        <MeasurementHistory checkins={checkins} t={t} />
       </aside>
     </div>
+  );
+}
+
+// Measurement history list. Reused on Voortgang (Phase 4) where each row links
+// back into the check-in form via onOpenMeasurement.
+export function MeasurementHistory({ checkins, onOpenMeasurement, t }) {
+  const items = checkins.filter(isMeasurementCheckin);
+  return (
+    <section aria-label={t('measurementHistory')}>
+      <div className="route-strip" aria-hidden="true" style={{ margin: '20px 4px 14px' }}>
+        <span className="route-line" />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', margin: '0 4px 12px' }}>
+        <div className="signal-kicker signal-kicker--accent">{t('measurementHistory')}</div>
+        {onOpenMeasurement && (
+          <button type="button" onClick={() => onOpenMeasurement()} style={{ border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--accent-strong)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', minHeight: '40px' }}>
+            {t('recordMeasurement')}
+          </button>
+        )}
+      </div>
+      {items.length === 0 ? (
+        <InfoCard><div style={{ fontSize: '13px', color: 'var(--muted)' }}>{t('noMeasurements')}</div></InfoCard>
+      ) : items.map(item => {
+        const summary = [item.weight_kg && `${item.weight_kg} kg`, item.waist_cm && `${item.waist_cm} cm`, item.sleep_hours && t('sleepShort', { hours: item.sleep_hours })].filter(Boolean).join(' · ');
+        const body = (
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{getMeasurementTitle(item.date)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '4px' }}>{formatDateShort(item.date, t('localeTag'))}</div>
+            </div>
+            {summary && <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{summary}</div>}
+          </div>
+        );
+        return (
+          <InfoCard key={item.id || item.date} style={onOpenMeasurement ? { padding: 0 } : undefined}>
+            {onOpenMeasurement ? (
+              <button type="button" onClick={() => onOpenMeasurement(item.date)} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '16px', cursor: 'pointer', color: 'inherit', minHeight: '44px' }}>
+                {body}
+              </button>
+            ) : body}
+          </InfoCard>
+        );
+      })}
+    </section>
   );
 }
