@@ -117,9 +117,18 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
   const isComplete = !!completed[day.id];
   const measurementMoment = day.type === 'check' ? getMeasurementMomentByDate(day.date) : null;
   const title = measurementMoment?.title || day.title;
+  const weekDays = PLAN_DATA.filter(d => d.week === day.week);
+  const heroWeather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
 
   return (
     <div className="dashboard-grid">
+      <div>
+      <div className="info-card" style={{ padding: '16px 18px', marginBottom: '16px' }}>
+        <div className="signal-kicker signal-kicker--accent">{t('weekRoute')}</div>
+        <div style={{ marginTop: '12px' }}>
+          <RouteProfile days={weekDays} completed={completed} todayId={day.id} t={t} />
+        </div>
+      </div>
       <div className="info-card hero-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '24px', borderLeft: `4px solid ${isComplete ? 'var(--success)' : meta.color}` }}>
         <div style={{ marginBottom: '16px' }}>
           <div style={{ fontSize: '12px', color: meta.color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -135,6 +144,12 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
           {day.hr && <Tag icon={HeartPulse} label={`HR ${day.hr}`} bg="var(--danger-tint)" color="var(--danger)" />}
           {day.speed && <Tag icon={Gauge} label={day.speed} bg="var(--info-tint)" color="var(--accent)" />}
           {day.target && <Tag icon={Target} label={day.target} bg="var(--warn-tint)" color="var(--warn)" />}
+          {heroWeather && (
+            <span style={{ background: 'var(--info-tint)', color: 'var(--accent-strong)', padding: '6px 12px', borderRadius: '999px', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <WeatherConditionIcon weatherCode={heroWeather.weatherCode} isDay={heroWeather.isDay} size={14} />
+              {heroWeather.startTime}-{heroWeather.endTime} · {getWeatherQualityLabel(heroWeather.quality, t)}
+            </span>
+          )}
         </div>
         {day.desc && <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.5, marginBottom: '20px' }}>{day.desc}</div>}
         {measurementMoment && (
@@ -149,6 +164,7 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
         <button type="button" onClick={() => toggleComplete(day.id)} style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius)', border: 'none', background: isComplete ? 'var(--success)' : meta.color, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer', minHeight: '44px' }}>
           {isComplete ? t('completed') : t('markComplete')}
         </button>
+      </div>
       </div>
 
       <div className="side-panel">
@@ -283,6 +299,7 @@ export function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum
 }
 
 export function AllView({ completed, toggleComplete, onSelectDay, cyclingWeather, t }) {
+  const todayId = (PLAN_DATA.find(d => d.date === getTodayString()) || {}).id;
   return (
     <div className="section-shell">
       {[...new Set(PLAN_DATA.map(d => d.week))].map(w => {
@@ -291,6 +308,9 @@ export function AllView({ completed, toggleComplete, onSelectDay, cyclingWeather
         return (
           <div key={w} style={{ marginBottom: '24px' }}>
             <div className="signal-kicker" style={{ color: 'var(--accent-strong)', margin: '0 4px 10px' }}>Week {w} · {compl}/{wd.length}</div>
+            <div style={{ margin: '0 4px 12px' }}>
+              <RouteProfile days={wd} completed={completed} todayId={todayId} t={t} ariaLabel={t('weekRouteProfile', { week: w })} />
+            </div>
             {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} compact t={t} />)}
           </div>
         );
@@ -299,14 +319,45 @@ export function AllView({ completed, toggleComplete, onSelectDay, cyclingWeather
   );
 }
 
-export function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, cyclingWeather, t }) {
-  const [section, setSection] = useState('days');
+// Effort level (0..4) → HR zone ramp colour. Drives the route profile so a
+// week's intensity reads by colour and bar height, not just labels.
+export function getDayIntensity(day) {
+  if (day.type === 'rest') return { level: 0, color: 'var(--muted-2)' };
+  if (day.type === 'check') return { level: 0, color: 'var(--accent)' };
+  if (day.type === 'goal') return { level: 4, color: 'var(--action)' };
+  if (day.type === 'walk') return { level: 1, color: 'var(--zone-1)' };
+  if (day.type === 'strength') return { level: 3, color: 'var(--zone-3)' };
+  // cycle: intensity from intent + duration
+  if (day.intense) return { level: 4, color: 'var(--zone-4)' };
+  if (day.big || day.dur >= 90) return { level: 3, color: 'var(--zone-3)' };
+  if (day.dur >= 60) return { level: 2, color: 'var(--zone-2)' };
+  return { level: 1, color: 'var(--zone-1)' };
+}
+
+export function RouteProfile({ days, completed, todayId, t, ariaLabel }) {
+  return (
+    <div className="route-profile" role="img" aria-label={ariaLabel || t('routeProfileLabel')}>
+      {days.map(day => {
+        const { level, color } = getDayIntensity(day);
+        const isToday = day.id === todayId;
+        const done = !!completed[day.id];
+        return (
+          <div key={day.id} className="route-profile-col" title={`${day.title} · ${day.dur > 0 ? `${day.dur} min` : t(day.type)}`}>
+            <div
+              className={`route-profile-bar${isToday ? ' route-profile-bar--today' : ''}`}
+              style={{ height: `${16 + level * 12}px`, background: color, opacity: done ? 0.4 : 1 }}
+            />
+            <span className={`route-profile-day${isToday ? ' route-profile-day--today' : ''}`}>{day.date.slice(8, 10)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Agenda — week focus + the full 6-week plan. The reference manual moved to Gids.
+export function AgendaView({ completed, toggleComplete, onSelectDay, currentWeek, cyclingWeather, t }) {
   const overview = getWeekOverview(currentWeek);
-  const sections = [
-    { key: 'days', label: t('days') }, { key: 'zones', label: t('zones') },
-    { key: 'food', label: t('nutrition') }, { key: 'strength', label: t('strength') },
-    { key: 'tips', label: t('tips') },
-  ];
   return (
     <div>
       <InfoCard style={{ background: 'var(--surface-2)', borderLeft: '4px solid var(--accent)' }}>
@@ -318,9 +369,31 @@ export function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, 
           <MetricTile icon={Flame} label={t('nutrition')} value={`${overview.kcal} kcal`} />
         </div>
       </InfoCard>
-      <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} idBase="plan" />
-      <div role="tabpanel" id={`plan-panel-${section}`} aria-labelledby={`plan-tab-${section}`} tabIndex={0}>
-        {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />}
+      <div className="route-strip" aria-hidden="true" style={{ margin: '14px 4px' }}>
+        <span className="route-line" />
+      </div>
+      <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />
+    </div>
+  );
+}
+
+// Gids — the reference manual (zones, nutrition, strength, tips), reachable from
+// the header menu now that Agenda holds the calendar.
+export function GuideView({ currentWeek, t }) {
+  const [section, setSection] = useState('zones');
+  const sections = [
+    { key: 'zones', label: t('zones') },
+    { key: 'food', label: t('nutrition') }, { key: 'strength', label: t('strength') },
+    { key: 'tips', label: t('tips') },
+  ];
+  return (
+    <div>
+      <InfoCard style={{ background: 'var(--surface-2)', borderLeft: '4px solid var(--accent)' }}>
+        <div className="signal-kicker signal-kicker--accent">{t('guide')}</div>
+        <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.5 }}>{t('guideSub')}</div>
+      </InfoCard>
+      <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} idBase="guide" />
+      <div role="tabpanel" id={`guide-panel-${section}`} aria-labelledby={`guide-tab-${section}`} tabIndex={0}>
         {section === 'zones' && <ZonesSection t={t} />}
         {section === 'food' && <NutritionSection currentWeek={currentWeek} t={t} />}
         {section === 'strength' && <StrengthSection t={t} />}
@@ -334,11 +407,11 @@ function ZonesSection({ t }) {
   return (
     <div>
       <SectionTitle title={t('heartZones')} subtitle={t('heartZonesSub')} />
-      {HEART_ZONES.map(zone => (
-        <InfoCard key={zone.zone}>
+      {HEART_ZONES.map((zone, i) => (
+        <InfoCard key={zone.zone} style={{ borderLeft: `4px solid var(--zone-${Math.min(i + 1, 5)})` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--accent)' }}>{zone.zone}</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: `var(--zone-${Math.min(i + 1, 5)})` }}>{zone.zone}</div>
               <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{zone.feel}</div>
             </div>
             <div style={{ textAlign: 'right', fontSize: '13px', color: 'var(--muted)' }}>

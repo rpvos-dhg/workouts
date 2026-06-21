@@ -84,6 +84,14 @@
   --text-h1:      28px;
   --text-display: clamp(30px, 6vw, 44px);
 
+  /* HR zone ramp — effort by colour (Z1 easy → Z5 max). Used by heart-rate
+     zones, ride intensity and the route profile. AA-large (≥3:1) on white. */
+  --zone-1: #5b7f99;   /* recovery */
+  --zone-2: #2f8f5b;   /* endurance — the Z2 home base */
+  --zone-3: #b8650a;   /* tempo */
+  --zone-4: #c2491e;   /* threshold */
+  --zone-5: #b23a48;   /* VO2max */
+
   /* Layout */
   --nav-h: 62px;
 }
@@ -302,6 +310,128 @@ input, textarea {
   background: var(--action);
 }
 
+/* Centre Record button — the single capture entry, replacing the FAB.
+   Yellow road-sign disc lifted above the tab bar. */
+.app-nav-record {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 8px 10px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--accent);
+  min-height: var(--nav-h);
+}
+
+.app-nav-record .record-disc {
+  width: 46px;
+  height: 46px;
+  margin-top: -16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--action-ink);
+  background: linear-gradient(135deg, #ffd84a 0%, var(--action) 100%);
+  border: 3px solid var(--bg);
+  box-shadow: 0 4px 16px rgba(255,204,0,0.42), 0 2px 6px rgba(0,58,113,0.18);
+  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.app-nav-record .nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-nav-record:active .record-disc {
+  transform: scale(0.94);
+  transition-duration: 80ms;
+}
+
+@media (hover: hover) {
+  .app-nav-record:hover .record-disc {
+    transform: scale(1.06);
+  }
+}
+
+/* Route-profile — the week as an elevation/intensity ramp. Bars coloured by
+   the HR zone ramp sit on a knooppunt rail; today is ringed, done days fade. */
+.route-profile {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--line);
+}
+
+.route-profile-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.route-profile-bar {
+  width: 100%;
+  max-width: 22px;
+  border-radius: 4px 4px 0 0;
+  transition: opacity 160ms ease;
+}
+
+.route-profile-bar--today {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.route-profile-day {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.route-profile-day--today {
+  color: var(--accent);
+}
+
+/* Route-strip — signature navy roadbook line with knooppunt end-dots.
+   A section divider / rail that makes the "route" metaphor literal. */
+.route-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.route-strip::before,
+.route-strip::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  flex: 0 0 auto;
+}
+
+.route-strip > .route-line {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(90deg, var(--accent) 0 12px, transparent 12px 20px);
+  opacity: 0.55;
+}
+
 /* Desktop: sticky top bar */
 @media (min-width: 800px) {
   .app-nav {
@@ -353,6 +483,28 @@ input, textarea {
   .app-nav-btn:not(.app-nav-btn--active):hover {
     background: var(--accent-tint);
     color: var(--accent);
+  }
+
+  /* Inline record button on the desktop top bar — no negative lift. */
+  .app-nav-record {
+    flex-direction: row;
+    gap: 8px;
+    padding: 6px 16px 6px 12px;
+    min-height: 42px;
+  }
+
+  .app-nav-record .record-disc {
+    width: 34px;
+    height: 34px;
+    margin-top: 0;
+    border-width: 0;
+    box-shadow: 0 2px 8px rgba(255,204,0,0.36);
+  }
+
+  .app-nav-record .nav-label {
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    text-transform: none;
   }
 }
 
@@ -951,6 +1103,12 @@ p {
     --shadow-soft: 0 1px 3px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.32);
     --shadow:      0 3px 14px rgba(0,0,0,0.55), 0 1px 4px rgba(0,0,0,0.38);
     --shadow-lift: 0 12px 36px rgba(0,0,0,0.68), 0 4px 12px rgba(0,0,0,0.42);
+    /* Zone ramp — brightened so effort still reads on deep navy. */
+    --zone-1: #7aa5c2;
+    --zone-2: #4ade80;
+    --zone-3: #f0a23a;
+    --zone-4: #ff8a5c;
+    --zone-5: #ff8a8a;
   }
 
   html {
