@@ -7,7 +7,8 @@ import { PLAN_DATA } from '../lib/plan-data';
 import { DEFAULT_USER_SETTINGS, getAdaptiveAdvice, withDefaultSettings } from '../lib/insights';
 import { getDueMeasurementMoment, getWeekOverview } from '../lib/plan-content';
 import { makeT } from '../lib/i18n';
-import { getTodayString, addDaysString, formatDateShort } from '../lib/utils';
+import { getTodayString, addDaysString, formatDateShort, safeStorageGet, safeStorageSet } from '../lib/utils';
+import { computeStreak, computeProgress, upsertLogList } from '../lib/progress';
 import { Loading, Auth, LanguageToggle } from './components/auth';
 import { DashboardStrip, MeasurementBanner, TodayView, WeekView, PlanView, DayDetail } from './components/plan';
 import { CheckInView } from './components/checkin';
@@ -25,12 +26,12 @@ export default function Home() {
   const [forcePasswordUpdate, setForcePasswordUpdate] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem('workouts-lang');
+    const saved = safeStorageGet('workouts-lang');
     if (saved === 'en' || saved === 'nl') setLang(saved);
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem('workouts-lang', lang);
+    safeStorageSet('workouts-lang', lang);
     document.documentElement.lang = lang;
   }, [lang]);
 
@@ -74,9 +75,9 @@ export default function Home() {
   if (loading) return <Loading t={t} />;
   if (!session) return <Auth t={t} lang={lang} setLang={setLang} />;
   return (
-    <ToastProvider>
-      <ConfirmProvider>
-        <ErrorBoundary label="Er ging iets mis in de app.">
+    <ToastProvider t={t}>
+      <ConfirmProvider t={t}>
+        <ErrorBoundary label={t('genericError')} reloadLabel={t('reloadPage')}>
           <App
             user={session.user}
             t={t}
@@ -102,7 +103,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const [settings, setSettings] = useState(DEFAULT_USER_SETTINGS);
   const [view, setView] = useState(() => {
     if (typeof window === 'undefined') return 'today';
-    const saved = sessionStorage.getItem('workouts-view');
+    let saved = null;
+    try { saved = sessionStorage.getItem('workouts-view'); } catch { /* ignore */ }
     return ['today', 'week', 'plan', 'checkin', 'insights', 'log'].includes(saved) ? saved : 'today';
   });
   const [todayId, setTodayId] = useState(1);
@@ -118,6 +120,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const [weatherRetry, setWeatherRetry] = useState(0);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateCountdown, setUpdateCountdown] = useState(10);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [dataReloadKey, setDataReloadKey] = useState(0);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -130,7 +134,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   }, [showMenu]);
 
   useEffect(() => {
-    sessionStorage.setItem('workouts-view', view);
+    try { sessionStorage.setItem('workouts-view', view); } catch { /* ignore */ }
   }, [view]);
 
   useEffect(() => {
@@ -172,24 +176,38 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   }, [forcePasswordUpdate]);
 
   useEffect(() => {
+    let active = true;
     const load = async () => {
-      const [{ data: completionsData }, { data: logsData }, { data: checkinData }, { data: settingsData }, { data: habitsData }] = await Promise.all([
-        supabase.from('completions').select('*').eq('user_id', user.id),
-        supabase.from('workout_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-        supabase.from('daily_checkins').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-        supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-      ]);
-      const compMap = {};
-      (completionsData || []).forEach(c => { compMap[c.day_id] = true; });
-      setCompleted(compMap);
-      setLogs(logsData || []);
-      setCheckins(checkinData || []);
-      setSettings(withDefaultSettings(settingsData || {}));
-      setHabits(habitsData || []);
+      try {
+        const results = await Promise.all([
+          supabase.from('completions').select('*').eq('user_id', user.id),
+          supabase.from('workout_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+          supabase.from('daily_checkins').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+          supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle(),
+          supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+        ]);
+        if (!active) return;
+        // Surface a hard failure (network/RLS) instead of silently showing empty data.
+        const firstError = results.find(r => r?.error)?.error;
+        if (firstError) throw firstError;
+        const [{ data: completionsData }, { data: logsData }, { data: checkinData }, { data: settingsData }, { data: habitsData }] = results;
+        const compMap = {};
+        (completionsData || []).forEach(c => { compMap[c.day_id] = true; });
+        setCompleted(compMap);
+        setLogs(logsData || []);
+        setCheckins(checkinData || []);
+        setSettings(withDefaultSettings(settingsData || {}));
+        setHabits(habitsData || []);
+        setLoadFailed(false);
+      } catch (error) {
+        if (!active) return;
+        setLoadFailed(true);
+        toast.error(t('loadError'));
+      }
     };
     load();
-  }, [user.id]);
+    return () => { active = false; };
+  }, [user.id, dataReloadKey]);
 
   useEffect(() => {
     const channel = supabase
@@ -206,7 +224,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       .on('postgres_changes', { event: '*', schema: 'public', table: 'workout_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
         if (payload.eventType === 'INSERT') {
           // Dedupe: the optimistic insert in saveLog may have already added this row.
-          setLogs(prev => prev.some(l => l.id === payload.new.id) ? prev : [payload.new, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+          setLogs(prev => upsertLogList(prev, payload.new));
         } else if (payload.eventType === 'UPDATE') {
           setLogs(prev => prev.map(l => l.id === payload.new.id ? payload.new : l));
         } else if (payload.eventType === 'DELETE') {
@@ -312,7 +330,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     setSyncing(true);
     const { data, error } = await supabase.from('workout_logs').insert(buildLogPayload(log)).select();
     if (error) { toast.error(error.message); }
-    else if (data) { setLogs(prev => prev.some(l => l.id === data[0].id) ? prev : [data[0], ...prev]); toast.success(t('saved')); }
+    else if (data) { setLogs(prev => upsertLogList(prev, data[0])); toast.success(t('saved')); }
     setSyncing(false);
     setShowLogForm(false);
   };
@@ -348,11 +366,41 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     });
     if (!ok) return;
     const previous = logs;
+    const removed = logs.find(l => l.id === id);
     setLogs(logs.filter(l => l.id !== id));
     const { error } = await supabase.from('workout_logs').delete().eq('id', id);
-    if (error) { setLogs(previous); toast.error(error.message); }
-    else toast.success(t('logDeleted'));
+    if (error) { setLogs(previous); toast.error(error.message); return; }
+    // Offer undo: re-create the row (a new id is assigned, which is fine).
+    toast.success(t('logDeleted'), removed ? {
+      action: {
+        label: t('undo'),
+        onClick: async () => {
+          const payload = buildLogPayload({
+            date: removed.date, type: removed.type, duration: removed.duration,
+            distance: removed.distance, avg_hr: removed.avg_hr, max_hr: removed.max_hr,
+            kcal: removed.kcal, notes: removed.notes,
+          });
+          const { data, error: reError } = await supabase.from('workout_logs').insert(payload).select();
+          if (reError) toast.error(reError.message);
+          else if (data) setLogs(prev => upsertLogList(prev, data[0]));
+        },
+      },
+    } : undefined);
   };
+
+  // Roving focus for the header dropdown (ARIA menu pattern).
+  const handleMenuKey = useCallback((e) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const items = Array.from(e.currentTarget.querySelectorAll('[role="menuitem"]'));
+    if (!items.length) return;
+    const current = items.indexOf(document.activeElement);
+    let next = 0;
+    if (e.key === 'ArrowDown') next = current < 0 ? 0 : (current + 1) % items.length;
+    else if (e.key === 'ArrowUp') next = current <= 0 ? items.length - 1 : current - 1;
+    else if (e.key === 'End') next = items.length - 1;
+    items[next].focus();
+  }, []);
 
   const switchView = useCallback((newView) => {
     scrollPositions.current[view] = window.scrollY;
@@ -449,21 +497,8 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
   const currentWeek = today.week;
   const currentOverview = useMemo(() => getWeekOverview(currentWeek), [currentWeek]);
   const weekDays = useMemo(() => PLAN_DATA.filter(d => d.week === currentWeek), [currentWeek]);
-  const completedCount = useMemo(() => Object.values(completed).filter(Boolean).length, [completed]);
-  const totalCount = PLAN_DATA.length;
-  const progressPct = useMemo(() => (completedCount / totalCount) * 100, [completedCount]);
-  const streak = useMemo(() => {
-    const past = PLAN_DATA.filter(d => d.date <= todayString).sort((a, b) => b.date.localeCompare(a.date));
-    let count = 0;
-    for (const d of past) {
-      if (d.type === 'rest') continue;
-      if (completed[d.id]) count++;
-      // Today's workout being still open should not reset the streak earned on prior days.
-      else if (d.date === todayString) continue;
-      else break;
-    }
-    return count;
-  }, [completed, todayString]);
+  const { done: completedCount, total: totalCount, pct: progressPct } = useMemo(() => computeProgress(completed), [completed]);
+  const streak = useMemo(() => computeStreak(completed, todayString), [completed, todayString]);
   const dueMeasurement = useMemo(() => getDueMeasurementMoment(checkins, todayString), [checkins, todayString]);
   const todayHabit = useMemo(() => habits.find(item => item.date === todayString) || { date: todayString }, [habits, todayString]);
   const adaptiveAdvice = useMemo(() => getAdaptiveAdvice({ today, completed, logs, checkins, settings, todayString }), [today, completed, logs, checkins, settings, todayString]);
@@ -506,12 +541,12 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
     if (!dueMeasurement || typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
     const storageKey = `measurement-notification-${dueMeasurement.key}-${dueMeasurement.date}`;
-    if (window.localStorage.getItem(storageKey)) return;
+    if (safeStorageGet(storageKey)) return;
     try {
       new Notification(`${t('navMeasure')}: ${dueMeasurement.title}`, {
-        body: `${formatDateShort(dueMeasurement.date)} · ${t('openMeasurement').toLowerCase()}.`,
+        body: `${formatDateShort(dueMeasurement.date, t('localeTag'))} · ${t('openMeasurement').toLowerCase()}.`,
       });
-      window.localStorage.setItem(storageKey, 'sent');
+      safeStorageSet(storageKey, 'sent');
     } catch { /* ignore */ }
   }, [dueMeasurement, t]);
 
@@ -528,14 +563,14 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
                 #{process.env.NEXT_PUBLIC_BUILD_ID || 'dev'}
               </span>
               {streak > 0 && (
-                <span style={{ fontSize: '13px', fontWeight: 700, opacity: 0.9 }} title={t('streakHint', { days: streak })}>
+                <span className="tnum" style={{ fontSize: '13px', fontWeight: 700, opacity: 0.9 }} title={t('streakHint', { days: streak })}>
                   🔥 {streak}
                 </span>
               )}
             </h1>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.16)', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
+            <div className="tnum" style={{ background: 'rgba(255,255,255,0.16)', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
               {t('progressTotal', { done: completedCount, total: totalCount })}
             </div>
             <button type="button" aria-label={t('openMenu')} aria-expanded={showMenu} aria-haspopup="menu" onClick={() => setShowMenu(!showMenu)} style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)', color: 'white', padding: '6px 12px', borderRadius: '999px', cursor: 'pointer', fontWeight: 600, minHeight: '40px', minWidth: '44px' }}>
@@ -562,9 +597,18 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
         </div>
       )}
 
+      {loadFailed && (
+        <div role="alert" style={{ background: 'var(--danger)', color: 'white', textAlign: 'center', padding: '12px 16px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <span>{t('loadError')}</span>
+          <button type="button" onClick={() => setDataReloadKey(n => n + 1)} style={{ background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '6px 14px', borderRadius: '999px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, minHeight: '36px' }}>
+            {t('retry')}
+          </button>
+        </div>
+      )}
+
       {showMenu && (
         <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'var(--overlay)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
-          <div role="menu" aria-label={t('openMenu')} onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '70px', right: '20px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '8px', boxShadow: 'var(--shadow-lift)', border: '1px solid var(--line)', minWidth: '208px' }}>
+          <div role="menu" aria-label={t('openMenu')} onClick={e => e.stopPropagation()} onKeyDown={handleMenuKey} style={{ position: 'absolute', top: '70px', right: '20px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '8px', boxShadow: 'var(--shadow-lift)', border: '1px solid var(--line)', minWidth: '208px' }}>
             <button type="button" role="menuitem" autoFocus onClick={() => { setShowMenu(false); setShowSettings(true); }} style={menuItemStyle}>
               <Settings size={16} aria-hidden="true" style={{ marginRight: '10px', color: 'var(--accent)' }} />{t('settings')}
             </button>
@@ -619,7 +663,7 @@ function App({ user, t, lang, setLang, forcePasswordUpdate, onPasswordUpdateHand
       )}
 
       <main id="main-content" className="view-main" style={{ padding: '20px 16px' }}>
-        <ErrorBoundary>
+        <ErrorBoundary label={t('genericError')} reloadLabel={t('reloadPage')}>
           {view === 'today' && <TodayView day={today} completed={completed} toggleComplete={toggleComplete} overview={currentOverview} onOpenMeasurement={openMeasurement} habit={todayHabit} saveDailyHabit={saveDailyHabit} adaptiveAdvice={adaptiveAdvice} settings={settings} cyclingWeather={cyclingWeather} onRetryWeather={() => setWeatherRetry(n => n + 1)} logs={logs} userEmail={user.email} t={t} />}
           {view === 'week' && <WeekView days={weekDays} completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} weekNum={currentWeek} cyclingWeather={cyclingWeather} t={t} />}
           {view === 'plan' && <PlanView completed={completed} toggleComplete={toggleComplete} onSelectDay={openDay} currentWeek={currentWeek} cyclingWeather={cyclingWeather} t={t} />}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BarChart3, Bike, Download, Dumbbell, Edit3, Flame, Footprints, Gauge, HeartPulse, Plus, Target, Trash2 } from 'lucide-react';
 import { getHeartZone } from '../../lib/insights';
-import { exportLogsCSV, getTodayString } from '../../lib/utils';
+import { exportLogsCSV, formatDate, getTodayString } from '../../lib/utils';
 import { InfoCard, Field, StatItem, MetricTile, SectionTitle } from './ui';
 import { inputStyle, smallActionStyle, ghostButtonStyle, primaryButtonStyle } from './styles';
 import { ModalShell } from './ModalShell';
@@ -45,10 +45,10 @@ export function LogView({ logs, settings, setShowLogForm, deleteLog, onEditLog, 
         <div className="premium-card" style={{ padding: '20px', borderRadius: 'var(--radius-lg)', marginBottom: '20px' }}>
           <div style={{ fontSize: '11px', opacity: 0.85, fontWeight: 800, letterSpacing: '0.1em' }}>{t('yourStats')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('workoutsLogged')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{logs.length}</div></div>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgSpeed')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{avgSpeed > 0 ? avgSpeed.toFixed(1) : '—'} <span style={{ fontSize: '14px', opacity: 0.7 }}>km/h</span></div></div>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgHr')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{avgHR > 0 ? Math.round(avgHR) : '—'} <span style={{ fontSize: '14px', opacity: 0.7 }}>bpm</span></div></div>
-            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('cycleRides')}</div><div style={{ fontSize: '24px', fontWeight: 800 }}>{cycleLogs.length}</div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('workoutsLogged')}</div><div className="tnum" style={{ fontSize: '24px', fontWeight: 800 }}>{logs.length}</div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgSpeed')}</div><div className="tnum" style={{ fontSize: '24px', fontWeight: 800 }}>{avgSpeed > 0 ? avgSpeed.toFixed(1) : '—'} <span style={{ fontSize: '14px', opacity: 0.7 }}>km/h</span></div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('avgHr')}</div><div className="tnum" style={{ fontSize: '24px', fontWeight: 800 }}>{avgHR > 0 ? Math.round(avgHR) : '—'} <span style={{ fontSize: '14px', opacity: 0.7 }}>bpm</span></div></div>
+            <div><div style={{ fontSize: '12px', opacity: 0.75 }}>{t('cycleRides')}</div><div className="tnum" style={{ fontSize: '24px', fontWeight: 800 }}>{cycleLogs.length}</div></div>
           </div>
         </div>
       )}
@@ -87,7 +87,7 @@ export function LogCard({ log, settings, deleteLog, onEditLog, t }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '11px', color: 'var(--muted-2)', fontWeight: 700, letterSpacing: '0.08em' }}>
-            {new Date(`${log.date}T12:00:00`).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
+            {formatDate(log.date, t('localeTag'), { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
           </div>
           <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '4px', color: 'var(--ink)' }}>
             {log.type === 'cycle' ? t('cycle') : log.type === 'strength' ? t('strength') : t('walk')} · {log.duration} min
