@@ -12,7 +12,7 @@ import {
   getMeasurementMomentByDate, getMeasurementTitle, getWeekOverview,
 } from '../../lib/plan-content';
 import { withDefaultSettings } from '../../lib/insights';
-import { formatDateShort, getTodayString } from '../../lib/utils';
+import { formatDate, formatDateShort, getTodayString } from '../../lib/utils';
 import {
   IconBadge, InfoCard, MetricTile, SectionTitle, Segmented, SimpleList, Tag,
 } from './ui';
@@ -23,10 +23,10 @@ import { ModalShell } from './ModalShell';
 export function DashboardStrip({ today, overview, progressPct, dueMeasurement, t }) {
   const meta = TYPE_META[today.type];
   const measurementLabel = dueMeasurement
-    ? `${formatDateShort(dueMeasurement.date)} - ${dueMeasurement.title}`
+    ? `${formatDateShort(dueMeasurement.date, t('localeTag'))} - ${dueMeasurement.title}`
     : t('noOpenMeasurement');
   return (
-    <section className="dashboard-strip" aria-label="Trainingsdashboard">
+    <section className="dashboard-strip" aria-label={t('trainingDashboard')}>
       <div className="signal-card">
         <div className="signal-kicker">{t('today')}</div>
         <div className="signal-value">{t(today.type) || meta.label}: {today.title}</div>
@@ -102,7 +102,7 @@ export function MeasurementBanner({ moment, onOpen, t }) {
             {isOverdue ? t('measurementOpen') : t('measurementToday')}
           </div>
           <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px', color: 'var(--ink)' }}>{moment.title}</div>
-          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{formatDateShort(moment.date)} · {moment.focus}</div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{formatDateShort(moment.date, t('localeTag'))} · {moment.focus}</div>
         </div>
         <button type="button" onClick={onOpen} style={{ border: 'none', background: 'var(--accent)', color: 'white', borderRadius: 'var(--radius)', padding: '12px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', flex: '0 0 auto', minHeight: '44px' }}>
           {t('open')}
@@ -123,7 +123,7 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
       <div className="info-card hero-card" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '24px', borderLeft: `4px solid ${isComplete ? 'var(--success)' : meta.color}` }}>
         <div style={{ marginBottom: '16px' }}>
           <div style={{ fontSize: '12px', color: meta.color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {day.day.toUpperCase()} {new Date(`${day.date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }).toUpperCase()}
+            {day.day.toUpperCase()} {formatDate(day.date, t('localeTag'), { day: 'numeric', month: 'long' }).toUpperCase()}
           </div>
           <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '26px', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--ink)' }}>
             <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={48} iconSize={26} />
@@ -184,7 +184,7 @@ export function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, c
   const day = rawDay.type === 'check' ? { ...rawDay, title: getMeasurementTitle(rawDay.date) } : rawDay;
   const meta = TYPE_META[day.type];
   const isComplete = !!completed[day.id];
-  const dateStr = new Date(`${day.date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  const dateStr = formatDate(day.date, t('localeTag'), { day: 'numeric', month: 'short' });
   const weather = day.type === 'cycle' ? cyclingWeather?.byDate?.[day.date] : null;
 
   return (
@@ -206,8 +206,8 @@ export function DayCard({ day: rawDay, completed, toggleComplete, onSelectDay, c
           </div>
           <div style={{ fontSize: '15px', fontWeight: 600, marginTop: '2px', textDecoration: isComplete ? 'line-through' : 'none', color: 'var(--ink)' }}>
             {day.title}
-            {day.intense && <Flame size={15} aria-label="Intensief" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--warn)' }} />}
-            {day.big && <Star size={15} aria-label="Belangrijk" style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--action)' }} />}
+            {day.intense && <Flame size={15} aria-label={t('intenseLabel')} style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--warn)' }} />}
+            {day.big && <Star size={15} aria-label={t('importantLabel')} style={{ marginLeft: 6, verticalAlign: '-2px', color: 'var(--action)' }} />}
           </div>
           {!compact && day.target && <div style={{ fontSize: '12px', color: 'var(--muted-2)', marginTop: '2px' }}>{day.target}</div>}
           {!compact && weather && (
@@ -248,7 +248,7 @@ export function DayDetail({ day, onClose, completed, toggleComplete, cyclingWeat
         <IconBadge type={day.type} color={meta.color} bg={meta.bg} size={46} iconSize={24} />
         <div>
           <div style={{ fontSize: '12px', color: meta.color, fontWeight: 700, letterSpacing: '0.08em' }}>
-            {day.day.toUpperCase()} {new Date(`${day.date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
+            {day.day.toUpperCase()} {formatDate(day.date, t('localeTag'), { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
           </div>
           <div id="day-detail-title" style={{ fontSize: '24px', fontWeight: 800, color: 'var(--ink)' }}>{day.title}</div>
         </div>
@@ -318,12 +318,14 @@ export function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, 
           <MetricTile icon={Flame} label={t('nutrition')} value={`${overview.kcal} kcal`} />
         </div>
       </InfoCard>
-      <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} />
-      {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />}
-      {section === 'zones' && <ZonesSection t={t} />}
-      {section === 'food' && <NutritionSection currentWeek={currentWeek} t={t} />}
-      {section === 'strength' && <StrengthSection t={t} />}
-      {section === 'tips' && <TipsSection t={t} />}
+      <Segmented options={sections} value={section} onChange={setSection} ariaLabel={t('planSections')} idBase="plan" />
+      <div role="tabpanel" id={`plan-panel-${section}`} aria-labelledby={`plan-tab-${section}`} tabIndex={0}>
+        {section === 'days' && <AllView completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} t={t} />}
+        {section === 'zones' && <ZonesSection t={t} />}
+        {section === 'food' && <NutritionSection currentWeek={currentWeek} t={t} />}
+        {section === 'strength' && <StrengthSection t={t} />}
+        {section === 'tips' && <TipsSection t={t} />}
+      </div>
     </div>
   );
 }

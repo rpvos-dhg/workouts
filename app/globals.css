@@ -37,10 +37,9 @@
   --action-ink:    #0f1d2e;
 
   /* Semantic */
-  --success:       #2e7d57;
+  --success:       #157347;        /* darker green — ≥4.5:1 with white text (AA) */
   --danger:        #b23a48;
   --warn:          #b8650a;        /* darker amber — AA contrast on white */
-  --copper:        #003a71;        /* kept for component compat — maps to navy */
   --focus:         #ffcc00;        /* yellow focus ring — high visibility */
 
   /* Semantic tints (light bg + readable ink) — dark-mode aware */
@@ -58,10 +57,32 @@
   --shadow:      0 3px 14px rgba(0,58,113,0.10), 0 1px 4px rgba(0,58,113,0.06);
   --shadow-lift: 0 12px 32px rgba(0,58,113,0.16), 0 4px 10px rgba(0,58,113,0.07);
 
-  /* Geometry — generous, modern */
+  /* Geometry — generous, modern. Radius scale: input < card < modal. */
+  --radius-sm:  8px;
   --radius:    10px;
   --radius-lg: 16px;
   --radius-xl: 20px;
+
+  /* Spacing scale — 4px base. Use these instead of ad-hoc magic numbers. */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Type scale — 1.25 (major third) from a 14px body. Weight + colour carry
+     most of the hierarchy; size is the third lever. */
+  --text-caption: 11px;
+  --text-meta:    12px;
+  --text-body:    14px;
+  --text-h4:      16px;
+  --text-h3:      18px;
+  --text-h2:      22px;
+  --text-h1:      28px;
+  --text-display: clamp(30px, 6vw, 44px);
 
   /* Layout */
   --nav-h: 62px;
@@ -253,6 +274,11 @@ input, textarea {
   text-transform: uppercase;
 }
 
+/* Tactile press feedback — confirms the tap registered (reduced-motion safe). */
+.app-nav-btn:active .nav-icon {
+  transform: scale(0.9);
+}
+
 /* Active state */
 .app-nav-btn--active {
   color: var(--accent);
@@ -354,11 +380,13 @@ input, textarea {
   transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 140ms ease;
 }
 
-.fab:hover {
-  transform: scale(1.09);
-  box-shadow:
-    0 8px 28px rgba(255,204,0,0.50),
-    0 4px 12px rgba(0,58,113,0.18);
+@media (hover: hover) {
+  .fab:hover {
+    transform: scale(1.09);
+    box-shadow:
+      0 8px 28px rgba(255,204,0,0.50),
+      0 4px 12px rgba(0,58,113,0.18);
+  }
 }
 
 .fab:active {
@@ -445,9 +473,11 @@ input, textarea {
   transition: box-shadow 180ms ease, transform 180ms ease;
 }
 
-.signal-card:hover {
-  box-shadow: var(--shadow);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .signal-card:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+  }
 }
 
 .signal-kicker {
@@ -488,12 +518,14 @@ input, textarea {
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.info-card:hover,
-.day-card:hover,
-.log-card:hover {
-  border-color: rgba(0, 58, 113, 0.22);
-  box-shadow: var(--shadow);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .info-card:hover,
+  .day-card:hover,
+  .log-card:hover {
+    border-color: rgba(0, 58, 113, 0.22);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+  }
 }
 
 /* Hero card — prominent navy left accent */
@@ -573,6 +605,25 @@ input, textarea {
 }
 
 /* =========================================
+   TYPOGRAPHY POLISH
+   ========================================= */
+h1, h2, h3 {
+  text-wrap: balance;       /* kill heading orphans/widows */
+  letter-spacing: -0.01em;  /* optical tightening on larger type */
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Tabular numerals for any dynamic figure (stats, scores, timers, prices)
+   so values don't shift width as they change. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* =========================================
    HELPERS
    ========================================= */
 .sr-only {
@@ -638,11 +689,11 @@ input, textarea {
 
 .modal-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -718,9 +769,10 @@ input, textarea {
   color: var(--action);
   font-weight: 700;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px 10px;
   margin-left: auto;
-  min-height: 32px;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: 6px;
 }
 
@@ -933,12 +985,14 @@ input, textarea {
     border-top-color: var(--action);
   }
 
-  .signal-card:hover,
-  .info-card:hover,
-  .day-card:hover,
-  .log-card:hover {
-    border-color: rgba(77, 159, 255, 0.25);
-    transform: translateY(-1px);
+  @media (hover: hover) {
+    .signal-card:hover,
+    .info-card:hover,
+    .day-card:hover,
+    .log-card:hover {
+      border-color: rgba(77, 159, 255, 0.25);
+      transform: translateY(-1px);
+    }
   }
 }
 

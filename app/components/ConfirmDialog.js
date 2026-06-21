@@ -6,7 +6,8 @@ import { ghostButtonStyle, dangerButtonStyle, primaryButtonStyle } from './style
 
 const ConfirmContext = createContext(null);
 
-export function ConfirmProvider({ children }) {
+export function ConfirmProvider({ children, t }) {
+  const tr = typeof t === 'function' ? t : (k) => k;
   const [state, setState] = useState(null);
   const resolverRef = useRef(null);
 
@@ -14,14 +15,14 @@ export function ConfirmProvider({ children }) {
     return new Promise((resolve) => {
       resolverRef.current = resolve;
       setState({
-        title: options.title || 'Weet je het zeker?',
+        title: options.title || tr('confirmDefaultTitle'),
         message: options.message || '',
-        confirmLabel: options.confirmLabel || 'Bevestigen',
-        cancelLabel: options.cancelLabel || 'Annuleren',
+        confirmLabel: options.confirmLabel || tr('confirmDefault'),
+        cancelLabel: options.cancelLabel || tr('cancel'),
         tone: options.tone || 'danger',
       });
     });
-  }, []);
+  }, [tr]);
 
   const handle = (value) => {
     resolverRef.current?.(value);
@@ -33,7 +34,7 @@ export function ConfirmProvider({ children }) {
     <ConfirmContext.Provider value={confirm}>
       {children}
       {state && (
-        <ModalShell open onClose={() => handle(false)} titleId="confirm-title" closeLabel="Annuleren">
+        <ModalShell open onClose={() => handle(false)} titleId="confirm-title" closeLabel={tr('cancel')}>
           <h2 id="confirm-title" style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 800, color: 'var(--ink)' }}>{state.title}</h2>
           {state.message && (
             <p style={{ margin: '0 0 20px', fontSize: '14px', color: 'var(--muted)', lineHeight: 1.5 }}>{state.message}</p>

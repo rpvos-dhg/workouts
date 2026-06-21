@@ -7,7 +7,8 @@ const ToastContext = createContext(null);
 let idCounter = 0;
 const nextId = () => `t-${Date.now()}-${++idCounter}`;
 
-export function ToastProvider({ children }) {
+export function ToastProvider({ children, t }) {
+  const tr = typeof t === 'function' ? t : (k) => ({ notificationsRegion: 'Notifications', closeNotificationLabel: 'Close notification' }[k] || k);
   const [toasts, setToasts] = useState([]);
   const timers = useRef(new Map());
 
@@ -49,7 +50,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="toast-stack" role="region" aria-label="Meldingen" aria-live="polite">
+      <div className="toast-stack" role="region" aria-label={tr('notificationsRegion')} aria-live="polite">
         {toasts.map(t => (
           <div key={t.id} className={`toast toast--${t.tone}`} role={t.tone === 'error' ? 'alert' : 'status'}>
             <span style={{ flex: 1 }}>{t.message}</span>
@@ -58,7 +59,7 @@ export function ToastProvider({ children }) {
                 {t.action.label}
               </button>
             )}
-            <button type="button" onClick={() => dismiss(t.id)} aria-label="Melding sluiten">×</button>
+            <button type="button" onClick={() => dismiss(t.id)} aria-label={tr('closeNotificationLabel')}>×</button>
           </div>
         ))}
       </div>

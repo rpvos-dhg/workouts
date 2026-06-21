@@ -66,22 +66,46 @@ export function SectionTitle({ title, subtitle }) {
   );
 }
 
-export function Segmented({ options, value, onChange, ariaLabel = 'Tabs' }) {
+export function Segmented({ options, value, onChange, ariaLabel = 'Tabs', idBase = 'seg' }) {
+  // Arrow-key navigation per the ARIA tabs pattern; roving tabindex keeps a single
+  // tab stop, and each tab points at its panel via aria-controls.
+  const onKeyDown = (e) => {
+    const idx = options.findIndex(o => o.key === value);
+    if (idx < 0) return;
+    let next = idx;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % options.length;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + options.length) % options.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = options.length - 1;
+    else return;
+    e.preventDefault();
+    onChange(options[next].key);
+    const el = e.currentTarget.querySelector(`#${idBase}-tab-${options[next].key}`);
+    if (el) el.focus();
+  };
   return (
-    <div role="tablist" aria-label={ariaLabel} style={{
+    <div role="tablist" aria-label={ariaLabel} onKeyDown={onKeyDown} style={{
       display: 'flex', overflowX: 'auto', gap: '4px',
       background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: '4px',
       margin: '14px 0', border: '1px solid var(--line)', scrollbarWidth: 'thin',
     }}>
-      {options.map(option => (
-        <button key={option.key} type="button" role="tab" aria-selected={value === option.key} onClick={() => onChange(option.key)} style={{
-          flex: '1 0 auto', padding: '10px 14px', border: 'none', borderRadius: 'var(--radius)',
-          background: value === option.key ? 'var(--accent)' : 'transparent',
-          color: value === option.key ? 'white' : 'var(--muted)',
-          fontSize: '13px', fontWeight: 700, cursor: 'pointer', minHeight: '40px',
-          whiteSpace: 'nowrap',
-        }}>{option.label}</button>
-      ))}
+      {options.map(option => {
+        const selected = value === option.key;
+        return (
+          <button key={option.key} type="button" role="tab"
+            id={`${idBase}-tab-${option.key}`}
+            aria-selected={selected}
+            aria-controls={`${idBase}-panel-${option.key}`}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(option.key)} style={{
+              flex: '1 0 auto', padding: '10px 14px', border: 'none', borderRadius: 'var(--radius)',
+              background: selected ? 'var(--accent)' : 'transparent',
+              color: selected ? 'white' : 'var(--muted)',
+              fontSize: '13px', fontWeight: 700, cursor: 'pointer', minHeight: '40px',
+              whiteSpace: 'nowrap',
+            }}>{option.label}</button>
+        );
+      })}
     </div>
   );
 }
@@ -93,7 +117,7 @@ export function MetricTile({ label, value, icon: Icon }) {
         {Icon && <Icon size={13} aria-hidden="true" />}
         {label}
       </div>
-      <div style={{ fontSize: '15px', fontWeight: 800, marginTop: '4px', color: 'var(--accent-strong)' }}>{value}</div>
+      <div className="tnum" style={{ fontSize: '15px', fontWeight: 800, marginTop: '4px', color: 'var(--accent-strong)' }}>{value}</div>
     </div>
   );
 }
@@ -141,7 +165,7 @@ export function BellIcon() {
   return <Clock3 size={16} aria-hidden="true" />;
 }
 
-export function MiniChart({ points, color, emptyLabel }) {
+export function MiniChart({ points, color, emptyLabel, ariaLabel = 'Trend' }) {
   if (!points || points.length < 2) {
     return <div style={{ minHeight: '120px', display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: '13px' }}>{emptyLabel}</div>;
   }
@@ -156,7 +180,7 @@ export function MiniChart({ points, color, emptyLabel }) {
   }));
   const polylinePoints = coordPairs.map(c => `${c.x},${c.y}`).join(' ');
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Trendgrafiek" style={{ width: '100%', height: '120px', display: 'block' }}>
+    <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel} style={{ width: '100%', height: '120px', display: 'block' }}>
       <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="var(--line)" strokeWidth="2" />
       <polyline fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" points={polylinePoints} />
       {points.map((p, i) => (
@@ -170,18 +194,22 @@ export function TrendCard({ title, unit, points, color, t }) {
   const latest = points.at(-1)?.value;
   const first = points[0]?.value;
   const delta = Number.isFinite(latest) && Number.isFinite(first) && points.length > 1 ? latest - first : null;
+  const latestText = Number.isFinite(latest) ? `${latest.toFixed(unit === '%' ? 0 : 1)} ${unit}` : '—';
+  const deltaText = delta !== null ? `${delta >= 0 ? '+' : ''}${delta.toFixed(unit === '%' ? 0 : 1)} ${unit}` : null;
+  // Describe the chart for screen readers: title, latest value, and overall change.
+  const chartLabel = `${title}: ${latestText}${deltaText ? `, ${deltaText}` : ''}`;
   return (
     <InfoCard>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div>
           <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 800 }}>{title}</div>
-          <div style={{ fontSize: '22px', fontWeight: 800, color }}>{Number.isFinite(latest) ? `${latest.toFixed(unit === '%' ? 0 : 1)} ${unit}` : '—'}</div>
+          <div className="tnum" style={{ fontSize: '22px', fontWeight: 800, color }}>{latestText}</div>
         </div>
-        {delta !== null && (
-          <Tag label={`${delta >= 0 ? '+' : ''}${delta.toFixed(unit === '%' ? 0 : 1)} ${unit}`} bg="var(--info-tint)" color="var(--accent)" />
+        {deltaText && (
+          <Tag label={deltaText} bg="var(--info-tint)" color="var(--accent)" />
         )}
       </div>
-      <MiniChart points={points} color={color} emptyLabel={t('noTrendData')} />
+      <MiniChart points={points} color={color} emptyLabel={t('noTrendData')} ariaLabel={chartLabel} />
     </InfoCard>
   );
 }

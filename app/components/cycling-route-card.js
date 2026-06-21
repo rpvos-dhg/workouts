@@ -90,7 +90,7 @@ export function CyclingRouteCard({ day, cycleLogs, userEmail, t }) {
       {status === 'done' && routeData && (
         <>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '10px' }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent)' }}>{routeData.estimatedKm}</span>
+            <span className="tnum" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent)' }}>{routeData.estimatedKm}</span>
             <span style={{ fontSize: '14px', color: 'var(--muted)' }}>{t('routeKmEstimated')}</span>
             {routeData.expectedAvgSpeed && (
               <span style={{ fontSize: '13px', color: 'var(--muted)', marginLeft: '6px' }}>
