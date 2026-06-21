@@ -10,11 +10,12 @@ try {
   buildId = 'dev';
 }
 
-// Enforced Content-Security-Policy. Kept deliberately permissive on inline
-// script/style because Next.js injects inline bootstrap scripts and the app
-// (plus next/font) relies on inline styles — without a nonce pipeline these
-// need 'unsafe-inline'. connect-src allows Supabase REST + realtime websockets;
-// Open-Meteo/Fietsersbond are also listed in case any call moves client-side.
+// Enforced Content-Security-Policy. script/style keep 'unsafe-inline': Next.js
+// injects inline bootstrap scripts and the app + next/font rely on inline styles.
+// A nonce-based policy was tried (see docs/QA-REVIEW.md) but verified to blank the
+// app — the static client shell is prerendered without a per-request nonce, so
+// 'strict-dynamic' blocked every script. The app has no HTML-injection sinks
+// (no dangerouslySetInnerHTML), so 'unsafe-inline' on script-src is low-risk here.
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
