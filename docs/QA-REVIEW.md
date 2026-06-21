@@ -275,8 +275,20 @@ remaining 🟡/🔵 recommendations plus a design-system refresh. Verified: `npm
 - New tests: `tests/progress.test.mjs`, `tests/utils.test.mjs` (streak edge cases,
   dedupe, date helpers, CSV escaping).
 
+### Round 3 — CSP enforced + style extraction [done]
+- **CSP now enforced** — `next.config.js` ships `Content-Security-Policy` (was
+  Report-Only) plus `upgrade-insecure-requests`. Verified the header (and the four
+  hardening headers) are emitted at runtime via `next start` + `curl -D`. Kept
+  `'unsafe-inline'` for script/style (Next bootstrap + inline styles need it absent
+  a nonce pipeline); `connect-src` allows Supabase REST + realtime websockets.
+- **Inline-style extraction** — the repeated `className="signal-kicker"
+  style={{ color: 'var(--accent-strong)' }}` (10 sites across 5 files) replaced
+  with a `.signal-kicker--accent` modifier class. Identical rendering, no inline
+  override.
+
 ### Still open (documented, not done)
-- Enforcing the CSP (needs in-browser validation first).
-- Extracting the remaining repeated inline-style objects into shared
-  components/classes (incremental; the token scales are now in place to do it).
+- Extracting the *remaining* varied eyebrow/caption inline styles into shared
+  components/classes (incremental; values differ per use, so done case-by-case).
 - A dedicated offline fallback page (SW currently falls back to the cached shell).
+- If a stricter CSP is wanted, move to a nonce-based pipeline (middleware) to drop
+  `'unsafe-inline'` — larger change, needs the inline `style={{…}}` usage reduced first.

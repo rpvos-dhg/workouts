@@ -75,7 +75,7 @@ export function DailyHabitCard({ day, habit, settings, onToggle, t }) {
   }
   return (
     <InfoCard>
-      <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('dailyChecklist')}</div>
+      <div className="signal-kicker signal-kicker--accent">{t('dailyChecklist')}</div>
       <div style={{ display: 'grid', gap: '8px', marginTop: '10px' }}>
         {items.map(([key, label, hint]) => {
           const checked = !!habit[key];
@@ -310,7 +310,7 @@ export function PlanView({ completed, toggleComplete, onSelectDay, currentWeek, 
   return (
     <div>
       <InfoCard style={{ background: 'var(--surface-2)', borderLeft: '4px solid var(--accent)' }}>
-        <div className="signal-kicker" style={{ color: 'var(--accent-strong)' }}>{t('weekFocusLabel', { week: currentWeek })}</div>
+        <div className="signal-kicker signal-kicker--accent">{t('weekFocusLabel', { week: currentWeek })}</div>
         <div style={{ fontFamily: 'var(--font-display), var(--font-body), sans-serif', fontSize: '22px', fontWeight: 800, marginTop: '6px' }}>{overview.focus}</div>
         <div className="metric-grid" style={{ marginTop: '14px' }}>
           <MetricTile icon={Clock3} label={t('period')} value={overview.period} />
