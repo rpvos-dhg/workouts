@@ -195,7 +195,7 @@ input, textarea {
   position: relative;
   background: #003a71;
   color: #ffffff;
-  padding: 20px 20px 22px;
+  padding: calc(20px + env(safe-area-inset-top)) 20px 22px;
   border-bottom: 4px solid var(--action);
   overflow: hidden;
 }
