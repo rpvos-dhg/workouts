@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Activity, Bike, CheckCircle2, Clock3, Dumbbell, Flame,
+  Activity, Bike, CheckCircle2, ChevronRight, Clock3, Dumbbell, Flame,
   Gauge, HeartPulse, Star, Target, TrendingDown,
 } from 'lucide-react';
 import { PLAN_DATA, TYPE_META } from '../../lib/plan-data';
@@ -301,19 +301,70 @@ export function WeekView({ days, completed, toggleComplete, onSelectDay, weekNum
 }
 
 export function AllView({ completed, toggleComplete, onSelectDay, cyclingWeather, t }) {
-  const todayId = (PLAN_DATA.find(d => d.date === getTodayString()) || {}).id;
+  const today = getTodayString();
+  const todayId = (PLAN_DATA.find(d => d.date === today) || {}).id;
+  const currentWeek = (PLAN_DATA.find(d => d.date >= today) || PLAN_DATA[PLAN_DATA.length - 1]).week;
+  const weeks = [...new Set(PLAN_DATA.map(d => d.week))];
+
+  // Finished weeks (all days done, or entirely before the current week) start
+  // collapsed so the relevant week sits near the top. Computed once; manually
+  // toggling a week afterwards is preserved.
+  const [expanded, setExpanded] = useState(() => {
+    const state = {};
+    for (const w of weeks) {
+      const wd = PLAN_DATA.filter(d => d.week === w);
+      const finished = w < currentWeek || wd.every(d => completed[d.id]);
+      state[w] = !finished;
+    }
+    return state;
+  });
+  const toggleWeek = w => setExpanded(prev => ({ ...prev, [w]: !prev[w] }));
+
   return (
     <div className="section-shell">
-      {[...new Set(PLAN_DATA.map(d => d.week))].map(w => {
+      {weeks.map(w => {
         const wd = PLAN_DATA.filter(d => d.week === w);
         const compl = wd.filter(d => completed[d.id]).length;
+        const allDone = compl === wd.length;
+        const isCurrent = w === currentWeek;
+        const isOpen = expanded[w];
         return (
-          <div key={w} style={{ marginBottom: '24px' }}>
-            <div className="signal-kicker" style={{ color: 'var(--accent-strong)', margin: '0 4px 10px' }}>Week {w} · {compl}/{wd.length}</div>
-            <div style={{ margin: '0 4px 12px' }}>
-              <RouteProfile days={wd} completed={completed} todayId={todayId} t={t} ariaLabel={t('weekRouteProfile', { week: w })} />
-            </div>
-            {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} compact t={t} />)}
+          <div key={w} style={{ marginBottom: isOpen ? '24px' : '8px' }}>
+            <button
+              type="button"
+              onClick={() => toggleWeek(w)}
+              aria-expanded={isOpen}
+              aria-controls={`week-panel-${w}`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                minHeight: '44px', padding: '10px 12px', marginBottom: '10px',
+                borderRadius: 'var(--radius)', border: '1px solid var(--line)',
+                background: isCurrent ? 'var(--surface-2)' : 'var(--surface)',
+                cursor: 'pointer', textAlign: 'left', color: 'inherit',
+                borderLeft: isCurrent ? '4px solid var(--accent)' : '1px solid var(--line)',
+              }}
+            >
+              <ChevronRight
+                size={18}
+                aria-hidden="true"
+                style={{ flexShrink: 0, color: 'var(--accent-strong)', transition: 'transform .15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}
+              />
+              <span className="signal-kicker" style={{ color: 'var(--accent-strong)', margin: 0 }}>
+                Week {w}{isCurrent ? ` · ${t('thisWeek')}` : ''}
+              </span>
+              <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: allDone ? 'var(--success)' : 'var(--muted)' }}>
+                {compl}/{wd.length}
+                {allDone && <CheckCircle2 size={15} aria-hidden="true" />}
+              </span>
+            </button>
+            {isOpen && (
+              <div id={`week-panel-${w}`}>
+                <div style={{ margin: '0 4px 12px' }}>
+                  <RouteProfile days={wd} completed={completed} todayId={todayId} t={t} ariaLabel={t('weekRouteProfile', { week: w })} />
+                </div>
+                {wd.map(d => <DayCard key={d.id} day={d} completed={completed} toggleComplete={toggleComplete} onSelectDay={onSelectDay} cyclingWeather={cyclingWeather} compact t={t} />)}
+              </div>
+            )}
           </div>
         );
       })}
