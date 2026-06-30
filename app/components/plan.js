@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   Activity, Bike, CheckCircle2, Clock3, Dumbbell, Flame,
-  Gauge, HeartPulse, Star, Target,
+  Gauge, HeartPulse, Star, Target, TrendingDown,
 } from 'lucide-react';
 import { PLAN_DATA, TYPE_META } from '../../lib/plan-data';
 import {
@@ -37,7 +37,7 @@ export function DashboardStrip({ today, overview, progressPct, dueMeasurement, t
       <div className="signal-card">
         <div className="signal-kicker">{t('weekFocus')}</div>
         <div className="signal-value">{overview.focus}</div>
-        <div className="signal-note">{overview.kcal} kcal · 130g {t('protein').toLowerCase()} · {t('longRide')} {overview.longRide}</div>
+        <div className="signal-note">{overview.kcal} kcal · 130g {t('protein').toLowerCase()} · {t('pace')} {t('paceValue')}</div>
       </div>
       <div className="signal-card">
         <div className="signal-kicker">{t('status')}</div>
@@ -174,6 +174,7 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
             <MetricTile icon={Flame} label="Kcal" value={overview.kcal} />
             <MetricTile icon={Dumbbell} label={t('protein')} value="130g" />
             <MetricTile icon={Activity} label={t('water')} value="2L" />
+            <MetricTile icon={TrendingDown} label={t('pace')} value={t('paceValue')} />
           </div>
         </div>
         <AdaptiveAdviceCard advice={adaptiveAdvice} t={t} />
@@ -186,6 +187,7 @@ export function TodayView({ day, completed, toggleComplete, overview, onOpenMeas
             <li>{t('proteinReminder')}</li>
             <li>{t('waterReminder')}</li>
             <li>{t('kcalTarget', { kcal: overview.kcal })}</li>
+            <li>{t('paceReminder')}</li>
             {['cycle', 'strength', 'walk'].includes(day.type) && <li>{t('postTrainingProtein')}</li>}
             {day.type === 'cycle' && day.dur >= 60 && <li>{t('longRideSnack')}</li>}
             {day.week === 6 && <li>{t('week6Recovery')}</li>}

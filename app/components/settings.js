@@ -142,7 +142,7 @@ export function SettingsDialog({ settings, onSave, onClose, t }) {
       <h2 id="settings-dialog-title" style={{ margin: '0 0 16px', fontSize: '22px', fontWeight: 800, color: 'var(--accent-strong)' }}>{t('settings')}</h2>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-        <MetricInput label={t('kcalGoal')} value={form.kcal_target} onChange={v => setForm({ ...form, kcal_target: Number(v) || 0 })} placeholder="2400" />
+        <MetricInput label={t('kcalGoal')} value={form.kcal_target} onChange={v => setForm({ ...form, kcal_target: Number(v) || 0 })} placeholder="1900" />
         <MetricInput label={t('proteinGoal')} value={form.protein_target} onChange={v => setForm({ ...form, protein_target: Number(v) || 0 })} placeholder="130" />
         <MetricInput label={t('waterGoal')} value={form.water_target} onChange={v => setForm({ ...form, water_target: Number(v) || 0 })} placeholder="2" />
         <MetricInput label={t('baselineHr')} value={form.resting_hr_baseline} onChange={v => setForm({ ...form, resting_hr_baseline: Number(v) || 0 })} placeholder="56" />
