@@ -1205,7 +1205,7 @@ p {
   background: #003a71;
   color: #ffffff;
   border-bottom: 4px solid var(--action);
-  padding: 22px 20px 24px;
+  padding: calc(22px + env(safe-area-inset-top)) 20px 24px;
 }
 
 .app-masthead::after {
